@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from fractions import Fraction
 import sympy as sym
 import pandas as pd
+from os.path import exists
 
 
 # define pipe class
