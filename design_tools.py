@@ -34,10 +34,12 @@ def read_flange_csv(group=2.3):
 
     # ensure group is valid
     group = str(group).replace('.', '_')
+    file_directory = './lookup_data/'
     file_name = 'ASME_B16_5_flange_ratings_group_' + group + '.csv'
-    if exists(file_name):
+    file_location = file_directory + file_name
+    if exists(file_location):
         # import the correct .csv file as a pandas dataframe
-        flange_limits = pd.read_csv(file_name)
+        flange_limits = pd.read_csv(file_location)
         return flange_limits
 
     else:
@@ -56,11 +58,13 @@ def collect_tube_materials():
     outputs:
         dictionary with metal names as keys and material groups as values
     """
+    file_directory = './lookup_data/'
     file_name = 'materials_list.csv'
-    if exists(file_name):
-        with open(file_name) as f:
+    file_location = file_directory + file_name
+    if exists(file_location):
+        with open(file_location) as file:
             output_dict = {}
-            for num, line in enumerate(f):
+            for num, line in enumerate(file):
                 if num > 0:
                     line = line.strip().split(',')
                     output_dict[line[0]] = line[1]
