@@ -13,6 +13,7 @@ CREATED BY:
 
 import unittest
 import os
+import pint
 import pandas as pd
 import design_tools
 
@@ -47,23 +48,49 @@ class TestReadFlangeCsv(unittest.TestCase):
         file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
         file_location = file_directory + file_name
 
+        # incorporate units with pint
+        ureg = pint.UnitRegistry()
+        Q_ = ureg.Quantity
+
         # create test dataframe and write it to a .csv file
-        test_dataframe = pd.DataFrame(data=[[0, 1], [2, 3]],
+        test_dataframe = pd.DataFrame(data=[[0, 1],     # temperatures
+                                            [2, 3]],    # pressures
                                       columns=['Temperature', 'Class'])
         test_dataframe.to_csv(file_location, index=False)
+
+        # add units to test dataframe
+        test_dataframe['Temperature'] = [Q_(temp, ureg.degC) for temp in
+                                         test_dataframe['Temperature']]
+        test_dataframe['Class'] = [Q_(pressure, ureg.bar) for pressure in
+                                   test_dataframe['Class']]
 
         # read in test dataframe using read_flange_csv()
         test_result = design_tools.read_flange_csv(my_input)
 
+        # check that all dataframe keys match
+        self.assertListEqual(list(test_dataframe.keys()),
+                             list(test_result.keys()))
+
+        # flatten list of values and check that all dataframe values match
+        test_dataframe_values = [item for column in test_dataframe.values
+                                 for item in column]
+        test_result_values = [item for column in test_result.values
+                              for item in column]
+        self.assertListEqual(test_dataframe_values, test_result_values)
+
+        # ensure rejection of tabulated pressures less than zero
+        with self.assertRaisesRegex(ValueError, 'Pressure less than zero.'):
+            # create test dataframe and write it to a .csv file
+            test_dataframe = pd.DataFrame(data=[[0, 1],     # temperatures
+                                                [2, -3]],   # pressures
+                                          columns=['Temperature', 'Class'])
+            test_dataframe.to_csv(file_location, index=False)
+
+            # run the test
+            design_tools.read_flange_csv(my_input)
+
         # delete test .csv file from disk
         os.remove(file_location)
-
-        # check that dataframes are equivalent
-        self.assertIsNone(pd.testing.assert_frame_equal(test_dataframe,
-                                                        test_result))
-
-        # ensure that allowable pressure values are all > 0
-        print('foo')
 
 
 class TestCollectTubeMaterials(unittest.TestCase):
