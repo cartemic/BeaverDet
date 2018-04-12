@@ -68,4 +68,6 @@ def collect_tube_materials():
 
 
 if __name__ == '__main__':
-    pass
+    # run unit tests
+    import test_design_tools
+    test_design_tools.unittest.main()
