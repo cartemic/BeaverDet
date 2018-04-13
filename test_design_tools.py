@@ -18,13 +18,15 @@ import pandas as pd
 import design_tools
 
 
-class TestReadFlangeCsv(unittest.TestCase):
+class TestDesignTools(unittest.TestCase):
     """
-    Tests the read_flange_csv() function, which reads flange pressure
-    limits as a function of temperature for various flange classes.
+    Unit tests for detonation tube design tools
     """
     def test_read_flange_csv(self):
         """
+        Tests the read_flange_csv() function, which reads flange pressure
+        limits as a function of temperature for various flange classes.
+
         Conditions tested:
             - proper error handling with bad .csv file name
             - imported dataframe has correct keys
@@ -96,15 +98,12 @@ class TestReadFlangeCsv(unittest.TestCase):
         # delete test .csv file from disk
         os.remove(file_location)
 
-
-class TestCollectTubeMaterials(unittest.TestCase):
-    """
-    Tests the collect_tube_materials() function, which reads in available
-    materials and returns a dictionary with materials as keys and their
-    appropriate ASME B16.5 material groups as values
-    """
     def test_collect_tube_materials(self):
         """
+        Tests the collect_tube_materials() function, which reads in available
+        materials and returns a dictionary with materials as keys and their
+        appropriate ASME B16.5 material groups as values
+
        Conditions tested:
             - values are imported correctly
         """
@@ -135,51 +134,110 @@ class TestCollectTubeMaterials(unittest.TestCase):
                                    float(values_from_dataframe[i]),
                                    places=7)
 
-
-class TestGetFlangeClass(unittest.TestCase):
-    """
-    Tests the get_flange_class() function, which takes in a temperature,
-    pressure, and a dataframe of pressure-temperature limits for a given
-    flange material and returns the minimum required flange class. Dataframes
-    are assumed to be good due to unit testing of their import function,
-    read_flange_csv().
-    """
     def test_get_flange_class(self):
         """
+        Tests the get_flange_class() function, which takes in a temperature,
+        pressure, and a dataframe of pressure-temperature limits for a given
+        flange material and returns the minimum required flange class.
+        Dataframes are assumed to be good due to unit testing of their import
+        function, read_flange_csv().
+
         Conditions tested:
             - Function returns expected value within P, T limits
             - Proper error handling when temperature units are bad
             - Proper error handling when pressure units are bad
             - Proper error handling when temperature is outside allowable range
             - Proper error handling when pressure is outside allowable range
+            - Proper error handling when temperature is not a pint quantity
+            - Proper error handling when pressure is not a pint quantity
         """
         # ----------------------------INPUT TESTING----------------------------
+        # check for error handling with non-string material
+        # check for error handling with bad material
+
         # incorporate units with pint
         ureg = pint.UnitRegistry()
         quant = ureg.Quantity
 
         # set temperatures
-        temp_low = quant(-100, ureg.degC)
-        temp_high = quant(500, ureg.degC)
-        temp_good = quant(350, ureg.degC)
+        temp_low = quant(-100, ureg.degC)       # temperature too low
+        temp_high = quant(500, ureg.degC)       # temperature too high
+        temp_good = quant(350, ureg.degC)       # temperature and units good
+        temp_badunits = quant(350, ureg.C)      # temperature good, units bad
 
         # set pressures
-        press_low = quant(-10, ureg.bar)
-        press_high = quant(350, ureg.bar)
-        press_good = quant(125, ureg.bar)
+        press_low = quant(-10, ureg.bar)        # pressure too low
+        press_high = quant(350, ureg.bar)       # pressure too high
+        press_good = quant(125, ureg.bar)       # pressure and units good
+        press_badunits = quant(125, ureg.barn)  # pressure good, units bad
 
-        # pick material group
+        # pick material group and import lookup dataframe
         # note: T = 350 °C and P = 125 bar for group 2.3, class is 1500
-        group = 2.3
+        material = '316L'   # 316L is in group 2.3
 
         # check for expected value within limits
-        self.assertEqual(design_tools.get_flange_class(temp_good, press_good),
-                         1500)
+        test_class = design_tools.get_flange_class(temp_good,
+                                                   press_good,
+                                                   material)
+        self.assertEqual(test_class, '1500')
 
         # check for error handling with bad temperature units
+        with self.assertRaisesRegex(ValueError, 'Bad temperature units.'):
+            design_tools.get_flange_class(temp_badunits,
+                                          press_good,
+                                          material)
+
         # check for error handling with bad pressure units
+        with self.assertRaisesRegex(ValueError, 'Bad pressure units.'):
+            design_tools.get_flange_class(temp_good,
+                                          press_badunits,
+                                          material)
+
         # check for error handling with temperature too low/high
+        with self.assertRaisesRegex(ValueError, 'Temperature out of range.'):
+            design_tools.get_flange_class(temp_low,
+                                          press_good,
+                                          material)
+            design_tools.get_flange_class(temp_high,
+                                          press_good,
+                                          material)
+
         # check for error handling with pressure too low/high
+        with self.assertRaisesRegex(ValueError, 'Pressure out of range.'):
+            design_tools.get_flange_class(temp_good,
+                                          press_low,
+                                          material)
+            design_tools.get_flange_class(temp_good,
+                                          press_high,
+                                          material)
+
+        # check for error handling when temperature is not a pint quantity
+        # input is numeric
+        with self.assertWarnsRegex(UserWarning,
+                                   'No temperature units. Assuming °C.'):
+            design_tools.get_flange_class(10,
+                                          press_good,
+                                          material)
+        # input is non-numeric
+        with self.assertRaisesRegex(ValueError,
+                                    'Non-numeric temperature input.'):
+            design_tools.get_flange_class('asdf',
+                                          press_good,
+                                          material)
+
+        # check for error handling when pressure is not a pint quantity
+        # input is numeric
+        with self.assertWarnsRegex(UserWarning,
+                                   'No pressure units. Assuming bar.'):
+            design_tools.get_flange_class(temp_good,
+                                          10,
+                                          material)
+        # input is non-numeric
+        with self.assertRaisesRegex(ValueError,
+                                    'Non-numeric pressure input.'):
+            design_tools.get_flange_class(temp_good,
+                                          'asdf',
+                                          material)
 
 
 # %% perform unit tests
