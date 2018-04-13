@@ -41,7 +41,7 @@ def read_flange_csv(group=2.3):
 
     # initialize unit registry and quantity for unit handling
     ureg = pint.UnitRegistry()
-    Q_ = ureg.Quantity
+    quant = ureg.Quantity
     if exists(file_location):
         # import the correct .csv file as a pandas dataframe
         flange_limits = pd.read_csv(file_location)
@@ -64,13 +64,13 @@ def read_flange_csv(group=2.3):
                         raise ValueError('Pressure less than zero.')
 
         # add units to temperature column
-        flange_limits['Temperature'] = [Q_(temp, ureg.degC) for temp in
+        flange_limits['Temperature'] = [quant(temp, ureg.degC) for temp in
                                         flange_limits['Temperature']]
 
         # add units to pressure columns
         for key in flange_limits.keys():
             if key != 'Temperature':
-                flange_limits[key] = [Q_(pressure, ureg.bar) for pressure in
+                flange_limits[key] = [quant(pressure, ureg.bar) for pressure in
                                       flange_limits[key]]
 
         return flange_limits
