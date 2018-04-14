@@ -13,6 +13,7 @@ CREATED BY:
 
 from os.path import exists
 import warnings
+from math import sqrt
 import pint
 import pandas as pd
 
@@ -24,14 +25,13 @@ def read_flange_csv(group=2.3):
     is in bar.
 
     Inputs:
-        group (float or string): ASME B16.5 material group (defaults to 2.3).
-                    Only groups 2.1, 2.2, and 2.3 are included in the current
-                    release.
+        group: float or string of ASME B16.5 material group (defaults to 2.3).
+             Only groups 2.1, 2.2, and 2.3 are included in the current release.
 
     Outputs:
-        flange_limits (pandas dataframe): First column is temperature. All
-                    other columns' keys are flange classes, and the values
-                    are the appropriate pressure limits in bar.
+        flange_limits: pandas dataframe, the first column of which is
+             temperature. All other columns' keys are flange classes, and the
+             values are the appropriate pressure limits in bar.
     """
 
     # ensure group is valid
@@ -93,7 +93,7 @@ def collect_tube_materials():
         none
 
     Outputs:
-       tube_materials (dictionary):  dictionary with metal names as keys and
+       tube_materials:  dictionary with metal names as keys and
        material groups as values
     """
     file_directory = './lookup_data/'
@@ -226,6 +226,64 @@ def get_flange_class(temperature, pressure, desired_material):
             correct_class = key
             break
     return correct_class
+
+
+def get_spiral_diameter(pipe_id, blockage_ratio):
+    """
+    Calculates the diameter of a Shchelkin spiral corresponding to a given
+    blockage ratio within a pipe of given inner diameter.
+
+    Inputs:
+        pipe_id: pint quantity with a length scale representing the inner
+            diameter of the pipe used for the detonation tube
+        blockage_ratio: percentage (float between 0 and 100)
+
+    Outputs:
+        spiral_diameter: pint quantity representing the Shchelkin spiral
+            diameter inside a tube of pipe_id inner diameter giving a blockage
+            ratio of blockage_ratio %. Units are the same as pipe_id.
+    """
+
+    # initialize unit registry and quantity for unit handling
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # ensure blockage ratio is a float
+    try:
+        blockage_ratio = float(blockage_ratio)
+    except ValueError:
+        raise ValueError('Non-numeric blockage ratio.')
+
+    # ensure blockage ratio is on 0<BR<100
+    if not 0 < blockage_ratio < 100:
+        raise ValueError('Blockage ratio outside of 0<BR<100')
+
+    # check inner diameter units to make sure they are length-scale
+    try:
+        pipe_id.to(ureg.inch)
+        # make sure pipe_id is numeric
+        try:
+            float(pipe_id.magnitude)
+        except ValueError:
+            # pipe_id is non-numeric quantity
+            raise ValueError('ID is non-numeric quantity.')
+    except pint.DimensionalityError:
+        # diameter has bad units
+        raise ValueError('Bad diameter units.')
+    except AttributeError:
+        # pipe_id is not a pint quantity. check if it is numeric.
+        try:
+            float(pipe_id)
+            # if no error, raise a warning and assume inches
+            pipe_id = quant(pipe_id, ureg.inch)
+            warnings.warn('No ID units, assuming inches.')
+        except ValueError:
+            # pipe_id is non-numeric, raise error
+            raise ValueError('ID is unitless and non-numeric.')
+
+    # calculate Shchelkin spiral diameter
+    spiral_diameter = pipe_id / 2 * (1 - sqrt(1 - blockage_ratio / 100))
+    return spiral_diameter
 
 
 if __name__ == '__main__':

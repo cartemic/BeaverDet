@@ -11,11 +11,11 @@ WHODUNIT:
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from fractions import Fraction
 import sympy as sym
 import pandas as pd
-from os.path import exists
+# from os.path import exists
 
 
 # define pipe class
@@ -257,54 +257,56 @@ class pipe:
         except:
             print('You can''t have maximum pressure without an OD...')
 
-    def info(self, plot=False):
-        """
-        Returns information about the pipe
-        """
-        try:
-            # check to make sure the pipe even has an OD
-            self.OD
-
-            # print specifications
-            print()
-            print('*' * (len(self.name) + 4))
-            print('* {} *'.format(self.name.upper()))
-            print('*' * (len(self.name) + 4))
-            print('NPS:           {}'.format(self.NPS))
-            print('Schedule:      {}'.format(self.schedule))
-            print('Safety Factor: {}'.format(self.FS*4.))
-            print('ID:            {} in'.format(round(self.ID, 3)))
-            print('OD:            {} in'.format(round(self.OD, 3)))
-            print('thickness:     {} in'.format(round(self.thk, 3)))
-
-            if plot:
-                # show DLF
-                nameStr = '{} Dynamic Load Factor'.format(self.name.title())
-                plt.figure(nameStr)
-                plt.clf()
-                plt.plot(self.DLF['Dcj'], self.DLF['factor'])
-                plt.grid('on')
-                plt.xlim([min(self.DLF['Dcj']), max(self.DLF['Dcj'])])
-                plt.title(nameStr)
-                plt.xlabel('Wave Velocity (m/s)')
-                plt.ylabel('Dynamic Load Factor (-)')
-
-                # show maximum pressure
-                nameStr = '{0} Maximum Pressure'.format(self.name.title())
-                plt.figure(nameStr)
-                plt.clf()
-                plt.plot(self.T, self.P_max_atm)
-                nameStr = '{0}\nFactor of Safety = {1}, DLF = {2}'\
-                    .format(nameStr, self.FS, self.design_DLF)
-                plt.title(nameStr)
-                plt.grid('on')
-                plt.xlim([min(self.T), max(self.T)])
-                plt.xlabel('Pipe Temperature (°F)')
-                plt.ylabel('Max Allowable Pressure (atm)')
-
-        except:
-            print()
-            print('No information for you! Better inputs next time.')
+# GET RID OF THIS -------------------------------------------------------------
+#    def info(self, plot=False):
+#        """
+#        Returns information about the pipe
+#        """
+#        try:
+#            # check to make sure the pipe even has an OD
+#            self.OD
+#
+#            # print specifications
+#            print()
+#            print('*' * (len(self.name) + 4))
+#            print('* {} *'.format(self.name.upper()))
+#            print('*' * (len(self.name) + 4))
+#            print('NPS:           {}'.format(self.NPS))
+#            print('Schedule:      {}'.format(self.schedule))
+#            print('Safety Factor: {}'.format(self.FS*4.))
+#            print('ID:            {} in'.format(round(self.ID, 3)))
+#            print('OD:            {} in'.format(round(self.OD, 3)))
+#            print('thickness:     {} in'.format(round(self.thk, 3)))
+#
+#            if plot:
+#                # show DLF
+#                nameStr = '{} Dynamic Load Factor'.format(self.name.title())
+#                plt.figure(nameStr)
+#                plt.clf()
+#                plt.plot(self.DLF['Dcj'], self.DLF['factor'])
+#                plt.grid('on')
+#                plt.xlim([min(self.DLF['Dcj']), max(self.DLF['Dcj'])])
+#                plt.title(nameStr)
+#                plt.xlabel('Wave Velocity (m/s)')
+#                plt.ylabel('Dynamic Load Factor (-)')
+#
+#                # show maximum pressure
+#                nameStr = '{0} Maximum Pressure'.format(self.name.title())
+#                plt.figure(nameStr)
+#                plt.clf()
+#                plt.plot(self.T, self.P_max_atm)
+#                nameStr = '{0}\nFactor of Safety = {1}, DLF = {2}'\
+#                    .format(nameStr, self.FS, self.design_DLF)
+#                plt.title(nameStr)
+#                plt.grid('on')
+#                plt.xlim([min(self.T), max(self.T)])
+#                plt.xlabel('Pipe Temperature (°F)')
+#                plt.ylabel('Max Allowable Pressure (atm)')
+#
+#        except:
+#            print()
+#            print('No information for you! Better inputs next time.')
+# -----------------------------------------------------------------------------
 
 
 class window:
@@ -493,26 +495,28 @@ class window:
             else:
                 print('Uh-oh. Something in the .rectangular_window() broke')
 
-    def info(self, plot=False):
-        print()
-        print('******************')
-        print('* VIEWING WINDOW *')
-        print('******************')
-        print('Shape:         {0}'.format(self.shape))
-        print('Retention:     {0}'.format(self.retention))
-        print('Safety Factor: {0}'.format(round(self.SF, 2)))
-        if plot:
-            print()
-            print('- NO PLOT FOR THIS COMPONENT -')
-        if self.shape == 'circular':
-            print('Radius:        {0} in.'.format(round(self.r, 3)))
-        else:
-            print('Length:        {0} in.'.format(round(self.l, 3)))
-            print('Width:         {0} in.'.format(round(self.w, 3)))
-        try:
-            print('Thickness:     {0} in.'.format(round(self.t, 3)))
-        except:
-            print('THICKNESS ERROR')
+# GET RID OF THIS -------------------------------------------------------------
+#    def info(self, plot=False):
+#        print()
+#        print('******************')
+#        print('* VIEWING WINDOW *')
+#        print('******************')
+#        print('Shape:         {0}'.format(self.shape))
+#        print('Retention:     {0}'.format(self.retention))
+#        print('Safety Factor: {0}'.format(round(self.SF, 2)))
+#        if plot:
+#            print()
+#            print('- NO PLOT FOR THIS COMPONENT -')
+#        if self.shape == 'circular':
+#            print('Radius:        {0} in.'.format(round(self.r, 3)))
+#        else:
+#            print('Length:        {0} in.'.format(round(self.l, 3)))
+#            print('Width:         {0} in.'.format(round(self.w, 3)))
+#        try:
+#            print('Thickness:     {0} in.'.format(round(self.t, 3)))
+#        except:
+#            print('THICKNESS ERROR')
+# -----------------------------------------------------------------------------
 
 
 class spiral:
@@ -571,17 +575,21 @@ class spiral:
 #                                                     )**2))
 #        except:
 # -----------------------------------------------------------------------------
-        #    # re-calculate spiral diameter without struts
-        self.spiral_diameter = self.pipe_ID / 2 * \
-            (1 - np.sqrt(1 - self.blockage_ratio/100))
-
-        # get nearest fractional value
-        nearest_fraction = 16
-        self.spiral_diameter = Fraction(round(
-                self.spiral_diameter * nearest_fraction)/nearest_fraction)
-
-        # update blockage ratio
-        self.get_blockage_ratio()
+# DONE ------------------------------------------------------------------------
+#        #    # re-calculate spiral diameter without struts
+#        self.spiral_diameter = self.pipe_ID / 2 * \
+#            (1 - np.sqrt(1 - self.blockage_ratio/100))
+#
+# -----------------------------------------------------------------------------
+# REMOVED ---------------------------------------------------------------------
+#        # get nearest fractional value
+#        nearest_fraction = 16
+#        self.spiral_diameter = Fraction(round(
+#                self.spiral_diameter * nearest_fraction)/nearest_fraction)
+#
+#        # update blockage ratio
+#        self.get_blockage_ratio()
+# -----------------------------------------------------------------------------
 
     def get_blockage_ratio(self, skip=True):
         """
@@ -602,68 +610,70 @@ class spiral:
 
         self.get_run_up()
 
-    def add_struts(self):
-        """
-        Adds a specified (and hopefully integer) number of struts in order to
-        keep the shchelkin spiral from bunching up.
-        """
-        try:
-            # if you can't make an integer out of the number_of_struts, you
-            # really shouldn't be here.
-            int(self.strut['number'])
-
-            # make sure the user isn't too dumb to enter an integer number
-            # of struts
-            if not isinstance(self.strut['number'], int):
-                # yell at the user for not using an integer
-                print(
-                      '{0} is not an integer number of struts, you dingus.'
-                      .format(self.strut['number'])
-                      )
-
-                # make their input an integer
-                self.strut['number'] = int(self.strut['number'])
-                print(
-                      'I''m just going to assume you meant {0}.'
-                      .format(self.strut['number'])
-                      )
-
-            # calculate maximum force required to hold the spiral
-            frontal_area = np.pi / 4 * \
-                (
-                 self.pipe_ID**2 - (
-                                    self.pipe_ID -
-                                    2 * float(self.spiral_diameter)
-                                    )**2
-                 )
-            required_force = frontal_area * self.max_pressure_difference_atm \
-                * 14.7
-
-            # divide force among struts
-            required_force = required_force / float(self.strut['number'])
-
-            # calculate minimum strut diameter
-            self.strut['diameter'] = np.sqrt(
-                        4 * self.strut['FS'] * required_force /
-                        (np.pi * self.strut['yield_psi'])
-                        )
-
-            # convert to next largest fraction
-            nearest_fraction = 16
-            self.strut['diameter'] = Fraction(
-                                              np.ceil(
-                                                      self.strut['diameter'] *
-                                                      nearest_fraction
-                                                      ) /
-                                              nearest_fraction)
-
-            # update spiral diameter and BR
-            self.get_spiral_diameter()
-
-        except:
-            # if you can't make an integer out of the number_of_struts, Ice
-            # Cube whoever's running this circus
-            print('Chiggity check your number_of_struts. It''s jacked up.')
+# GET RID OF THIS -------------------------------------------------------------
+#    def add_struts(self):
+#        """
+#        Adds a specified (and hopefully integer) number of struts in order to
+#        keep the shchelkin spiral from bunching up.
+#        """
+#        try:
+#            # if you can't make an integer out of the number_of_struts, you
+#            # really shouldn't be here.
+#            int(self.strut['number'])
+#
+#            # make sure the user isn't too dumb to enter an integer number
+#            # of struts
+#            if not isinstance(self.strut['number'], int):
+#                # yell at the user for not using an integer
+#                print(
+#                      '{0} is not an integer number of struts, you dingus.'
+#                      .format(self.strut['number'])
+#                      )
+#
+#                # make their input an integer
+#                self.strut['number'] = int(self.strut['number'])
+#                print(
+#                      'I''m just going to assume you meant {0}.'
+#                      .format(self.strut['number'])
+#                      )
+#
+#            # calculate maximum force required to hold the spiral
+#            frontal_area = np.pi / 4 * \
+#                (
+#                 self.pipe_ID**2 - (
+#                                    self.pipe_ID -
+#                                    2 * float(self.spiral_diameter)
+#                                    )**2
+#                 )
+#            required_force = frontal_area * self.max_pressure_difference_atm \
+#                * 14.7
+#
+#            # divide force among struts
+#            required_force = required_force / float(self.strut['number'])
+#
+#            # calculate minimum strut diameter
+#            self.strut['diameter'] = np.sqrt(
+#                        4 * self.strut['FS'] * required_force /
+#                        (np.pi * self.strut['yield_psi'])
+#                        )
+#
+#            # convert to next largest fraction
+#            nearest_fraction = 16
+#            self.strut['diameter'] = Fraction(
+#                                              np.ceil(
+#                                                      self.strut['diameter'] *
+#                                                      nearest_fraction
+#                                                      ) /
+#                                              nearest_fraction)
+#
+#            # update spiral diameter and BR
+#            self.get_spiral_diameter()
+#
+#        except:
+#            # if you can't make an integer out of the number_of_struts, Ice
+#            # Cube whoever's running this circus
+#            print('Chiggity check your number_of_struts. It''s jacked up.')
+# -----------------------------------------------------------------------------
 
     def get_run_up(self, scale=1.1):
         """
@@ -695,36 +705,36 @@ class spiral:
         runup = np.interp(self.blockage_ratio, BR, X_D) * scale * self.pipe_ID
         self.runup_length = runup
 
-    def info(self, plot=False):
-        """
-        Returns information about the spiral
-        """
-        print()
-        print('********************')
-        print('* SHCHELKIN SPIRAL *')
-        print('********************')
-        print('Pipe ID:         {0} in.'.format(round(self.pipe_ID, 3)))
-        print('Spiral Diameter: {0} in.'.format(self.spiral_diameter))
-        print('Blockage Ratio:  {0} %'.format(round(self.blockage_ratio, 1)))
-        print('Runup Length:    {0} in.'.format(round(self.runup_length, 2)))
-        try:
-            self.strut['diameter']
-            print()
-            print('***************************')
-            print('* SHCHELKIN SPIRAL STRUTS *')
-            print('***************************')
-            print('Number:        {0}'.format(self.strut['number']))
-            print('Diameter:      {0} in.'.format(self.strut['diameter']))
-            print('Safety Factor: {0}'.format(self.strut['FS']))
-        except:
-            pass
-
-        if plot:
-            print('- NO PLOT FOR THIS COMPONENT -')
-
-
-# DONE
-#class flange:
+# GET RID OF THIS -------------------------------------------------------------
+#    def info(self, plot=False):
+#        """
+#        Returns information about the spiral
+#        """
+#        print()
+#        print('********************')
+#        print('* SHCHELKIN SPIRAL *')
+#        print('********************')
+#        print('Pipe ID:         {0} in.'.format(round(self.pipe_ID, 3)))
+#        print('Spiral Diameter: {0} in.'.format(self.spiral_diameter))
+#        print('Blockage Ratio:  {0} %'.format(round(self.blockage_ratio, 1)))
+#        print('Runup Length:    {0} in.'.format(round(self.runup_length, 2)))
+#        try:
+#            self.strut['diameter']
+#            print()
+#            print('***************************')
+#            print('* SHCHELKIN SPIRAL STRUTS *')
+#            print('***************************')
+#            print('Number:        {0}'.format(self.strut['number']))
+#            print('Diameter:      {0} in.'.format(self.strut['diameter']))
+#            print('Safety Factor: {0}'.format(self.strut['FS']))
+#        except:
+#            pass
+#
+#        if plot:
+#            print('- NO PLOT FOR THIS COMPONENT -')
+# -----------------------------------------------------------------------------
+# DONE ------------------------------------------------------------------------
+# class flange:
 #    """
 #    asdga
 #    """
@@ -807,6 +817,7 @@ class spiral:
 #            plt.xlabel('Flange Temperature (°F)')
 #            plt.ylabel('Flange Max Pressure (atm)')
 #            plt.title(nameStr)
+# -----------------------------------------------------------------------------
 
 
 class reflection:
@@ -865,31 +876,33 @@ class reflection:
                 (self.Pr_atm - self.P_relax_atm)
                 )
 
-    def info(self, plot=False):
-        print()
-        print('*************************')
-        print('* DETONATION REFLECTION *')
-        print('*************************')
-        print('Max Allowable Reflection Pressure: {} atm'
-              .format(round(max(self.Pr_atm), 2)))
-        print('Max Allowable C-J Pressure:        {} atm'
-              .format(round(max(self.Pcj_atm), 2)))
-        print('Minimum Length:                    {} in.'
-              .format(round(max(self.L), 2),))
-        if len(self.L) > 1 and plot:
-            nameStr = 'Reflection Decay Length vs. Initial Pressure'
-            plt.figure(nameStr)
-            plt.plot(self.P0_atm, self.L)
-            plt.grid('on')
-            plt.xlim([min(self.P0_atm), max(self.P0_atm)])
-            plt.xlabel('Initial Pressure (atm)')
-            plt.ylabel('Reflection Decay Length (in)')
-            nameStr = nameStr + \
-                '\n$\gamma$ = {0}, $V_{{C-J}}$ = {1} m/s , ' \
-                .format(self.gamma, self.Vcj_m_s) + \
-                '$a_{{0}}$ = {0} m/s' \
-                .format(self.a0_m_s)
-            plt.title(nameStr)
+# GET RID OF THIS -------------------------------------------------------------
+#    def info(self, plot=False):
+#        print()
+#        print('*************************')
+#        print('* DETONATION REFLECTION *')
+#        print('*************************')
+#        print('Max Allowable Reflection Pressure: {} atm'
+#              .format(round(max(self.Pr_atm), 2)))
+#        print('Max Allowable C-J Pressure:        {} atm'
+#              .format(round(max(self.Pcj_atm), 2)))
+#        print('Minimum Length:                    {} in.'
+#              .format(round(max(self.L), 2),))
+#        if len(self.L) > 1 and plot:
+#            nameStr = 'Reflection Decay Length vs. Initial Pressure'
+#            plt.figure(nameStr)
+#            plt.plot(self.P0_atm, self.L)
+#            plt.grid('on')
+#            plt.xlim([min(self.P0_atm), max(self.P0_atm)])
+#            plt.xlabel('Initial Pressure (atm)')
+#            plt.ylabel('Reflection Decay Length (in)')
+#            nameStr = nameStr + \
+#                '\n$\gamma$ = {0}, $V_{{C-J}}$ = {1} m/s , ' \
+#                .format(self.gamma, self.Vcj_m_s) + \
+#                '$a_{{0}}$ = {0} m/s' \
+#                .format(self.a0_m_s)
+#            plt.title(nameStr)
+# -----------------------------------------------------------------------------
 
 
 class boltPattern:

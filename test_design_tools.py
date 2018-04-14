@@ -13,6 +13,7 @@ CREATED BY:
 
 import unittest
 import os
+from math import sqrt
 import pint
 import pandas as pd
 import design_tools
@@ -137,10 +138,9 @@ class TestDesignTools(unittest.TestCase):
     def test_get_flange_class(self):
         """
         Tests the get_flange_class() function, which takes in a temperature,
-        pressure, and a dataframe of pressure-temperature limits for a given
-        flange material and returns the minimum required flange class.
-        Dataframes are assumed to be good due to unit testing of their import
-        function, read_flange_csv().
+        pressure, and a string for the desired flange material and returns the
+        minimum required flange class. Dataframes are assumed to be good due to
+        unit testing of their import function, read_flange_csv().
 
         Conditions tested:
             - Function returns expected value within P, T limits
@@ -238,6 +238,74 @@ class TestDesignTools(unittest.TestCase):
             design_tools.get_flange_class(temp_good,
                                           'asdf',
                                           material)
+
+    def test_get_spiral_diameter(self):
+        """
+        Tests the get_spiral_diameter function, which takes the pipe inner
+        diameter as a pint quantity, and the desired blockage ratio as a float
+        and returns the diameter of the corresponding Shchelkin spiral.
+
+        Conditions tested:
+            - Good input
+            - Proper handling with non-numeric pint ID
+            - Proper handling and calculation with bad ID units
+            - Proper handling with numeric, non-pint ID
+            - Proper handling with non-numeric, non-pint ID
+            - Proper handling with non-numeric blockage ratio
+            - Proper handling with blockage ratio outside of 0<BR<100
+        """
+        # incorporate units with pint
+        ureg = pint.UnitRegistry()
+        quant = ureg.Quantity
+
+        # define a pipe inner diameter and blockage ratio
+        test_diameter = quant(5.76, ureg.inch)
+        test_blockage_ratio = 44
+
+        # define expected result and actual result
+        expected_spiral_diameter = test_diameter / 2 * \
+            (1 - sqrt(1 - test_blockage_ratio / 100.))
+        result = design_tools.get_spiral_diameter(test_diameter,
+                                                  test_blockage_ratio)
+
+        # ensure good output
+        self.assertEqual(expected_spiral_diameter, result.to(ureg.inch))
+
+        # ensure proper handling with non-numeric pint item
+        test_diameter_bad = quant('asdf', ureg.inch)
+        with self.assertRaisesRegex(ValueError, 'ID is non-numeric quantity.'):
+            design_tools.get_spiral_diameter(test_diameter_bad,
+                                             test_blockage_ratio)
+
+        # ensure proper handling with bad pint units
+        test_diameter_bad = quant(70, ureg.degC)
+        with self.assertRaisesRegex(ValueError, 'Bad diameter units.'):
+            design_tools.get_spiral_diameter(test_diameter_bad,
+                                             test_blockage_ratio)
+
+        # ensure proper handling with numeric, non-pint diameter
+        with self.assertWarnsRegex(Warning, 'No ID units, assuming inches.'):
+            result = design_tools.get_spiral_diameter(test_diameter.magnitude,
+                                                      test_blockage_ratio)
+        self.assertEqual(result, expected_spiral_diameter)
+
+        # ensure proper handling with non-numeric, non-pint diameter
+        with self.assertRaisesRegex(ValueError,
+                                    'ID is unitless and non-numeric.'):
+            design_tools.get_spiral_diameter('oompa loompa',
+                                             test_blockage_ratio)
+
+        # ensure proper handling with non-numeric blockage ratio
+        with self.assertRaisesRegex(ValueError, 'Non-numeric blockage ratio.'):
+            design_tools.get_spiral_diameter(test_diameter, 'doompity doo')
+
+        # ensure proper handling with blockage ratio outside allowable limits
+        with self.assertRaisesRegex(ValueError,
+                                    'Blockage ratio outside of 0<BR<100'):
+            design_tools.get_spiral_diameter(test_diameter, -35.)
+            design_tools.get_spiral_diameter(test_diameter, 0)
+            design_tools.get_spiral_diameter(test_diameter, 100.)
+            design_tools.get_spiral_diameter(test_diameter, 120)
 
 
 # %% perform unit tests
