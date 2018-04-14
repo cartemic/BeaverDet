@@ -523,50 +523,57 @@ class spiral:
                  pipe_ID,
                  blockage_ratio=44,
                  max_pressure_difference_atm=1,
-                 pitch=None,
-                 add_struts=False,
-                 number_of_struts=None,
-                 FS_struts=2,
-                 strut_yield_psi=30000
-                 ):
+                 pitch=None):  # ,
+        #  GET RID OF               add_struts=False,
+        #  GET RID OF               number_of_struts=None,
+        #  GET RID OF               FS_struts=2,
+        #  GET RID OF               strut_yield_psi=30000
+        #                 ):
+
         # define the good stuff
         self.blockage_ratio = blockage_ratio
         self.pipe_ID = pipe_ID
         self.max_pressure_difference_atm = max_pressure_difference_atm
 
-        # strut your stuff!
-        strut = {}
-        strut['number'] = number_of_struts
-        strut['FS'] = FS_struts
-        strut['yield_psi'] = strut_yield_psi
-        self.strut = strut
-        if number_of_struts is not None and not add_struts:
-            print('You put a number of struts but didn''t change add_struts.')
-            print('Maybe try again with add_struts=True')
+# GET RID OF THIS -------------------------------------------------------------
+#        # strut your stuff!
+#        strut = {}
+#        strut['number'] = number_of_struts
+#        strut['FS'] = FS_struts
+#        strut['yield_psi'] = strut_yield_psi
+#        self.strut = strut
+#        if number_of_struts is not None and not add_struts:
+#            print('You put a number of struts but didn''t change add_struts.')
+#            print('Maybe try again with add_struts=True')
+# -----------------------------------------------------------------------------
 
         # get diameter of spiral that results in the requested blockage ratio
         self.get_spiral_diameter()
 
-        # add struts to keep the sprial from bunching
-        if add_struts:
-            self.add_struts()
+# GET RID OF THIS -------------------------------------------------------------
+#        # add struts to keep the sprial from bunching
+#        if add_struts:
+#            self.add_struts()
+# -----------------------------------------------------------------------------
 
     def get_spiral_diameter(self):
         """
         waka waka
         """
         # calculate the ideal diameter
-        try:
-            # re-calculate spiral diameter if strut diameter is known
-            self.spiral_diameter = self.pipe_ID / 2 * \
-                (1 - np.sqrt(1 - self.blockage_ratio/100 +
-                             self.strut['number'] * (
-                                     self.strut['diameter'] / self.pipe_ID
-                                                     )**2))
-        except:
-            # re-calculate spiral diameter without struts
-            self.spiral_diameter = self.pipe_ID / 2 * \
-                (1 - np.sqrt(1 - self.blockage_ratio/100))
+# GET RID OF THIS -------------------------------------------------------------
+#        try:
+#            # re-calculate spiral diameter if strut diameter is known
+#            self.spiral_diameter = self.pipe_ID / 2 * \
+#                (1 - np.sqrt(1 - self.blockage_ratio/100 +
+#                             self.strut['number'] * (
+#                                     self.strut['diameter'] / self.pipe_ID
+#                                                     )**2))
+#        except:
+# -----------------------------------------------------------------------------
+        #    # re-calculate spiral diameter without struts
+        self.spiral_diameter = self.pipe_ID / 2 * \
+            (1 - np.sqrt(1 - self.blockage_ratio/100))
 
         # get nearest fractional value
         nearest_fraction = 16
@@ -716,89 +723,90 @@ class spiral:
             print('- NO PLOT FOR THIS COMPONENT -')
 
 
-class flange:
-    """
-    asdga
-    """
-    def __init__(self,
-                 flange_name,
-                 max_pressure_atm,
-                 design_temperature_F=100):
-
-        # define given information
-        self.name = flange_name
-        self.max_pressure_atm = max_pressure_atm
-        self.design_temperature_F = design_temperature_F
-
-        # calculate required flange class
-        self.recalculate()
-
-    def recalculate(self):
-        # define possible flange classes
-        self.T = np.array([
-                0, 100, 200, 300, 400, 500, 600, 650, 700, 750, 800, 850, 900,
-                950, 1000
-                ])
-        flange_class = {}
-        flange_class['400'] = np.array([
-                               1000, 1000, 1000, 970, 940, 885, 805,
-                               785, 740, 675, 550, 425, 295, 185, 115
-                               ])
-        flange_class['600'] = np.array([
-                               1500, 1500, 1500, 1455, 1405, 1330,
-                               1210, 1175, 1110, 1015, 825, 640, 445,
-                               275, 170
-                               ])
-        flange_class['900'] = np.array([
-                               2250, 2250, 2250, 2185, 2110, 1995,
-                               1815, 1765, 1665, 1520, 1235, 955, 670,
-                               410, 255
-                               ])
-        flange_class['1500'] = np.array([
-                               3750, 3750, 3750, 3640, 3520, 3325,
-                               3025, 2940, 2775, 2535, 2055, 1595,
-                               1115, 685, 430
-                               ])
-        flange_class['2500'] = np.array([
-                               6250, 6250, 6250, 6070, 5865, 5540,
-                               5040, 4905, 4630, 4230, 3430, 2655,
-                               1855, 1145, 715
-                               ])
-
-        try:
-            # determine correct class such that the allowable pressure is
-            # higher than the required pressure at the given temperature
-            if self.design_temperature_F < 0:
-                print('Frosty.')
-            thePress = [np.interp(
-                                  self.design_temperature_F,
-                                  self.T, flange_class[key]
-                                  ) for key in flange_class]
-            theKeys = list(flange_class.keys())
-            indices = [i for i in range(len(thePress))
-                       if thePress[i] >= self.max_pressure_atm * 14.7]
-            index = str(min([int(theKeys[i]) for i in indices]))
-            self.flange_class = index
-            self.P = flange_class[index]
-        except:
-            print('Flange requirements outside of allowable range. Nerf it.')
-
-    def info(self, plot=False):
-        nameStr = 'Class '+self.flange_class+' Flange ('+self.name.title()+')'
-        print()
-        print('*' * (len(nameStr) + 4))
-        print('* {} *'.format(nameStr.upper()))
-        print('*' * (len(nameStr) + 4))
-
-        if plot:
-            plt.figure(nameStr)
-            plt.clf()
-            plt.plot(self.T, self.P / 14.7)
-            plt.grid('on')
-            plt.xlim([min(self.T), max(self.T)])
-            plt.xlabel('Flange Temperature (°F)')
-            plt.ylabel('Flange Max Pressure (atm)')
-            plt.title(nameStr)
+# DONE
+#class flange:
+#    """
+#    asdga
+#    """
+#    def __init__(self,
+#                 flange_name,
+#                 max_pressure_atm,
+#                 design_temperature_F=100):
+#
+#        # define given information
+#        self.name = flange_name
+#        self.max_pressure_atm = max_pressure_atm
+#        self.design_temperature_F = design_temperature_F
+#
+#        # calculate required flange class
+#        self.recalculate()
+#
+#    def recalculate(self):
+#        # define possible flange classes
+#        self.T = np.array([
+#                0, 100, 200, 300, 400, 500, 600, 650, 700, 750, 800, 850, 900,
+#                950, 1000
+#                ])
+#        flange_class = {}
+#        flange_class['400'] = np.array([
+#                               1000, 1000, 1000, 970, 940, 885, 805,
+#                               785, 740, 675, 550, 425, 295, 185, 115
+#                               ])
+#        flange_class['600'] = np.array([
+#                               1500, 1500, 1500, 1455, 1405, 1330,
+#                               1210, 1175, 1110, 1015, 825, 640, 445,
+#                               275, 170
+#                               ])
+#        flange_class['900'] = np.array([
+#                               2250, 2250, 2250, 2185, 2110, 1995,
+#                               1815, 1765, 1665, 1520, 1235, 955, 670,
+#                               410, 255
+#                               ])
+#        flange_class['1500'] = np.array([
+#                               3750, 3750, 3750, 3640, 3520, 3325,
+#                               3025, 2940, 2775, 2535, 2055, 1595,
+#                               1115, 685, 430
+#                               ])
+#        flange_class['2500'] = np.array([
+#                               6250, 6250, 6250, 6070, 5865, 5540,
+#                               5040, 4905, 4630, 4230, 3430, 2655,
+#                               1855, 1145, 715
+#                               ])
+#
+#        try:
+#            # determine correct class such that the allowable pressure is
+#            # higher than the required pressure at the given temperature
+#            if self.design_temperature_F < 0:
+#                print('Frosty.')
+#            thePress = [np.interp(
+#                                  self.design_temperature_F,
+#                                  self.T, flange_class[key]
+#                                  ) for key in flange_class]
+#            theKeys = list(flange_class.keys())
+#            indices = [i for i in range(len(thePress))
+#                       if thePress[i] >= self.max_pressure_atm * 14.7]
+#            index = str(min([int(theKeys[i]) for i in indices]))
+#            self.flange_class = index
+#            self.P = flange_class[index]
+#        except:
+#            print('Flange requirements outside of allowable range. Nerf it.')
+#
+#    def info(self, plot=False):
+#        nameStr = 'Class '+self.flange_class+' Flange ('+self.name.title()+')'
+#        print()
+#        print('*' * (len(nameStr) + 4))
+#        print('* {} *'.format(nameStr.upper()))
+#        print('*' * (len(nameStr) + 4))
+#
+#        if plot:
+#            plt.figure(nameStr)
+#            plt.clf()
+#            plt.plot(self.T, self.P / 14.7)
+#            plt.grid('on')
+#            plt.xlim([min(self.T), max(self.T)])
+#            plt.xlabel('Flange Temperature (°F)')
+#            plt.ylabel('Flange Max Pressure (atm)')
+#            plt.title(nameStr)
 
 
 class reflection:
