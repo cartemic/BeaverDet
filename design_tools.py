@@ -12,6 +12,7 @@ CREATED BY:
 
 
 from os.path import exists
+from os import listdir
 import warnings
 from math import sqrt
 import pint
@@ -226,6 +227,71 @@ def get_flange_class(temperature, pressure, desired_material):
             correct_class = key
             break
     return correct_class
+
+
+def check_materials():
+    """
+    Makes sure that the materials in materials_list.csv have stress limits and
+    flange ratings. This function relies on collect_tube_materials().
+    """
+    # collect files
+    directory = './lookup_data/'
+    my_files = listdir(directory)
+    flange_ratings = [file for file in my_files if "flange" in file.lower()]
+    stress_limits = [file for file in my_files if "stress" in file.lower()]
+    materials_list = collect_tube_materials()
+
+    # make sure things were actually loaded
+    if not bool(flange_ratings + stress_limits):
+        raise ValueError('no files containing "flange" or "stress" found')
+
+    # make sure all pipe material limits are either welded or seamless
+    # other types are permitted, but will raise a warning
+    for file in stress_limits:
+        if ('welded' not in file.lower()) and ('seamless' not in file.lower()):
+            # warn that something is weird
+            warnings.warn(directory + file +
+                          'does not indicate whether it is welded or seamless')
+
+        # initialize an error string and error indicator. Error string will be
+        # used to aggregate errors in the list of available materials so that
+        # all issues may be rectified simultaneously.
+        error_string = '\n'
+        has_errors = False
+
+        # check the first row of the file in question to extract the names of
+        # the materials that it contains stress limits for
+        with open(directory + file, 'r') as current_file:
+            # read the first line, strip off carriage return, and split by
+            # comma separators. Ignore first value, as this is temperature.
+            materials = current_file.readline().strip().split(',')[1:]
+
+            # check to make sure that each material in the list of available
+            # materials has a stress limit curve for the current limit type
+            for item in materials_list:
+                if item not in materials:
+                    # a material is missing from the limits spreadsheet.
+                    # indicate that an error has occurred, and add it to the
+                    # error string.
+                    error_string += 'Material ' + item + ' not found in ' +\
+                                    directory + file + '\n'
+                    has_errors = True
+
+    # find out which material groups need to be inspected
+    groups = set()
+    for _, group in materials_list.items():
+        groups.add(group.replace('.', '_'))
+
+    # check folder to make sure the correct files exist
+    for group in groups:
+        if not any(rating.find(group) > 0 for rating in flange_ratings):
+            # current group was not found in any of the files
+            error_string += 'material group ' + group + ' not found' + '\n'
+            has_errors = True
+
+    # report all errors
+    if has_errors:
+        raise ValueError(error_string)
 
 
 def get_spiral_diameter(pipe_id, blockage_ratio):

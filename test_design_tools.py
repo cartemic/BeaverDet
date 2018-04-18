@@ -12,6 +12,7 @@ CREATED BY:
 
 
 import unittest
+from unittest.mock import patch
 import os
 from math import sqrt
 import pint
@@ -306,6 +307,133 @@ class TestDesignTools(unittest.TestCase):
             design_tools.get_spiral_diameter(test_diameter, 0)
             design_tools.get_spiral_diameter(test_diameter, 100.)
             design_tools.get_spiral_diameter(test_diameter, 120)
+
+    def test_check_materials(self):
+        """
+        Tests the check_materials function, which checks the materials_list
+        csv file to make sure that each material contained within it has a
+        corresponding flange ratings material group and tube stress limits.
+        It relies on open(), collect_tube_materials(), and os.listdir(), so
+        these functions have been replaced with fakes to facilitate testing.
+
+        Conditions tested:
+            - things
+        """
+        class FakeOpen():
+            """
+            fake open()
+            """
+            def __init__(self, *args):
+                """
+                dummy init statement
+                """
+                pass
+
+            def __enter__(self, *args):
+                """
+                enter statement that returns a FakeFile
+                """
+                return self.FakeFile()
+
+            def __exit__(self, *args):
+                """
+                dummy exit statement
+                """
+                pass
+
+            class FakeFile():
+                """
+                fake file used for FakeOpen
+                """
+                def readline(self):
+                    """
+                    fake file for use with FakeOpen()
+                    """
+                    return 'ASDF,thing0,thing1\n'
+
+        def fake_collect_tube_materials(*args):
+            """
+            fake collect_tube_materials()
+            """
+            return {'thing0': 'group0', 'thing1': 'group1'}
+
+        def fake_listdir(*args):
+            """
+            fake os.listdir() which should work 100%
+            """
+            return ['asdfflangegroup0sfh',
+                    'asdfflangegroup1asd',
+                    'asdfstressweldedasdg']
+
+        # run test suite
+        with patch('builtins.open', new=FakeOpen):
+            with patch('design_tools.collect_tube_materials',
+                       new=fake_collect_tube_materials):
+                with patch('design_tools.listdir', new=fake_listdir):
+                    test = design_tools.check_materials()
+                    self.assertIsNone(test)
+
+                def fake_listdir(*args):
+                    """
+                    listdir function which should fail group1llookup
+                    """
+                    return ['asdfflangegroup0sfh',
+                            'asdfstressweldedasdg']
+                with patch('design_tools.listdir', new=fake_listdir):
+                    error_string = '\nmaterial group group1 not found'
+                    with self.assertRaisesRegex(ValueError, error_string):
+                        design_tools.check_materials()
+
+                def fake_listdir(*args):
+                    """
+                    listdir function which should warn about welded vs.
+                    seamless
+                    """
+                    return ['asdfflangegroup0sfh',
+                            'asdfflangegroup1asd',
+                            'asdfstresswdasdg']
+                with patch('design_tools.listdir', new=fake_listdir):
+                    error_string = './lookup_data/' + 'asdfstresswdasdg' + \
+                                   'does not indicate whether it is welded' + \
+                                   ' or seamless'
+                    with self.assertWarnsRegex(Warning, error_string):
+                        design_tools.check_materials()
+
+                def fake_listdir(*args):
+                    """
+                    listdir function that should work 100%
+                    """
+                    return ['asdfflangegroup0sfh',
+                            'asdfflangegroup1asd',
+                            'asdfstressweldedasdg']
+                with patch('design_tools.listdir', new=fake_listdir):
+                    test = design_tools.check_materials()
+                    self.assertIsNone(test)
+
+                    class NewFakeFile():
+                        def readline(self):
+                            """
+                            readline function that should fail thing1 lookup
+                            """
+                            return 'ASDF,thing0\n'
+
+                    setattr(FakeOpen, 'FakeFile', NewFakeFile)
+
+                    error_string = '\nMaterial thing1 not found in ./' + \
+                                   'lookup_data/asdfstressweldedasdg'
+                    with self.assertRaisesRegex(ValueError, error_string):
+                        design_tools.check_materials()
+
+                def fake_listdir(*args):
+                    """
+                    listdir function that should result in flange/stress error
+                    """
+                    return ['asdgasdg']
+                with patch('design_tools.listdir', new=fake_listdir):
+                    error_string = 'no files containing "flange" or ' + \
+                                   '"stress" found'
+                    with self.assertRaisesRegex(ValueError, error_string):
+                        design_tools.check_materials()
 
 
 # %% perform unit tests
