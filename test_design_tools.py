@@ -317,7 +317,11 @@ class TestDesignTools(unittest.TestCase):
         these functions have been replaced with fakes to facilitate testing.
 
         Conditions tested:
-            - things
+            - function runs correctly with good input
+            - material group lookup fails
+            - warning if pipe specs aren't welded or seamless
+            - missing material
+            - lack of flange or stress .csv file in lookup directory
         """
         class FakeOpen():
             """
@@ -327,7 +331,7 @@ class TestDesignTools(unittest.TestCase):
                 """
                 dummy init statement
                 """
-                pass
+                return None
 
             def __enter__(self, *args):
                 """
@@ -339,7 +343,7 @@ class TestDesignTools(unittest.TestCase):
                 """
                 dummy exit statement
                 """
-                pass
+                return None
 
             class FakeFile():
                 """
@@ -370,9 +374,10 @@ class TestDesignTools(unittest.TestCase):
             with patch('design_tools.collect_tube_materials',
                        new=fake_collect_tube_materials):
                 with patch('design_tools.listdir', new=fake_listdir):
-                    test = design_tools.check_materials()
-                    self.assertIsNone(test)
+                    # Test if function runs correctly with good input
+                    self.assertIsNone(design_tools.check_materials())
 
+                # Test if material group lookup fails
                 def fake_listdir(*args):
                     """
                     listdir function which should fail group1llookup
@@ -384,6 +389,7 @@ class TestDesignTools(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, error_string):
                         design_tools.check_materials()
 
+                # Test for warning if pipe specs aren't welded or seamless
                 def fake_listdir(*args):
                     """
                     listdir function which should warn about welded vs.
@@ -399,6 +405,7 @@ class TestDesignTools(unittest.TestCase):
                     with self.assertWarnsRegex(Warning, error_string):
                         design_tools.check_materials()
 
+                # Test for missing material
                 def fake_listdir(*args):
                     """
                     listdir function that should work 100%
@@ -407,23 +414,24 @@ class TestDesignTools(unittest.TestCase):
                             'asdfflangegroup1asd',
                             'asdfstressweldedasdg']
                 with patch('design_tools.listdir', new=fake_listdir):
-                    test = design_tools.check_materials()
-                    self.assertIsNone(test)
-
                     class NewFakeFile():
+                        """
+                        FakeFile class that should fail material lookup
+                        """
                         def readline(self):
                             """
-                            readline function that should fail thing1 lookup
+                            readline function that should fail material lookup
+                            for thing1
                             """
                             return 'ASDF,thing0\n'
-
                     setattr(FakeOpen, 'FakeFile', NewFakeFile)
-
                     error_string = '\nMaterial thing1 not found in ./' + \
                                    'lookup_data/asdfstressweldedasdg'
                     with self.assertRaisesRegex(ValueError, error_string):
                         design_tools.check_materials()
 
+                # Test for lack of flange or stress .csv file in lookup
+                # directory
                 def fake_listdir(*args):
                     """
                     listdir function that should result in flange/stress error
