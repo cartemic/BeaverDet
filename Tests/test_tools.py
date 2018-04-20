@@ -16,7 +16,7 @@ from math import sqrt
 import pytest
 import pint
 import pandas as pd
-from . import tools
+from BeaverDet.TubeDesignTools import tools
 
 
 def test_get_flange_limits_from_csv():
@@ -48,7 +48,7 @@ def test_get_flange_limits_from_csv():
     # file information
     my_input = 'testfile'
     file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  'lookup_data')
+                                  '..', 'TubeDesignTools', 'lookup_data')
     file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
     file_location = os.path.relpath(os.path.join(file_directory, file_name))
 
@@ -242,3 +242,10 @@ def test_calculate_spiral_diameter():
         tools.calculate_spiral_diameter(test_diameter, 0)
         tools.calculate_spiral_diameter(test_diameter, 100.)
         tools.calculate_spiral_diameter(test_diameter, 120)
+
+
+def test_get_blockage_ratio():
+    """
+    Tests the get_blockage ratio function, which takes arguments of pipe
+    inner diameter and spiral blockage diameter.
+    """

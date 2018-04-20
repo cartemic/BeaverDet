@@ -14,7 +14,8 @@ import os
 from unittest.mock import patch
 import pytest
 import pandas as pd
-from . import accessories
+from BeaverDet.TubeDesignTools import accessories
+
 
 
 def test_check_materials():
@@ -33,7 +34,7 @@ def test_check_materials():
         - lack of flange or stress .csv file in lookup directory
     """
     file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  'lookup_data')
+                                  '..', 'TubeDesignTools', 'lookup_data')
 
     class FakeOpen():
         """
@@ -174,7 +175,7 @@ def test_collect_tube_materials():
 
     # file information
     file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  'lookup_data')
+                                  '..', 'TubeDesignTools', 'lookup_data')
     file_name = 'materials_list.csv'
     file_location = os.path.join(file_directory, file_name)
 

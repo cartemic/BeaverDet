@@ -1,0 +1,8 @@
+[
+  "Tests/test_accessories.py::test_check_materials",
+  "Tests/test_accessories.py::test_collect_tube_materials",
+  "Tests/test_tools.py::test_get_flange_limits_from_csv",
+  "Tests/test_tools.py::test_get_flange_class",
+  "Tests/test_tools.py::test_calculate_spiral_diameter",
+  "Tests/test_tools.py::test_get_blockage_ratio"
+]
