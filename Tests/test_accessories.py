@@ -17,7 +17,6 @@ import pandas as pd
 from BeaverDet.TubeDesignTools import accessories
 
 
-
 def test_check_materials():
     """
     Tests the check_materials function, which checks the materials_list
@@ -167,17 +166,47 @@ def test_collect_tube_materials():
     appropriate ASME B16.5 material groups as values
 
    Conditions tested:
+        - file does not exist
+        - file is empty
         - values are imported correctly
     """
-    # ----------------------------OUTPUT TESTING---------------------------
-    # ensure correctness by comparing to a pandas dataframe reading the
-    # same file
-
     # file information
     file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   '..', 'TubeDesignTools', 'lookup_data')
     file_name = 'materials_list.csv'
     file_location = os.path.join(file_directory, file_name)
+
+    # ----------------------------INPUT TESTING----------------------------
+    # ensure proper error handling with bad inputs
+
+    # check for error handling when file does not exist by removing the file
+    # extension
+    dataframe = pd.read_csv(file_location)
+    bad_location = file_location[:-4]
+    os.rename(file_location, bad_location)
+    with pytest.raises(ValueError, message=file_name+' does not exist'):
+        accessories.collect_tube_materials()
+
+    # create a blank file
+    open(file_location, 'a').close()
+
+    # check for proper error handling when file is blank
+    with pytest.raises(ValueError, message=file_name+' is empty'):
+        accessories.collect_tube_materials()
+
+    # create a test file with too many entries
+    dataframe['bad'] = dataframe['Group'].values
+    dataframe.to_csv(file_location)
+    with pytest.warns(Warning, match=file_name+' contains extra entries'):
+        accessories.collect_tube_materials()
+
+    # delete the test file and reinstate the original
+    os.remove(file_location)
+    os.rename(bad_location, file_location)
+
+    # ----------------------------OUTPUT TESTING---------------------------
+    # ensure correctness by comparing to a pandas dataframe reading the
+    # same file
 
     # load data into a test dataframe
     test_dataframe = pd.read_csv(file_location)

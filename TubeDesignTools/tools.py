@@ -258,7 +258,3 @@ def calculate_spiral_diameter(pipe_id, blockage_ratio):
     # calculate Shchelkin spiral diameter
     spiral_diameter = pipe_id / 2 * (1 - sqrt(1 - blockage_ratio / 100))
     return spiral_diameter
-
-
-if __name__ == '__main__':
-    get_flange_limits_from_csv()

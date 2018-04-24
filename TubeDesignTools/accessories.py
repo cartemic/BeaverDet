@@ -100,12 +100,29 @@ def collect_tube_materials():
                                   'lookup_data')
     file_name = 'materials_list.csv'
     file_location = os.path.relpath(os.path.join(file_directory, file_name))
-    print(file_location)
     output_dict = {}
+
+    # read in csv and extract information
     if os.path.exists(file_location):
         with open(file_location) as file:
             for num, line in enumerate(file):
+                # skip the first line of the file, since it contains only
+                # column titles and no data
                 if num > 0:
+                    # extract each material name and corresponding group
                     line = line.strip().split(',')
                     output_dict[line[0]] = line[1]
+
+                    # warn the user if materials_list.csv has more than 2
+                    # columns
+                    if len(line) > 2:
+                        warnings.warn(file_name + ' contains extra entries')
+    else:
+        # raise an exception if the file doesn't exist
+        raise ValueError(file_name + ' does not exist')
+
+    # raise an exception if the file is empty
+    if not bool(output_dict):
+        raise ValueError(file_name + ' is empty')
+
     return output_dict
