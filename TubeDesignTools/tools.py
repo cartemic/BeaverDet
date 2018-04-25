@@ -258,3 +258,20 @@ def calculate_spiral_diameter(pipe_id, blockage_ratio):
     # calculate Shchelkin spiral diameter
     spiral_diameter = pipe_id / 2 * (1 - sqrt(1 - blockage_ratio / 100))
     return spiral_diameter
+
+
+def get_blockage_ratio(tube_inner_diameter, blockage_diameter):
+    """
+    Calculates the blockage ratio of a Shchelkin spiral within a detonation
+    tube.
+
+    Inputs:
+        tube_inner_diameter: pint quantity with a length scale corresponding
+            to the ID of the detonation tube
+        blockage_diameter: pint quantity with a length scale corresponding to
+            the OD of a Shchelkin spiral
+
+    Outputs:
+        blockage_ratio: float between 0 and 100, representing the resulting
+            blockage ratio in percent
+    """

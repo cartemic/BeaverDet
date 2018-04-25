@@ -248,6 +248,81 @@ def test_calculate_spiral_diameter():
 
 def test_get_blockage_ratio():
     """
-    Tests the get_blockage ratio function, which takes arguments of pipe
+    Tests the get_blockage ratio function, which takes arguments of det tube
     inner diameter and spiral blockage diameter.
+
+    Conditions tested:
+        - good input
+        - units are mismatched
+        - non-pint blockage diameter
+        - non-numeric pint blockage diameter
+        - blockage diameter with bad units
+        - non-pint tube diameter
+        - non-numeric pint tube diameter
+        - tube diameter with bad units
+        - blockage diameter < 0
+        - blockage diameter >= tube diameter
+        - tube diameter < 0
     """
+    # incorporate units with pint
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # known good results from hand-calcs
+    test_tube_diameter = quant(3.438, ureg.inch)
+    test_blockage_diameter = quant(7./16., ureg.inch)
+    hand_calc_blockage_ratio = 0.444242326717679
+
+    # check for expected result with good input
+    test_result = tools.get_blockage_ratio(test_tube_diameter,
+                                           test_blockage_diameter)
+    assert test_result == hand_calc_blockage_ratio
+
+    # check for correct result when units are mismatched
+    test_result = tools.get_blockage_ratio(test_tube_diameter.to(ureg.meter),
+                                           test_blockage_diameter)
+    assert test_result == hand_calc_blockage_ratio
+
+    # check for correct handling of non-pint blockage diameter
+    with pytest.raises(ValueError,
+                       message='blockage diameter is not a pint quantity'):
+        tools.get_blockage_ratio(test_tube_diameter, 'adsg')
+        tools.get_blockage_ratio(test_tube_diameter, 7)
+        tools.get_blockage_ratio(test_tube_diameter, 2.125)
+
+    # check for correct handling of non-numeric pint blockage diameter
+    with pytest.raises(ValueError, message='blockage diameter is non-numeric'):
+        tools.get_blockage_ratio(test_tube_diameter, quant('asd', ureg.inch))
+
+    # check for correct handling of blockage diameter with bad units
+    with pytest.raises(ValueError, message='blockage diameter has bad units'):
+        tools.get_blockage_ratio(test_tube_diameter, quant(23, ureg.degC))
+
+    # check for correct handling of non-pint tube diameter
+    with pytest.raises(ValueError,
+                       message='tube diameter is not a pint quantity'):
+        tools.get_blockage_ratio('adsg', test_blockage_diameter)
+        tools.get_blockage_ratio(7, test_blockage_diameter)
+        tools.get_blockage_ratio(2.125, test_blockage_diameter)
+
+    # check for correct handling of non-numeric pint tube diameter
+    with pytest.raises(ValueError, message='tube diameter is non-numeric'):
+        tools.get_blockage_ratio(quant('asd', ureg.inch),
+                                 test_blockage_diameter)
+
+    # check for correct handling of tube diameter with bad units
+    with pytest.raises(ValueError, message='blockage diameter has bad units'):
+        tools.get_blockage_ratio(quant(23, ureg.degC), test_blockage_diameter)
+
+    # check for correct handling when blockage diameter < 0
+    with pytest.raises(ValueError, message='blockage diameter < 0'):
+        tools.get_blockage_ratio(test_tube_diameter, -test_blockage_diameter)
+
+    # check for correct handling when blockage diameter >= tube diameter
+    with pytest.raises(ValueError,
+                       message='blockage diameter >= tube diameter'):
+        tools.get_blockage_ratio(test_blockage_diameter, test_tube_diameter)
+
+    # check for correct handling when tube diameter <= 0
+    with pytest.raises(ValueError, message='tube diameter <= 0'):
+        tools.get_blockage_ratio(-test_tube_diameter, test_blockage_diameter)
