@@ -13,3 +13,4 @@ install:
     - conda install pandas
 # run tests
 script: pytest -vv -cov:./
+
