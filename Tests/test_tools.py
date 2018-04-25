@@ -187,7 +187,7 @@ def test_calculate_spiral_diameter():
     diameter as a pint quantity, and the desired blockage ratio as a float
     and returns the diameter of the corresponding Shchelkin spiral.
 
-    Conditions tested:
+    Conditions tested: ADD ZERO DIAMETER CASE
         - Good input
         - Proper handling with non-numeric pint ID
         - Proper handling and calculation with bad ID units
@@ -195,6 +195,7 @@ def test_calculate_spiral_diameter():
         - Proper handling with non-numeric, non-pint ID
         - Proper handling with non-numeric blockage ratio
         - Proper handling with blockage ratio outside of 0<BR<100
+        - Proper handling with tube of diameter 0
     """
     # incorporate units with pint
     ureg = pint.UnitRegistry()
@@ -252,7 +253,7 @@ def test_get_blockage_ratio():
     inner diameter and spiral blockage diameter.
 
     Conditions tested:
-        - good input
+        - good input (both zero and nonzero)
         - units are mismatched
         - non-pint blockage diameter
         - non-numeric pint blockage diameter
@@ -271,17 +272,20 @@ def test_get_blockage_ratio():
     # known good results from hand-calcs
     test_tube_diameter = quant(3.438, ureg.inch)
     test_blockage_diameter = quant(7./16., ureg.inch)
-    hand_calc_blockage_ratio = 0.444242326717679
+    hand_calc_blockage_ratio = 0.444242326717679 * 100
 
     # check for expected result with good input
     test_result = tools.get_blockage_ratio(test_tube_diameter,
                                            test_blockage_diameter)
-    assert test_result == hand_calc_blockage_ratio
+    assert (test_result - hand_calc_blockage_ratio) < 1e-8
+    test_result = tools.get_blockage_ratio(test_tube_diameter,
+                                           quant(0, ureg.inch))
+    assert (test_result - hand_calc_blockage_ratio) < 1e-8
 
     # check for correct result when units are mismatched
     test_result = tools.get_blockage_ratio(test_tube_diameter.to(ureg.meter),
                                            test_blockage_diameter)
-    assert test_result == hand_calc_blockage_ratio
+    assert (test_result - hand_calc_blockage_ratio) < 1e-8
 
     # check for correct handling of non-pint blockage diameter
     with pytest.raises(ValueError,
@@ -311,7 +315,7 @@ def test_get_blockage_ratio():
                                  test_blockage_diameter)
 
     # check for correct handling of tube diameter with bad units
-    with pytest.raises(ValueError, message='blockage diameter has bad units'):
+    with pytest.raises(ValueError, message='tube diameter has bad units'):
         tools.get_blockage_ratio(quant(23, ureg.degC), test_blockage_diameter)
 
     # check for correct handling when blockage diameter < 0

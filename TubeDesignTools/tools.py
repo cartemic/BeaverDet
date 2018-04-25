@@ -275,3 +275,48 @@ def get_blockage_ratio(tube_inner_diameter, blockage_diameter):
         blockage_ratio: float between 0 and 100, representing the resulting
             blockage ratio in percent
     """
+
+    # initialize unit registry and quantity for unit handling
+    ureg = pint.UnitRegistry()
+
+    # ensure tube diameter is a positive numeric pint quantity with a length
+    # scale
+    try:
+        tube_inner_diameter = tube_inner_diameter.to(ureg.inch)
+        float(tube_inner_diameter.magnitude)
+    except AttributeError:
+        # non-pint input
+        raise ValueError('tube diameter is not a pint quantity')
+    except pint.DimensionalityError:
+        # input with bad units
+        raise ValueError('tube diameter has bad units')
+    except ValueError:
+        # non-numeric input
+        raise ValueError('tube diameter is non-numeric')
+    if tube_inner_diameter.magnitude <= 0:
+        raise ValueError('tube diameter <= 0')
+
+    # ensure blockage diameter is a positive numeric pint quantity with a
+    # length scale, and also that it is less than the tube diameter
+    try:
+        blockage_diameter = blockage_diameter.to(ureg.inch)
+        float(blockage_diameter.magnitude)
+    except AttributeError:
+        # non-pint input
+        raise ValueError('blockage diameter is not a pint quantity')
+    except pint.DimensionalityError:
+        # input with bad units
+        raise ValueError('blockage diameter has bad units')
+    except ValueError:
+        # non-numeric input
+        raise ValueError('blockage diameter is non-numeric')
+    if blockage_diameter.magnitude < 0:
+        raise ValueError('blockage diameter < 0')
+    elif blockage_diameter >= tube_inner_diameter:
+        raise ValueError('blockage diameter >= tube diameter')
+
+    # calculate blockage ratio
+    blockage_ratio = (1 - (1 - 2 * blockage_diameter.magnitude /
+                           tube_inner_diameter.magnitude)**2) * 100
+
+    return blockage_ratio
