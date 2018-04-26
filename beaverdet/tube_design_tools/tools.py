@@ -83,7 +83,7 @@ def get_flange_limits_from_csv(group=2.3):
         raise ValueError('{0} is not a valid group'.format(group))
 
 
-def get_flange_class(temperature, pressure, desired_material):
+def lookup_flange_class(temperature, pressure, desired_material):
     """
     Finds the minimum allowable flange class per ASME B16.5 for a give flange
     temperature and tube pressure.
@@ -260,7 +260,7 @@ def calculate_spiral_diameter(pipe_id, blockage_ratio):
     return spiral_diameter
 
 
-def get_blockage_ratio(tube_inner_diameter, blockage_diameter):
+def calculate_blockage_ratio(tube_inner_diameter, blockage_diameter):
     """
     Calculates the blockage ratio of a Shchelkin spiral within a detonation
     tube.

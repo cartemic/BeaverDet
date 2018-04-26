@@ -114,9 +114,9 @@ def test_get_flange_limits_from_csv():
     os.remove(file_location)
 
 
-def test_get_flange_class():
+def test_lookup_flange_class():
     """
-    Tests the get_flange_class() function, which takes in a temperature,
+    Tests the lookup_flange_class() function, which takes in a temperature,
     pressure, and a string for the desired flange material and returns the
     minimum required flange class. Dataframes are assumed to be good due to
     unit testing of their import function, get_flange_limits_from_csv().
@@ -158,55 +158,55 @@ def test_get_flange_class():
     material = '316L'   # 316L is in group 2.3
 
     # check for expected value within limits
-    test_class = tools.get_flange_class(temp_good, press_good, material)
+    test_class = tools.lookup_flange_class(temp_good, press_good, material)
     assert test_class == '1500'
 
     # check for error handling with bad temperature units
     with pytest.raises(ValueError, match='Bad temperature units.'):
-        tools.get_flange_class(temp_badunits, press_good, material)
+        tools.lookup_flange_class(temp_badunits, press_good, material)
 
     # check for error handling with bad pressure units
     with pytest.raises(ValueError, match='Bad pressure units.'):
-        tools.get_flange_class(temp_good, press_badunits, material)
+        tools.lookup_flange_class(temp_good, press_badunits, material)
 
     # check for error handling with temperature too low/high
     test_temperatures = [temp_low, temp_high]
     for temperature in test_temperatures:
         with pytest.raises(ValueError, match='Temperature out of range.'):
-            tools.get_flange_class(temperature, press_good, material)
+            tools.lookup_flange_class(temperature, press_good, material)
 
     # check for error handling with pressure too low/high
     test_pressures = [press_low, press_high]
     for pressure in test_pressures:
         with pytest.raises(ValueError, match='Pressure out of range.'):
-            tools.get_flange_class(temp_good, pressure, material)
+            tools.lookup_flange_class(temp_good, pressure, material)
 
     # check for error handling when temperature is not a pint quantity
     # input is numeric
     with pytest.warns(UserWarning, match='No temperature units. Assuming °C.'):
-        tools.get_flange_class(10, press_good, material)
+        tools.lookup_flange_class(10, press_good, material)
     # input is non-numeric
     with pytest.raises(ValueError, match='Non-numeric temperature input.'):
-        tools.get_flange_class('asdf', press_good, material)
+        tools.lookup_flange_class('asdf', press_good, material)
 
     # check for error handling when pressure is not a pint quantity
     # input is numeric
     with pytest.warns(UserWarning, match='No pressure units. Assuming bar.'):
-        tools.get_flange_class(temp_good, 10, material)
+        tools.lookup_flange_class(temp_good, 10, material)
     # input is non-numeric
     with pytest.raises(ValueError, match='Non-numeric pressure input.'):
-        tools.get_flange_class(temp_good, 'asdf', material)
+        tools.lookup_flange_class(temp_good, 'asdf', material)
 
     # check for error handling when material isn't in database
     with pytest.raises(ValueError, match='Desired material not in database.'):
-        tools.get_flange_class(temp_good, press_good, 'unobtainium')
+        tools.lookup_flange_class(temp_good, press_good, 'unobtainium')
 
     # check for error handling with non-string material
     bad_materials = [0, 3.14, -7]
     for bad_material in bad_materials:
         with pytest.raises(ValueError,
                            match='Desired material non-string input.'):
-            tools.get_flange_class(temp_good, press_good, bad_material)
+            tools.lookup_flange_class(temp_good, press_good, bad_material)
 
 
 def test_calculate_spiral_diameter():
@@ -274,7 +274,7 @@ def test_calculate_spiral_diameter():
             tools.calculate_spiral_diameter(test_diameter, ratio)
 
 
-def test_get_blockage_ratio():
+def test_calculate_blockage_ratio():
     """
     Tests the get_blockage ratio function, which takes arguments of det tube
     inner diameter and spiral blockage diameter.
@@ -302,16 +302,17 @@ def test_get_blockage_ratio():
     hand_calc_blockage_ratio = 0.444242326717679 * 100
 
     # check for expected result with good input
-    test_result = tools.get_blockage_ratio(test_tube_diameter,
-                                           test_blockage_diameter)
+    test_result = tools.calculate_blockage_ratio(test_tube_diameter,
+                                                 test_blockage_diameter)
     assert (test_result - hand_calc_blockage_ratio) < 1e-8
-    test_result = tools.get_blockage_ratio(test_tube_diameter,
-                                           quant(0, ureg.inch))
+    test_result = tools.calculate_blockage_ratio(test_tube_diameter,
+                                                 quant(0, ureg.inch))
     assert (test_result - hand_calc_blockage_ratio) < 1e-8
 
     # check for correct result when units are mismatched
-    test_result = tools.get_blockage_ratio(test_tube_diameter.to(ureg.meter),
-                                           test_blockage_diameter)
+    test_result = tools.calculate_blockage_ratio(test_tube_diameter.
+                                                 to(ureg.meter),
+                                                 test_blockage_diameter)
     assert (test_result - hand_calc_blockage_ratio) < 1e-8
 
     # check for correct handling of non-pint blockage diameter
@@ -319,40 +320,48 @@ def test_get_blockage_ratio():
     for blockage_diameter in bad_diameters:
         with pytest.raises(ValueError,
                            match='blockage diameter is not a pint quantity'):
-            tools.get_blockage_ratio(test_tube_diameter, blockage_diameter)
+            tools.calculate_blockage_ratio(test_tube_diameter,
+                                           blockage_diameter)
 
     # check for correct handling of non-numeric pint blockage diameter
     with pytest.raises(ValueError, match='blockage diameter is non-numeric'):
-        tools.get_blockage_ratio(test_tube_diameter, quant('asd', ureg.inch))
+        tools.calculate_blockage_ratio(test_tube_diameter,
+                                       quant('asd', ureg.inch))
 
     # check for correct handling of blockage diameter with bad units
     with pytest.raises(ValueError, match='blockage diameter has bad units'):
-        tools.get_blockage_ratio(test_tube_diameter, quant(23, ureg.degC))
+        tools.calculate_blockage_ratio(test_tube_diameter,
+                                       quant(23, ureg.degC))
 
     # check for correct handling of non-pint tube diameter
     for tube_diameter in bad_diameters:
         with pytest.raises(ValueError,
                            match='tube diameter is not a pint quantity'):
-            tools.get_blockage_ratio(tube_diameter, test_blockage_diameter)
+            tools.calculate_blockage_ratio(tube_diameter,
+                                           test_blockage_diameter)
 
     # check for correct handling of non-numeric pint tube diameter
     with pytest.raises(ValueError, match='tube diameter is non-numeric'):
-        tools.get_blockage_ratio(quant('asd', ureg.inch),
-                                 test_blockage_diameter)
+        tools.calculate_blockage_ratio(quant('asd', ureg.inch),
+                                       test_blockage_diameter)
 
     # check for correct handling of tube diameter with bad units
     with pytest.raises(ValueError, match='tube diameter has bad units'):
-        tools.get_blockage_ratio(quant(23, ureg.degC), test_blockage_diameter)
+        tools.calculate_blockage_ratio(quant(23, ureg.degC),
+                                       test_blockage_diameter)
 
     # check for correct handling when blockage diameter < 0
     with pytest.raises(ValueError, match='blockage diameter < 0'):
-        tools.get_blockage_ratio(test_tube_diameter, -test_blockage_diameter)
+        tools.calculate_blockage_ratio(test_tube_diameter,
+                                       -test_blockage_diameter)
 
     # check for correct handling when blockage diameter >= tube diameter
     with pytest.raises(ValueError,
                        match='blockage diameter >= tube diameter'):
-        tools.get_blockage_ratio(test_blockage_diameter, test_tube_diameter)
+        tools.calculate_blockage_ratio(test_blockage_diameter,
+                                       test_tube_diameter)
 
     # check for correct handling when tube diameter <= 0
     with pytest.raises(ValueError, match='tube diameter <= 0'):
-        tools.get_blockage_ratio(-test_tube_diameter, test_blockage_diameter)
+        tools.calculate_blockage_ratio(-test_tube_diameter,
+                                       test_blockage_diameter)
