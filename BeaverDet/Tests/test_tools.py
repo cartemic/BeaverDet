@@ -16,7 +16,7 @@ from math import sqrt
 import pytest
 import pint
 import pandas as pd
-from BeaverDet.TubeDesignTools import tools
+from ..TubeDesignTools import tools
 
 
 def test_get_flange_limits_from_csv():

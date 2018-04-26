@@ -14,7 +14,7 @@ import os
 from unittest.mock import patch
 import pytest
 import pandas as pd
-from BeaverDet.TubeDesignTools import accessories
+from ..TubeDesignTools import accessories
 
 
 def test_check_materials():
