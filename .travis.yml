@@ -12,5 +12,5 @@ install:
   - conda install pint
   - conda install pandas
 # run tests
-script: pytest -vv -cov:./
+script: pytest
 
