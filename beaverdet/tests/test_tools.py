@@ -16,7 +16,7 @@ from math import sqrt
 import pytest
 import pint
 import pandas as pd
-from ..TubeDesignTools import tools
+from ..tube_design_tools import tools
 
 
 def test_get_flange_limits_from_csv():
@@ -48,7 +48,7 @@ def test_get_flange_limits_from_csv():
     # file information
     my_input = 'testfile'
     file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  '..', 'TubeDesignTools', 'lookup_data')
+                                  '..', 'tube_design_tools', 'lookup_data')
     file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
     file_location = os.path.relpath(os.path.join(file_directory, file_name))
 
