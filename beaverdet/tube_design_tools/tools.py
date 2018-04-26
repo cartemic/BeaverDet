@@ -52,18 +52,18 @@ def get_flange_limits_from_csv(group=2.3):
         # ensure all temperatures and pressures are floats, and check to make
         # sure pressures are greater than zero
         values = flange_limits.values
-        for row in values:
-            for element, item in enumerate(row):
+        for row_number, row in enumerate(values):
+            for column_number, item in enumerate(row):
                 # ensure each item is a float and assign non-numeric values
                 # a value of zero
                 try:
-                    item = float(item)
+                    values[row_number][column_number] = float(item)
                 except ValueError:
-                    item = 0.
+                    values[row_number][column_number] = 0.
 
-                if element > 0:
+                if column_number > 0:
                     # these are pressures, which must be positive
-                    if item < 0:
+                    if values[row_number][column_number] < 0:
                         raise ValueError('Pressure less than zero.')
 
         # add units to temperature column
