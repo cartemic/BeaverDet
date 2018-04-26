@@ -1,16 +1,16 @@
 langauge: python
 python:
-    - "2.7"
-    - "3.6"
-    # PyPy versions
-    -"pypy2.7"
-    -"pypy3.5"
+  - "2.7"
+  - "3.6"
+  # PyPy versions
+  -"pypy2.7"
+  -"pypy3.5"
 # install dependencies
 install:
-    - conda install .
-    - conda install pytest
-    - conda install pint
-    - conda install pandas
+  - conda install .
+  - conda install pytest
+  - conda install pint
+  - conda install pandas
 # run tests
 script: pytest -vv -cov:./
 
