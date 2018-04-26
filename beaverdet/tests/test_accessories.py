@@ -83,8 +83,14 @@ def test_check_materials():
 
     # run test suite
     with patch('builtins.open', new=FakeOpen):
-        patched_module = 'BeaverDet.tube_design_tools.accessories.' + \
-                         'collect_tube_materials'
+        print()
+        print()
+        print(accessories.__file__)
+        print()
+        print()
+        patched_module = __name__.split('.')[0] + \
+            '.tube_design_tools.accessories.' + \
+            'collect_tube_materials'
         with patch(patched_module,
                    new=fake_collect_tube_materials):
             with patch('os.listdir', new=fake_listdir):
