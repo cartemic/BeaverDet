@@ -13,6 +13,9 @@ CREATED BY:
 
 import os
 import warnings
+import pint
+import sympy as sp
+import numpy as np
 
 
 def check_materials():
@@ -126,3 +129,166 @@ def collect_tube_materials():
         raise ValueError(file_name + ' is empty')
 
     return output_dict
+
+
+def check_pint_quantity(quantity, dimension_type, ensure_positive=False):
+    """
+    This function checks to make sure that a quantity is an instance of a pint
+    quantity, and that it has the correct units.
+
+    Currently supported dimension types:
+        length
+        pressure
+        temperature
+        velocity
+
+    Parameters
+    ----------
+    quantity : pint quantity
+        Pint quantity which is to be checked for dimensionality
+    dimension_type : str
+        Dimensionality that quantity should have
+    ensure_positive : bool
+        Determines whether the magnitude of the pint quantity will be checked
+        for positivity
+
+    Returns
+    -------
+    True if no errors are raised
+
+    """
+
+    ureg = pint.UnitRegistry()
+    units = {
+        'length': ureg.meter.dimensionality.__str__(),
+        'temperature': ureg.degC.dimensionality.__str__(),
+        'pressure': ureg.psi.dimensionality.__str__(),
+        'velocity': (ureg.meter/ureg.second).dimensionality.__str__()
+    }
+
+    if dimension_type not in units:
+        raise ValueError(dimension_type + ' not a supported dimension type')
+
+    try:
+        actual_dimension_type = quantity.dimensionality.__str__()
+    except AttributeError:
+        raise ValueError('Non-pint quantity')
+
+    try:
+        float(quantity.magnitude)
+    except ValueError:
+        raise ValueError('Non-numeric pint quantity')
+
+    if ensure_positive:
+        if quantity.magnitude < 0:
+            raise ValueError('Input value < 0')
+
+    if units[dimension_type] != actual_dimension_type:
+        raise ValueError(
+            actual_dimension_type +
+            ' is not '
+            + units[dimension_type]
+        )
+
+    return True
+
+
+def window_sympy_solver(
+        **kwargs):
+    """
+    This function uses sympy to solve for a missing window measurement. Inputs
+    are five keyword arguments, with the following possible values:
+        length
+        width
+        thickness
+        pressure
+        rupture_modulus
+        safety_factor
+    All of these arguments should be floats, and dimensions should be
+    consistent (handling should be done in other functions, such as
+    calculate_window_sf().
+
+    Equation from:
+    https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
+
+    Parameters
+    ----------
+    kwargs
+
+    Returns
+    -------
+    missing value as a float, or NaN if the result is imaginary
+    """
+
+    # Ensure that 5 keyword arguments were given
+    if kwargs.__len__() != 5:
+        raise ValueError('Incorrect number of arguments sent to solver')
+
+    # Ensure all keyword arguments are correct
+    good_arguments = [
+        'length',
+        'width',
+        'thickness',
+        'pressure',
+        'rupture_modulus',
+        'safety_factor'
+    ]
+    bad_args = []
+    for arg in kwargs:
+        if arg not in good_arguments:
+            bad_args.append(arg)
+
+    if len(bad_args) > 0:
+        error_string = 'Bad keyword argument:'
+        for arg in bad_args:
+            error_string += '\n'+arg
+
+        raise ValueError(error_string)
+
+    # Define equation to be solved
+    k_factor = 0.75  # clamped window factor
+    argument_symbols = {
+        'length': 'var_l',
+        'width': 'var_w',
+        'thickness': 'var_t',
+        'pressure': 'var_p',
+        'rupture_modulus': 'var_m',
+        'safety_factor': 'var_sf'
+    }
+    var_l = sp.Symbol('var_l')
+    var_w = sp.Symbol('var_w')
+    var_t = sp.Symbol('var_t')
+    var_p = sp.Symbol('var_p')
+    var_m = sp.Symbol('var_m')
+    var_sf = sp.Symbol('var_sf')
+    expr = (
+            var_l *
+            var_w *
+            sp.sqrt(
+                (
+                        var_p *
+                        k_factor *
+                        var_sf /
+                        (
+                                2 *
+                                var_m *
+                                (
+                                        var_l ** 2 +
+                                        var_w ** 2
+                                )
+                        )
+                 )
+            ) - var_t
+    )
+
+    # Solve equation
+    for arg in kwargs:
+        expr = expr.subs(argument_symbols[arg], kwargs[arg])
+
+    solution = sp.solve(expr)[0]
+
+    if solution.is_real:
+        return float(solution)
+    else:
+        warnings.warn('Window inputs resulted in imaginary solution.')
+        return np.NaN

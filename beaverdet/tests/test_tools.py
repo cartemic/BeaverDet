@@ -123,12 +123,8 @@ def test_lookup_flange_class():
 
     Conditions tested:
         - Function returns expected value within P, T limits
-        - Proper error handling when temperature units are bad
-        - Proper error handling when pressure units are bad
         - Proper error handling when temperature is outside allowable range
         - Proper error handling when pressure is outside allowable range
-        - Proper error handling when temperature is not a pint quantity
-        - Proper error handling when pressure is not a pint quantity
         - Proper error handling when desired material isn't in database
     """
     # ----------------------------INPUT TESTING----------------------------
@@ -161,14 +157,6 @@ def test_lookup_flange_class():
     test_class = tools.lookup_flange_class(temp_good, press_good, material)
     assert test_class == '1500'
 
-    # check for error handling with bad temperature units
-    with pytest.raises(ValueError, match='Bad temperature units.'):
-        tools.lookup_flange_class(temp_badunits, press_good, material)
-
-    # check for error handling with bad pressure units
-    with pytest.raises(ValueError, match='Bad pressure units.'):
-        tools.lookup_flange_class(temp_good, press_badunits, material)
-
     # check for error handling with temperature too low/high
     test_temperatures = [temp_low, temp_high]
     for temperature in test_temperatures:
@@ -180,22 +168,6 @@ def test_lookup_flange_class():
     for pressure in test_pressures:
         with pytest.raises(ValueError, match='Pressure out of range.'):
             tools.lookup_flange_class(temp_good, pressure, material)
-
-    # check for error handling when temperature is not a pint quantity
-    # input is numeric
-    with pytest.warns(UserWarning, match='No temperature units. Assuming °C.'):
-        tools.lookup_flange_class(10, press_good, material)
-    # input is non-numeric
-    with pytest.raises(ValueError, match='Non-numeric temperature input.'):
-        tools.lookup_flange_class('asdf', press_good, material)
-
-    # check for error handling when pressure is not a pint quantity
-    # input is numeric
-    with pytest.warns(UserWarning, match='No pressure units. Assuming bar.'):
-        tools.lookup_flange_class(temp_good, 10, material)
-    # input is non-numeric
-    with pytest.raises(ValueError, match='Non-numeric pressure input.'):
-        tools.lookup_flange_class(temp_good, 'asdf', material)
 
     # check for error handling when material isn't in database
     with pytest.raises(ValueError, match='Desired material not in database.'):
@@ -217,11 +189,6 @@ def test_calculate_spiral_diameter():
 
     Conditions tested: ADD ZERO DIAMETER CASE
         - Good input
-        - Proper handling with non-numeric pint ID
-        - Proper handling and calculation with bad ID units
-        - Proper handling with numeric, non-pint ID
-        - Proper handling with non-numeric, non-pint ID
-        - Proper handling with non-numeric blockage ratio
         - Proper handling with blockage ratio outside of 0<BR<100
         - Proper handling with tube of diameter 0
     """
@@ -241,26 +208,6 @@ def test_calculate_spiral_diameter():
 
     # ensure good output
     assert expected_spiral_diameter == result.to(ureg.inch)
-
-    # ensure proper handling with non-numeric pint item
-    test_diameter_bad = quant('asdf', ureg.inch)
-    with pytest.raises(ValueError, match='ID is non-numeric quantity.'):
-        tools.calculate_spiral_diameter(test_diameter_bad, test_blockage_ratio)
-
-    # ensure proper handling with bad pint units
-    test_diameter_bad = quant(70, ureg.degC)
-    with pytest.raises(ValueError, match='Bad diameter units.'):
-        tools.calculate_spiral_diameter(test_diameter_bad, test_blockage_ratio)
-
-    # ensure proper handling with numeric, non-pint diameter
-    with pytest.warns(Warning, match='No ID units, assuming inches.'):
-        result = tools.calculate_spiral_diameter(test_diameter.magnitude,
-                                                 test_blockage_ratio)
-    assert result == expected_spiral_diameter
-
-    # ensure proper handling with non-numeric, non-pint diameter
-    with pytest.raises(ValueError, match='ID is unitless and non-numeric.'):
-        tools.calculate_spiral_diameter('oompa loompa', test_blockage_ratio)
 
     # ensure proper handling with non-numeric blockage ratio
     with pytest.raises(ValueError, match='Non-numeric blockage ratio.'):
@@ -309,59 +256,30 @@ def test_calculate_blockage_ratio():
                                                  quant(0, ureg.inch))
     assert (test_result - hand_calc_blockage_ratio) < 1e-8
 
-    # check for correct result when units are mismatched
-    test_result = tools.calculate_blockage_ratio(test_tube_diameter.
-                                                 to(ureg.meter),
-                                                 test_blockage_diameter)
-    assert (test_result - hand_calc_blockage_ratio) < 1e-8
-
-    # check for correct handling of non-pint blockage diameter
-    bad_diameters = ['adsg', 7, 2.125]
-    for blockage_diameter in bad_diameters:
-        with pytest.raises(ValueError,
-                           match='blockage diameter is not a pint quantity'):
-            tools.calculate_blockage_ratio(test_tube_diameter,
-                                           blockage_diameter)
-
-    # check for correct handling of non-numeric pint blockage diameter
-    with pytest.raises(ValueError, match='blockage diameter is non-numeric'):
-        tools.calculate_blockage_ratio(test_tube_diameter,
-                                       quant('asd', ureg.inch))
-
-    # check for correct handling of blockage diameter with bad units
-    with pytest.raises(ValueError, match='blockage diameter has bad units'):
-        tools.calculate_blockage_ratio(test_tube_diameter,
-                                       quant(23, ureg.degC))
-
-    # check for correct handling of non-pint tube diameter
-    for tube_diameter in bad_diameters:
-        with pytest.raises(ValueError,
-                           match='tube diameter is not a pint quantity'):
-            tools.calculate_blockage_ratio(tube_diameter,
-                                           test_blockage_diameter)
-
-    # check for correct handling of non-numeric pint tube diameter
-    with pytest.raises(ValueError, match='tube diameter is non-numeric'):
-        tools.calculate_blockage_ratio(quant('asd', ureg.inch),
-                                       test_blockage_diameter)
-
-    # check for correct handling of tube diameter with bad units
-    with pytest.raises(ValueError, match='tube diameter has bad units'):
-        tools.calculate_blockage_ratio(quant(23, ureg.degC),
-                                       test_blockage_diameter)
-
-    # check for correct handling when blockage diameter < 0
-    with pytest.raises(ValueError, match='blockage diameter < 0'):
-        tools.calculate_blockage_ratio(test_tube_diameter,
-                                       -test_blockage_diameter)
-
     # check for correct handling when blockage diameter >= tube diameter
     with pytest.raises(ValueError,
                        match='blockage diameter >= tube diameter'):
         tools.calculate_blockage_ratio(test_blockage_diameter,
                                        test_tube_diameter)
 
-    # check for correct handling when tube diameter <= 0
-    with pytest.raises(ValueError, match='tube diameter <= 0'):
-        tools.calculate_blockage_ratio(-test_tube_diameter,
-                                       test_blockage_diameter)
+
+def test_calculate_window_sf():
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    width = quant(50, ureg.mm).to(ureg.inch)
+    length = quant(20, ureg.mm).to(ureg.mile)
+    pressure = quant(1, ureg.atm).to(ureg.torr)
+    thickness = quant(1.2, ureg.mm).to(ureg.furlong)
+    rupture_modulus = quant(5300, ureg.psi).to(ureg.mmHg)
+    desired_safety_factor = 4
+
+    test_sf = tools.calculate_window_sf(
+        length,
+        width,
+        thickness,
+        pressure,
+        rupture_modulus
+    )
+
+    assert abs(test_sf - desired_safety_factor) / test_sf < 0.01

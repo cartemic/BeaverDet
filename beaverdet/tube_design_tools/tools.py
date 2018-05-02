@@ -12,14 +12,14 @@ CREATED BY:
 
 
 import os
-import warnings
 from math import sqrt
 import pint
 import pandas as pd
 from . import accessories as acc
 
 
-def get_flange_limits_from_csv(group=2.3):
+def get_flange_limits_from_csv(
+        group=2.3):
     """
     Reads in flange pressure limits as a function of temperature for different
     pressure classes per ASME B16.5. Temperature is in Centigrade and pressure
@@ -83,7 +83,10 @@ def get_flange_limits_from_csv(group=2.3):
         raise ValueError('{0} is not a valid group'.format(group))
 
 
-def lookup_flange_class(temperature, pressure, desired_material):
+def lookup_flange_class(
+        temperature,
+        pressure,
+        desired_material):
     """
     Finds the minimum allowable flange class per ASME B16.5 for a give flange
     temperature and tube pressure.
@@ -110,56 +113,20 @@ def lookup_flange_class(temperature, pressure, desired_material):
         # material is good, get ASME B16.5 material group
         group = materials_dict[desired_material]
 
-    # initialize unit registry and quantity for unit handling
+    # initialize unit registry for unit handling
     ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
 
     # type check to make sure temperature is a pint quantity
-    try:
-        temperature.to_base_units()
-    except AttributeError:
-        # temperature is not a pint quantity. Try to make it one, and if that
-        # fails, raise an error
-        try:
-            # ensure numeric type and convert to quantity
-            float(temperature)
-            temperature = quant(temperature, ureg.degC)
-            # let the user know something went wrong
-            warnings.warn('No temperature units. Assuming °C.')
-        except ValueError:
-            # temperature is non-numeric
-            raise ValueError('Non-numeric temperature input.')
+    acc.check_pint_quantity(
+        temperature,
+        'temperature'
+    )
 
     # type check to make sure pressure is a pint quantity
-    try:
-        pressure.to_base_units()
-    except AttributeError:
-        # pressure is not a pint quantity. Try to make it one, and if that
-        # fails, raise an error
-        try:
-            # ensure numeric type and convert to quantity
-            float(pressure)
-            pressure = quant(pressure, ureg.bar)
-            # let the user know something went wrong
-            warnings.warn('No pressure units. Assuming bar.')
-        except ValueError:
-            # pressure is non-numeric
-            raise ValueError('Non-numeric pressure input.')
-
-    # ensure units are good:
-    #   convert temperature to degC
-    #   convert pressure to bar
-    # return ValueError if this is not possible
-    try:
-        # check and convert temperature units
-        temperature = temperature.to(ureg.degC)
-    except pint.DimensionalityError:
-        raise ValueError('Bad temperature units.')
-    try:
-        # check and convert pressure units
-        pressure = pressure.to(ureg.bar)
-    except pint.DimensionalityError:
-        raise ValueError('Bad pressure units.')
+    acc.check_pint_quantity(
+        pressure,
+        'pressure'
+    )
 
     # import flange limits from csv
     flange_limits = get_flange_limits_from_csv(group)
@@ -202,7 +169,9 @@ def lookup_flange_class(temperature, pressure, desired_material):
     return correct_class
 
 
-def calculate_spiral_diameter(pipe_id, blockage_ratio):
+def calculate_spiral_diameter(
+        pipe_id,
+        blockage_ratio):
     """
     Calculates the diameter of a Shchelkin spiral corresponding to a given
     blockage ratio within a pipe of given inner diameter.
@@ -217,11 +186,6 @@ def calculate_spiral_diameter(pipe_id, blockage_ratio):
             diameter inside a tube of pipe_id inner diameter giving a blockage
             ratio of blockage_ratio %. Units are the same as pipe_id.
     """
-
-    # initialize unit registry and quantity for unit handling
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
     # ensure blockage ratio is a float
     try:
         blockage_ratio = float(blockage_ratio)
@@ -232,35 +196,20 @@ def calculate_spiral_diameter(pipe_id, blockage_ratio):
     if not 0 < blockage_ratio < 100:
         raise ValueError('Blockage ratio outside of 0<BR<100')
 
-    # check inner diameter units to make sure they are length-scale
-    try:
-        pipe_id.to(ureg.inch)
-        # make sure pipe_id is numeric
-        try:
-            float(pipe_id.magnitude)
-        except ValueError:
-            # pipe_id is non-numeric quantity
-            raise ValueError('ID is non-numeric quantity.')
-    except pint.DimensionalityError:
-        # diameter has bad units
-        raise ValueError('Bad diameter units.')
-    except AttributeError:
-        # pipe_id is not a pint quantity. check if it is numeric.
-        try:
-            float(pipe_id)
-            # if no error, raise a warning and assume inches
-            pipe_id = quant(pipe_id, ureg.inch)
-            warnings.warn('No ID units, assuming inches.')
-        except ValueError:
-            # pipe_id is non-numeric, raise error
-            raise ValueError('ID is unitless and non-numeric.')
+    acc.check_pint_quantity(
+        pipe_id,
+        'length',
+        ensure_positive=True
+    )
 
     # calculate Shchelkin spiral diameter
     spiral_diameter = pipe_id / 2 * (1 - sqrt(1 - blockage_ratio / 100))
     return spiral_diameter
 
 
-def calculate_blockage_ratio(tube_inner_diameter, blockage_diameter):
+def calculate_blockage_ratio(
+        tube_inner_diameter,
+        blockage_diameter):
     """
     Calculates the blockage ratio of a Shchelkin spiral within a detonation
     tube.
@@ -276,43 +225,24 @@ def calculate_blockage_ratio(tube_inner_diameter, blockage_diameter):
             blockage ratio in percent
     """
 
-    # initialize unit registry and quantity for unit handling
-    ureg = pint.UnitRegistry()
+    # check dimensionality and >0
+    acc.check_pint_quantity(
+        tube_inner_diameter,
+        'length',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        blockage_diameter,
+        'length',
+        ensure_positive=True
+    )
 
-    # ensure tube diameter is a positive numeric pint quantity with a length
-    # scale
-    try:
-        tube_inner_diameter = tube_inner_diameter.to(ureg.inch)
-        float(tube_inner_diameter.magnitude)
-    except AttributeError:
-        # non-pint input
-        raise ValueError('tube diameter is not a pint quantity')
-    except pint.DimensionalityError:
-        # input with bad units
-        raise ValueError('tube diameter has bad units')
-    except ValueError:
-        # non-numeric input
-        raise ValueError('tube diameter is non-numeric')
-    if tube_inner_diameter.magnitude <= 0:
-        raise ValueError('tube diameter <= 0')
+    # make sure units cancel
+    blockage_diameter = blockage_diameter.to_base_units()
+    tube_inner_diameter = tube_inner_diameter.to_base_units()
 
-    # ensure blockage diameter is a positive numeric pint quantity with a
-    # length scale, and also that it is less than the tube diameter
-    try:
-        blockage_diameter = blockage_diameter.to(ureg.inch)
-        float(blockage_diameter.magnitude)
-    except AttributeError:
-        # non-pint input
-        raise ValueError('blockage diameter is not a pint quantity')
-    except pint.DimensionalityError:
-        # input with bad units
-        raise ValueError('blockage diameter has bad units')
-    except ValueError:
-        # non-numeric input
-        raise ValueError('blockage diameter is non-numeric')
-    if blockage_diameter.magnitude < 0:
-        raise ValueError('blockage diameter < 0')
-    elif blockage_diameter >= tube_inner_diameter:
+    # ensure blockage diameter < tube diameter
+    if blockage_diameter >= tube_inner_diameter:
         raise ValueError('blockage diameter >= tube diameter')
 
     # calculate blockage ratio
@@ -320,3 +250,69 @@ def calculate_blockage_ratio(tube_inner_diameter, blockage_diameter):
                            tube_inner_diameter.magnitude)**2) * 100
 
     return blockage_ratio
+
+
+def calculate_window_sf(
+        length,
+        width,
+        thickness,
+        pressure,
+        rupture_modulus):
+    """
+    This function calculates the safety factor of a clamped rectangular window
+    given window dimensions, design pressure, and material rupture modulus
+
+    Parameters
+    ----------
+    length : pint quantity with length units
+        Window unsupported (viewing) length
+    width : pint quantity with length units
+        Window unsupported (viewing) width
+    thickness : pint quantity with length units
+        Window thickness
+    pressure : pint quantity with pressure units
+        Design pressure differential across window at which factor of safety is
+        to be calculated
+    rupture_modulus : pint quantity with pressure units
+        Rupture modulus of desired window material.
+
+    Returns
+    -------
+
+    """
+
+    acc.check_pint_quantity(
+        length,
+        'length',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        width,
+        'length',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        thickness,
+        'length',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        pressure,
+        'pressure',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        rupture_modulus,
+        'pressure',
+        ensure_positive=True
+    )
+
+    safety_factor = acc.window_sympy_solver(
+        length=length.to_base_units().magnitude,
+        width=width.to_base_units().magnitude,
+        thickness=thickness.to_base_units().magnitude,
+        pressure=pressure.to_base_units().magnitude,
+        rupture_modulus=rupture_modulus.to_base_units().magnitude
+    )
+
+    return safety_factor
