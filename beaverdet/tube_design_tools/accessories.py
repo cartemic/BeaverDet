@@ -35,6 +35,12 @@ def check_materials():
     if not bool(flange_ratings + stress_limits):
         raise ValueError('no files containing "flange" or "stress" found')
 
+    # initialize an error string and error indicator. Error string will be
+    # used to aggregate errors in the list of available materials so that
+    # all issues may be rectified simultaneously.
+    error_string = '\n'
+    has_errors = False
+
     # make sure all pipe material limits are either welded or seamless
     # other types are permitted, but will raise a warning
     for file in stress_limits:
@@ -42,12 +48,6 @@ def check_materials():
             # warn that something is weird
             warnings.warn(file +
                           'does not indicate whether it is welded or seamless')
-
-        # initialize an error string and error indicator. Error string will be
-        # used to aggregate errors in the list of available materials so that
-        # all issues may be rectified simultaneously.
-        error_string = '\n'
-        has_errors = False
 
         # check the first row of the file in question to extract the names of
         # the materials that it contains stress limits for
