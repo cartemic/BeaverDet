@@ -221,7 +221,7 @@ def test_calculate_spiral_diameter():
 
 def test_calculate_blockage_ratio():
     """
-    Tests the get_blockage ratio function, which takes arguments of det tube
+    Tests the get_blockage_ratio function, which takes arguments of det tube
     inner diameter and spiral blockage diameter.
 
     Conditions tested:
@@ -262,6 +262,14 @@ def test_calculate_blockage_ratio():
 
 
 def test_calculate_window_sf():
+    """
+    Tests the calculate_window_sf function, which calculates the factor of
+    safety for a viewing window.
+
+    Conditions tested:
+        - good input (all potential errors are handled by
+            accessories.check_pint_quantity)
+    """
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
 
@@ -281,3 +289,59 @@ def test_calculate_window_sf():
     )
 
     assert abs(test_sf - desired_safety_factor) / test_sf < 0.01
+
+
+def test_calculate_window_thk():
+    """
+    Tests the calculate_window_thk function, which calculates the thickness of
+    a viewing window.
+
+    Conditions tested:
+        - safety factor < 1
+        - non-numeric safety factor
+        - good input
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    width = quant(50, ureg.mm).to(ureg.inch)
+    length = quant(20, ureg.mm).to(ureg.mile)
+    pressure = quant(1, ureg.atm).to(ureg.torr)
+    rupture_modulus = quant(5300, ureg.psi).to(ureg.mmHg)
+    desired_thickness = quant(1.2, ureg.mm)
+
+    # safety factor < 1
+    safety_factor = [0.25, -7]
+    for factor in safety_factor:
+        with pytest.raises(ValueError, match='Window safety factor < 1'):
+            test_thickness = tools.calculate_window_thk(
+                length,
+                width,
+                factor,
+                pressure,
+                rupture_modulus
+            )
+
+    # non-numeric safety factor
+    safety_factor = 'BruceCambpell'
+    with pytest.raises(TypeError, match='Non-numeric window safety factor'):
+        test_thickness = tools.calculate_window_thk(
+            length,
+            width,
+            safety_factor,
+            pressure,
+            rupture_modulus
+        )
+
+    # good input
+    safety_factor = 4
+    test_thickness = tools.calculate_window_thk(
+        length,
+        width,
+        safety_factor,
+        pressure,
+        rupture_modulus
+    )
+    test_thickness = test_thickness.to(desired_thickness.units).magnitude
+    desired_thickness = desired_thickness.magnitude
+    assert abs(test_thickness - desired_thickness) / test_thickness < 0.01

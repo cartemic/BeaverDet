@@ -19,7 +19,8 @@ from . import accessories as acc
 
 
 def get_flange_limits_from_csv(
-        group=2.3):
+        group=2.3
+):
     """
     Reads in flange pressure limits as a function of temperature for different
     pressure classes per ASME B16.5. Temperature is in Centigrade and pressure
@@ -86,7 +87,8 @@ def get_flange_limits_from_csv(
 def lookup_flange_class(
         temperature,
         pressure,
-        desired_material):
+        desired_material
+):
     """
     Finds the minimum allowable flange class per ASME B16.5 for a give flange
     temperature and tube pressure.
@@ -171,7 +173,8 @@ def lookup_flange_class(
 
 def calculate_spiral_diameter(
         pipe_id,
-        blockage_ratio):
+        blockage_ratio
+):
     """
     Calculates the diameter of a Shchelkin spiral corresponding to a given
     blockage ratio within a pipe of given inner diameter.
@@ -209,7 +212,8 @@ def calculate_spiral_diameter(
 
 def calculate_blockage_ratio(
         tube_inner_diameter,
-        blockage_diameter):
+        blockage_diameter
+):
     """
     Calculates the blockage ratio of a Shchelkin spiral within a detonation
     tube.
@@ -257,7 +261,8 @@ def calculate_window_sf(
         width,
         thickness,
         pressure,
-        rupture_modulus):
+        rupture_modulus
+):
     """
     This function calculates the safety factor of a clamped rectangular window
     given window dimensions, design pressure, and material rupture modulus
@@ -278,7 +283,8 @@ def calculate_window_sf(
 
     Returns
     -------
-
+    safety_factor : float
+        Window factor of safety
     """
 
     acc.check_pint_quantity(
@@ -316,3 +322,74 @@ def calculate_window_sf(
     )
 
     return safety_factor
+
+def calculate_window_thk(
+        length,
+        width,
+        safety_factor,
+        pressure,
+        rupture_modulus
+):
+    """
+    This function calculates the thickness of a clamped rectangular window
+    which gives the desired safety factor.
+
+    Parameters
+    ----------
+    length : pint quantity with length units
+        Window unsupported (viewing) length
+    width : pint quantity with length units
+        Window unsupported (viewing) width
+    safety_factor : float
+        Safety factor
+    pressure : pint quantity with pressure units
+        Design pressure differential across window at which factor of safety is
+        to be calculated
+    rupture_modulus : pint quantity with pressure units
+        Rupture modulus of desired window material.
+
+    Returns
+    -------
+    thickness : float
+        Window factor of safety
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    acc.check_pint_quantity(
+        length,
+        'length',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        width,
+        'length',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        pressure,
+        'pressure',
+        ensure_positive=True
+    )
+    acc.check_pint_quantity(
+        rupture_modulus,
+        'pressure',
+        ensure_positive=True
+    )
+
+    # Ensure safety factor is numeric and > 1
+    try:
+        if safety_factor < 1:
+            raise ValueError('Window safety factor < 1')
+    except TypeError:
+        raise TypeError('Non-numeric window safety factor')
+
+    thickness = acc.window_sympy_solver(
+        length=length.to_base_units().magnitude,
+        width=width.to_base_units().magnitude,
+        safety_factor=safety_factor,
+        pressure=pressure.to_base_units().magnitude,
+        rupture_modulus=rupture_modulus.to_base_units().magnitude
+    )
+
+    return quant(thickness, width.to_base_units().units)
