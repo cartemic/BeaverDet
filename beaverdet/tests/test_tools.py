@@ -314,7 +314,7 @@ def test_calculate_window_thk():
     safety_factor = [0.25, -7]
     for factor in safety_factor:
         with pytest.raises(ValueError, match='Window safety factor < 1'):
-            test_thickness = tools.calculate_window_thk(
+            tools.calculate_window_thk(
                 length,
                 width,
                 factor,
@@ -325,7 +325,7 @@ def test_calculate_window_thk():
     # non-numeric safety factor
     safety_factor = 'BruceCambpell'
     with pytest.raises(TypeError, match='Non-numeric window safety factor'):
-        test_thickness = tools.calculate_window_thk(
+        tools.calculate_window_thk(
             length,
             width,
             safety_factor,

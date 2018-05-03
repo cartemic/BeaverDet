@@ -393,3 +393,6 @@ def calculate_window_thk(
     )
 
     return quant(thickness, width.to_base_units().units)
+
+
+

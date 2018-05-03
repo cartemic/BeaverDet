@@ -389,3 +389,54 @@ def test_window_sympy_solver():
     for index in range(len(args)):
         test_output = accessories.window_sympy_solver(**args[index])
         assert abs(test_output - good_solutions[index]) < 0.1
+
+
+def test_calculate_laminar_flamespeed():
+    """
+    Tests the calculate_laminar_flamespeed function
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    initial_temperature = quant(300, 'K')
+    initial_pressure = quant(1, 'atm')
+
+    # test with bad species
+    species = {
+        'Wayne': 3,
+        'CH4': 7,
+        'Garth': 5
+    }
+    bad_string = 'Species not in mechanism:\nWayne\nGarth\n'
+    with pytest.raises(ValueError, match=bad_string):
+        accessories.calculate_laminar_flamespeed(
+            initial_temperature,
+            initial_pressure,
+            species,
+            'gri30.cti'
+        )
+
+    # test with no species
+    species = {}
+    with pytest.raises(ValueError, match='Empty species dictionary'):
+        accessories.calculate_laminar_flamespeed(
+            initial_temperature,
+            initial_pressure,
+            species,
+            'gri30.cti'
+        )
+
+    # test with good species
+    species = {
+        'CH4': 0.095057034220532327,
+        'O2': 0.19011406844106465,
+        'N2': 0.71482889733840305
+    }
+    good_result = 0.41433832370809709
+    test_flamespeed = accessories.calculate_laminar_flamespeed(
+        initial_temperature,
+        initial_pressure,
+        species,
+        'gri30.cti'
+    )
+    assert abs(test_flamespeed.magnitude - good_result) / good_result < 1e-7

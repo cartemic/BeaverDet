@@ -16,6 +16,7 @@ import warnings
 import pint
 import sympy as sp
 import numpy as np
+import cantera as ct
 
 
 def check_materials():
@@ -131,7 +132,11 @@ def collect_tube_materials():
     return output_dict
 
 
-def check_pint_quantity(quantity, dimension_type, ensure_positive=False):
+def check_pint_quantity(
+        quantity,
+        dimension_type,
+        ensure_positive=False
+):
     """
     This function checks to make sure that a quantity is an instance of a pint
     quantity, and that it has the correct units.
@@ -180,7 +185,7 @@ def check_pint_quantity(quantity, dimension_type, ensure_positive=False):
         raise ValueError('Non-numeric pint quantity')
 
     if ensure_positive:
-        if quantity.magnitude < 0:
+        if quantity.to_base_units().magnitude < 0:
             raise ValueError('Input value < 0')
 
     if units[dimension_type] != actual_dimension_type:
@@ -194,7 +199,8 @@ def check_pint_quantity(quantity, dimension_type, ensure_positive=False):
 
 
 def window_sympy_solver(
-        **kwargs):
+        **kwargs
+):
     """
     This function uses sympy to solve for a missing window measurement. Inputs
     are five keyword arguments, with the following possible values:
@@ -292,3 +298,71 @@ def window_sympy_solver(
     else:
         warnings.warn('Window inputs resulted in imaginary solution.')
         return np.NaN
+
+
+def calculate_laminar_flamespeed(
+        initial_temperature,
+        initial_pressure,
+        species_dict,
+        mechanism,
+):
+    """
+    This function uses cantera to calculate the laminar flame speed of a given
+    gas mixture.
+
+    Parameters
+    ----------
+    initial_temperature : pint quantity
+        Initial temperature of gas mixture
+    initial_pressure : pint quantity
+        Initial pressure of gas mixture
+    species_dict : dict
+        Dictionary with species names (all caps) as keys and moles as values
+    mechanism : str
+        String of mechanism to use (e.g. 'gri30.cti')
+
+    Returns
+    -------
+    Laminar flame speed in m/s as a pint quantity
+    """
+    gas = ct.Solution(mechanism)
+
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    check_pint_quantity(
+        initial_pressure,
+        'pressure',
+        ensure_positive=True
+    )
+    check_pint_quantity(
+        initial_temperature,
+        'temperature',
+        ensure_positive=True
+    )
+
+    # ensure species dict isn't empty
+    if len(species_dict) == 0:
+        raise ValueError('Empty species dictionary')
+
+    # ensure all species are in the mechanism file
+    bad_species = ''
+    good_species = gas.species_names
+    for species in species_dict:
+        if species not in good_species:
+            bad_species += species + '\n'
+    if len(bad_species) > 0:
+        raise ValueError('Species not in mechanism:\n' + bad_species)
+
+    gas.TPX = (
+        initial_temperature.to('K').magnitude,
+        initial_pressure.to('Pa').magnitude,
+        species_dict
+    )
+
+    # find laminar flame speed
+    flame = ct.FreeFlame(gas)
+    flame.solve(loglevel=0)
+
+    return quant(flame.u[0], 'm/s')
+
