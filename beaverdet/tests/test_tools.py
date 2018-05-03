@@ -140,14 +140,12 @@ def test_lookup_flange_class():
     temp_low = quant(-100, ureg.degC)       # temperature too low
     temp_high = quant(500, ureg.degC)       # temperature too high
     temp_good = quant(350, ureg.degC)       # temperature and units good
-    temp_badunits = quant(350, ureg.C)      # temperature good, units bad
 
     # set pressures for various tests. Values are selected to create desired
     # error conditions based on known information from 316L P-T curves.
     press_low = quant(-10, ureg.bar)        # pressure too low
     press_high = quant(350, ureg.bar)       # pressure too high
     press_good = quant(125, ureg.bar)       # pressure and units good
-    press_badunits = quant(125, ureg.barn)  # pressure good, units bad
 
     # pick material group and import lookup dataframe
     # note: T = 350 °C and P = 125 bar for group 2.3, class should be 1500
