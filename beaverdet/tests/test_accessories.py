@@ -37,7 +37,7 @@ def test_check_materials():
     file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   '..', 'tube_design_tools', 'lookup_data')
 
-    class FakeOpen():
+    class FakeOpen:
         """
         fake open()
         """
@@ -58,11 +58,12 @@ def test_check_materials():
             """
             return None
 
-        class FakeFile():
+        class FakeFile:
             """
             fake file used for FakeOpen
             """
-            def readline(self):
+            @staticmethod
+            def readline(*_):
                 """
                 fake file for use with FakeOpen()
                 """
@@ -135,11 +136,12 @@ def test_check_materials():
                         'asdfflangegroup1asd',
                         'asdfstressweldedasdg']
             with patch('os.listdir', new=fake_listdir):
-                class NewFakeFile():
+                class NewFakeFile:
                     """
                     FakeFile class that should fail material lookup
                     """
-                    def readline(self):
+                    @staticmethod
+                    def readline(*_):
                         """
                         readline function that should fail material lookup
                         for thing1
