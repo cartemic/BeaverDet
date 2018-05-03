@@ -14,6 +14,7 @@ import os
 from unittest.mock import patch
 import pytest
 import pandas as pd
+import numpy as np
 import pint
 from ..tube_design_tools import accessories
 
@@ -40,19 +41,18 @@ def test_check_materials():
         """
         fake open()
         """
-        def __init__(self, *args):
+        def __init__(self, *_):
             """
             dummy init statement
             """
-            return None
 
-        def __enter__(self, *args):
+        def __enter__(self, *_):
             """
             enter statement that returns a FakeFile
             """
             return self.FakeFile()
 
-        def __exit__(self, *args):
+        def __exit__(self, *_):
             """
             dummy exit statement
             """
@@ -68,13 +68,13 @@ def test_check_materials():
                 """
                 return 'ASDF,thing0,thing1\n'
 
-    def fake_collect_tube_materials(*args):
+    def fake_collect_tube_materials(*_):
         """
         fake collect_tube_materials()
         """
         return {'thing0': 'group0', 'thing1': 'group1'}
 
-    def fake_listdir(*args):
+    def fake_listdir(*_):
         """
         fake os.listdir() which should work 100%
         """
@@ -99,7 +99,7 @@ def test_check_materials():
                 assert accessories.check_materials() is None
 
             # Test if material group lookup fails
-            def fake_listdir(*args):
+            def fake_listdir(*_):
                 """
                 listdir function which should fail group1llookup
                 """
@@ -111,7 +111,7 @@ def test_check_materials():
                     accessories.check_materials()
 
             # Test for warning if pipe specs aren't welded or seamless
-            def fake_listdir(*args):
+            def fake_listdir(*_):
                 """
                 listdir function which should warn about welded vs.
                 seamless
@@ -127,7 +127,7 @@ def test_check_materials():
                     accessories.check_materials()
 
             # Test for missing material
-            def fake_listdir(*args):
+            def fake_listdir(*_):
                 """
                 listdir function that should work 100%
                 """
@@ -154,7 +154,7 @@ def test_check_materials():
 
             # Test for lack of flange or stress .csv file in lookup
             # directory
-            def fake_listdir(*args):
+            def fake_listdir(*_):
                 """
                 listdir function that should result in flange/stress error
                 """
@@ -307,3 +307,83 @@ def test_check_pint_quantity():
         quant(-8, ureg.inch),
         'length'
     )
+
+
+def test_window_sympy_solver():
+    """
+    Tests the check_pint_quantity() function, which makes sure a variable is
+    a numeric pint quantity of the correct dimensionality. It can also ensure
+    that the magnitude of the quantity is > 0.
+
+   Conditions tested:
+        - pass too few arguments
+        - pass bad keyword argument
+        - pass arguments that cause an imaginary answer
+        - good input
+    Returns
+    """
+    # pass too few arguments
+    error_msg = 'Incorrect number of arguments sent to solver'
+    args = [
+        {
+            'length': 5,
+            'width': 4,
+            'thickness': 2,
+            'pressure': 2
+        },
+        {
+            'length': 5,
+            'width': 4,
+            'thickness': 2,
+            'pressure': 2,
+            'rupture_modulus': 10,
+            'safety_factor': 4
+        }
+    ]
+    for argument_dict in args:
+        with pytest.raises(ValueError, match=error_msg):
+            accessories.window_sympy_solver(
+                **argument_dict
+            )
+
+    # pass bad keyword argument
+    kwargs = args[0]
+    kwargs['pulled_pork'] = 9
+    with pytest.raises(ValueError, match='Bad keyword argument:\npulled_pork'):
+        accessories.window_sympy_solver(**kwargs)
+
+    # pass arguments that cause an imaginary answer
+    kwargs = {
+        'length': 20,
+        'width': 50,
+        'safety_factor': 4,
+        'pressure': -139,
+        'rupture_modulus': 5300
+    }
+    with pytest.warns(Warning,
+                      match='Window inputs resulted in imaginary solution.'):
+        test_nan = accessories.window_sympy_solver(**kwargs)
+
+    assert test_nan is np.nan
+
+    # good input
+    args = [
+        {
+            'length': 20,
+            'width': 50,
+            'safety_factor': 4,
+            'pressure': 14.7,
+            'rupture_modulus': 5300
+        },
+        {
+            'length': 20,
+            'width': 50,
+            'thickness': 1.2,
+            'pressure': 14.7,
+            'rupture_modulus': 5300
+        }
+    ]
+    good_solutions = [1.2, 4.]
+    for index in range(len(args)):
+        test_output = accessories.window_sympy_solver(**args[index])
+        assert abs(test_output - good_solutions[index]) < 0.1
