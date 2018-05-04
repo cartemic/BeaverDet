@@ -17,7 +17,7 @@ install:
     - conda update -q --all
     - conda config --append channels conda-forge
     - conda env create -qf test-environment.yaml;
-    - conda install -c cantera cantera
     - source activate test-environment;
+    - conda install -c cantera cantera
 script:
     - pytest -vv --cov=./;
