@@ -132,15 +132,16 @@ def get_material_groups():
 
     Returns
     -------
-
+    groups_dict
     """
     materials_dataframe = collect_tube_materials()
-    grades = materials_dataframe.Grade.values
-    groups = test.group.values
+    grades = materials_dataframe.Grade.values.astype(str)
+    groups = materials_dataframe.Group.values.astype(str)
+    groups_dict = {}
     for [grade, group] in zip(grades, groups):
+        groups_dict[grade] = group
 
-
-
+    return groups_dict
 
 
 def check_pint_quantity(

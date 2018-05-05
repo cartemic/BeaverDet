@@ -106,7 +106,7 @@ def lookup_flange_class(
         raise ValueError('Desired material non-string input.')
 
     # read in available materials and their associated groups
-    materials_dict = acc.collect_tube_materials()
+    materials_dict = acc.get_material_groups()
 
     # ensure desired_material is in materials_dict
     if desired_material not in materials_dict.keys():

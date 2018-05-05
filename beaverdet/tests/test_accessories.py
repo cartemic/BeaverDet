@@ -24,7 +24,7 @@ def test_check_materials():
     Tests the check_materials function, which checks the materials_list
     csv file to make sure that each material contained within it has a
     corresponding flange ratings material group and tube stress limits.
-    It relies on open(), collect_tube_materials(), and os.listdir(), so
+    It relies on open(), get_material_groups(), and os.listdir(), so
     these functions have been replaced with fakes to facilitate testing.
 
     Conditions tested:
@@ -69,9 +69,9 @@ def test_check_materials():
                 """
                 return 'ASDF,thing0,thing1\n'
 
-    def fake_collect_tube_materials(*_):
+    def fake_get_material_groups(*_):
         """
-        fake collect_tube_materials()
+        fake get_material_groups()
         """
         return {'thing0': 'group0', 'thing1': 'group1'}
 
@@ -92,9 +92,9 @@ def test_check_materials():
         print()
         patched_module = __name__.split('.')[0] + \
             '.tube_design_tools.accessories.' + \
-            'collect_tube_materials'
+            'get_material_groups'
         with patch(patched_module,
-                   new=fake_collect_tube_materials):
+                   new=fake_get_material_groups()):
             with patch('os.listdir', new=fake_listdir):
                 # Test if function runs correctly with good input
                 assert accessories.check_materials() is None
@@ -168,9 +168,9 @@ def test_check_materials():
                     accessories.check_materials()
 
 
-def test_collect_tube_materials():
+def test_get_material_groups():
     """
-    Tests the collect_tube_materials() function, which reads in available
+    Tests the get_material_groups() function, which reads in available
     materials and returns a dictionary with materials as keys and their
     appropriate ASME B16.5 material groups as values
 
@@ -180,8 +180,14 @@ def test_collect_tube_materials():
         - values are imported correctly
     """
     # file information
-    file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  '..', 'tube_design_tools', 'lookup_data')
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        '..',
+        'tube_design_tools',
+        'lookup_data'
+    )
     file_name = 'materials_list.csv'
     file_location = os.path.join(file_directory, file_name)
 
@@ -190,24 +196,17 @@ def test_collect_tube_materials():
 
     # check for error handling when file does not exist by removing the file
     # extension
-    dataframe = pd.read_csv(file_location)
     bad_location = file_location[:-4]
     os.rename(file_location, bad_location)
     with pytest.raises(ValueError, message=file_name+' does not exist'):
-        accessories.collect_tube_materials()
+        accessories.get_material_groups()
 
     # create a blank file
     open(file_location, 'a').close()
 
     # check for proper error handling when file is blank
     with pytest.raises(ValueError, message=file_name+' is empty'):
-        accessories.collect_tube_materials()
-
-    # create a test file with too many entries
-    dataframe['bad'] = dataframe['Group'].values
-    dataframe.to_csv(file_location)
-    with pytest.warns(Warning, match=file_name+' contains extra entries'):
-        accessories.collect_tube_materials()
+        accessories.get_material_groups()
 
     # delete the test file and reinstate the original
     os.remove(file_location)
@@ -220,20 +219,19 @@ def test_collect_tube_materials():
     # load data into a test dataframe
     test_dataframe = pd.read_csv(file_location)
 
-    # load data into a dictionary using collect_tube_materials()
-    test_output = accessories.collect_tube_materials()
+    # load data into a dictionary using get_material_groups()
+    test_output = accessories.get_material_groups()
 
     # collect keys and values from dataframe that should correspond to
     # those of the dictionary
-    keys_from_dataframe = test_dataframe[test_dataframe.keys()[0]]
-    values_from_dataframe = test_dataframe[test_dataframe.keys()[1]]
+    keys_from_dataframe = test_dataframe.Grade.values.astype(str)
+    values_from_dataframe = test_dataframe.Group.values.astype(str)
 
-    for i, key in enumerate(keys_from_dataframe):
+    for index, key in enumerate(keys_from_dataframe):
         # make sure each set of values are approximately equal
-        # NOTE: this uses almost equal because of floating point errors
-        dict_value = float(test_output[key])
-        dataframe_value = float(values_from_dataframe[i])
-        assert abs(dict_value - dataframe_value) <= 1e-7
+        dict_value = test_output[key]
+        dataframe_value = values_from_dataframe[index]
+        assert dict_value == dataframe_value
 
 
 def test_check_pint_quantity():
