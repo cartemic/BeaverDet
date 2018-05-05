@@ -23,11 +23,15 @@ import cantera as ct
 def check_materials():
     """
     Makes sure that the materials in materials_list.csv have stress limits and
-    flange ratings. This function relies on collect_tube_materials().
+    flange ratings. This function relies on get_material_groups().
     """
     # collect files
-    file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  'lookup_data')
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        'lookup_data'
+    )
     my_files = os.listdir(file_directory)
     flange_ratings = [file for file in my_files if "flange" in file.lower()]
     stress_limits = [file for file in my_files if "stress" in file.lower()]

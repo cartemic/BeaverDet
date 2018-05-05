@@ -34,8 +34,13 @@ def test_check_materials():
         - missing material
         - lack of flange or stress .csv file in lookup directory
     """
-    file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  '..', 'tube_design_tools', 'lookup_data')
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        '..',
+        'tube_design_tools',
+        'lookup_data')
 
     class FakeOpen:
         """
@@ -94,7 +99,7 @@ def test_check_materials():
             '.tube_design_tools.accessories.' + \
             'get_material_groups'
         with patch(patched_module,
-                   new=fake_get_material_groups()):
+                   new=fake_get_material_groups):
             with patch('os.listdir', new=fake_listdir):
                 # Test if function runs correctly with good input
                 assert accessories.check_materials() is None
@@ -168,6 +173,10 @@ def test_check_materials():
                     accessories.check_materials()
 
 
+def test_collect_tube_materials():
+    pass
+
+
 def test_get_material_groups():
     """
     Tests the get_material_groups() function, which reads in available
@@ -226,6 +235,8 @@ def test_get_material_groups():
     # those of the dictionary
     keys_from_dataframe = test_dataframe.Grade.values.astype(str)
     values_from_dataframe = test_dataframe.Group.values.astype(str)
+
+    print(keys_from_dataframe)
 
     for index, key in enumerate(keys_from_dataframe):
         # make sure each set of values are approximately equal
