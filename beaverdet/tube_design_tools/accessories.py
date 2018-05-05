@@ -16,6 +16,7 @@ import warnings
 import pint
 import sympy as sp
 import numpy as np
+import pandas as pd
 import cantera as ct
 
 
@@ -366,3 +367,101 @@ def calculate_laminar_flamespeed(
     flame.solve(loglevel=0)
 
     return quant(flame.u[0], 'm/s')
+
+
+def import_pipe_schedules():
+    """
+    This function imports pipe schedule dimensions from a fixed location
+
+    Returns
+    -------
+    schedule_info : pandas dataframe
+        Dataframe of available pipe schedules and their associated dimensions
+    """
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        'lookup_data'
+    )
+    file_name = 'pipe_schedules.csv'
+    file_location = os.path.relpath(
+        os.path.join(
+            file_directory,
+            file_name
+        )
+    )
+
+    schedule_info = pd.read_csv(file_location, index_col=0).replace(' ', np.NaN)
+    return schedule_info
+
+
+def get_available_pipe_sizes(
+        pipe_schedule,
+        schedule_info
+):
+    """
+    This function finds available nominal pipe sizes for a given pipe schedule
+    (in inches)
+
+    Parameters
+    ----------
+    pipe_schedule: str
+        Desired pipe schedule (e.g. 40, 80s, XXS, etc.)
+    schedule_info: pandas dataframe
+        Dataframe of available schedules from import_pipe_schedules()
+
+    Returns
+    -------
+    available_sizes : list
+        List of available sizes for the given pipe schedule (in inches)
+    """
+    try:
+        available_sizes = list(
+            schedule_info[pipe_schedule].dropna().to_dict().keys()
+        )
+    except KeyError:
+        raise ValueError('Pipe class not found')
+
+    return available_sizes
+
+
+def get_pipe_dimensions(
+        pipe_schedule,
+        nominal_size
+):
+    """
+
+    Parameters
+    ----------
+    pipe_schedule : str
+        String of desired pipe schedule (e.g. 40, 80s, XXS, etc.)
+    nominal_size : str
+        String of desired nominal pipe size in inches (e.g. 1, 1/2, 2 1/2, etc.)
+
+    Returns
+    -------
+    list
+        [outer diameter, inner diameter] as pint quantities
+
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # collect pipe schedules
+    pipe_schedule_dataframe = import_pipe_schedules()
+    avaliable_pipe_sizes = get_available_pipe_sizes(
+        pipe_schedule,
+        pipe_schedule_dataframe
+    )
+
+    # ensure size exists
+    if nominal_size not in avaliable_pipe_sizes:
+        raise ValueError('Nominal size not found for given pipe schedule')
+
+    outer_diameter = pipe_schedule_dataframe['OD'][nominal_size]
+    wall_thickness = pipe_schedule_dataframe[pipe_schedule][nominal_size]
+    inner_diameter = outer_diameter - 2 * wall_thickness
+
+    return [quant(outer_diameter, ureg.inch),
+            quant(inner_diameter, ureg.inch)]
