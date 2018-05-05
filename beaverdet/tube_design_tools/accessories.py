@@ -392,7 +392,7 @@ def import_pipe_schedules():
         )
     )
 
-    schedule_info = pd.read_csv(file_location, index_col=0).replace(' ', np.NaN)
+    schedule_info = pd.read_csv(file_location, index_col=0)
     return schedule_info
 
 

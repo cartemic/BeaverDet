@@ -440,3 +440,70 @@ def test_calculate_laminar_flamespeed():
         'gri30.cti'
     )
     assert abs(test_flamespeed.magnitude - good_result) / good_result < 0.05
+
+
+def test_import_pipe_schedules():
+    """
+    Tests import_pipe_schedules
+    """
+    schedule_dataframe = accessories.import_pipe_schedules()
+    good_values = [
+        ('5s', '1/2', 0.065),
+        ('40', '2 1/2', 0.203),
+        ('XXH', '8', 0.875)
+    ]
+    for (schedule, size, thickness) in good_values:
+        assert schedule_dataframe[schedule][size] == thickness
+
+
+def test_get_available_pipe_sizes():
+    """
+    Tests get_available_pipe_sizes
+
+    Conditions tested:
+        - good input
+        - non-existent pipe size
+    """
+    schedule_info = accessories.import_pipe_schedules()
+
+    # good input
+    test_sizes = accessories.get_available_pipe_sizes('40', schedule_info)
+    assert isinstance(test_sizes, list)
+    assert '36' in test_sizes
+    assert '42' not in test_sizes
+
+    # non-existent pipe size
+    with pytest.raises(ValueError, match='Pipe class not found'):
+        accessories.get_available_pipe_sizes(
+            'how do you type with boxing gloves on?',
+            schedule_info
+        )
+
+
+def test_get_pipe_dimensions():
+    """
+    Tests get_pipe_dimensions
+
+    Conditions tested:
+        - good input
+        - bad pipe size
+    """
+    # good input
+    [outer_diameter, inner_diameter] = accessories.get_pipe_dimensions(
+        pipe_schedule='80',
+        nominal_size='6'
+    )
+    assert outer_diameter.magnitude == 6.625
+    assert inner_diameter.magnitude == 5.761
+    assert outer_diameter.units.format_babel() == 'inch'
+    assert inner_diameter.units.format_babel() == 'inch'
+
+    # bad pipe size
+    with pytest.raises(
+            ValueError,
+            match='Nominal size not found for given pipe schedule'
+    ):
+        accessories.get_pipe_dimensions(
+            pipe_schedule='80',
+            nominal_size='really big'
+        )
