@@ -88,49 +88,59 @@ def check_materials():
 
 def collect_tube_materials():
     """
-    Reads in a csv file containing tube materials and their corresponding
-    ASME B16.5 material groups. This should be used to
-        a. determine available materials and
-        b. determine the correct group so that flange pressure limits can be
-            found as a function of temperature
+    Reads in a csv file containing tube materials, their corresponding
+    ASME B16.5 material groups, and selected material properties.
 
-    Inputs:
-        none
-
-    Outputs:
-       tube_materials:  dictionary with metal names as keys and
-       material groups as values
+    Returns
+    -------
+    materials_dataframe : pandas dataframe
+        Dataframe of materials and their corresponding material groups and
+        properties
     """
-    file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  'lookup_data')
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        'lookup_data'
+    )
     file_name = 'materials_list.csv'
-    file_location = os.path.relpath(os.path.join(file_directory, file_name))
-    output_dict = {}
+    file_location = os.path.relpath(
+        os.path.join(
+            file_directory,
+            file_name
+        )
+    )
 
     # read in csv and extract information
     if os.path.exists(file_location):
-        with open(file_location) as file:
-            for num, line in enumerate(file):
-                # skip the first line of the file, since it contains only
-                # column titles and no data
-                if num > 0:
-                    # extract each material name and corresponding group
-                    line = line.strip().split(',')
-                    output_dict[line[0]] = line[1]
+        try:
+            materials_dataframe = pd.read_csv(file_location)
+        except pd.errors.EmptyDataError:
+            raise ValueError(file_name + ' is empty')
 
-                    # warn the user if materials_list.csv has more than 2
-                    # columns
-                    if len(line) > 2:
-                        warnings.warn(file_name + ' contains extra entries')
     else:
         # raise an exception if the file doesn't exist
         raise ValueError(file_name + ' does not exist')
 
-    # raise an exception if the file is empty
-    if not bool(output_dict):
-        raise ValueError(file_name + ' is empty')
+    return materials_dataframe
 
-    return output_dict
+
+def get_material_groups():
+    """
+    Collects materials and their associated ASME B16.5 material groups from a
+    dataframe of material properties
+
+    Returns
+    -------
+
+    """
+    materials_dataframe = collect_tube_materials()
+    grades = materials_dataframe.Grade.values
+    groups = test.group.values
+    for [grade, group] in zip(grades, groups):
+
+
+
 
 
 def check_pint_quantity(
