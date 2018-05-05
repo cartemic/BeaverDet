@@ -31,7 +31,7 @@ def check_materials():
     my_files = os.listdir(file_directory)
     flange_ratings = [file for file in my_files if "flange" in file.lower()]
     stress_limits = [file for file in my_files if "stress" in file.lower()]
-    materials_list = collect_tube_materials()
+    materials_list = get_material_groups()
 
     # make sure things were actually loaded
     if not bool(flange_ratings + stress_limits):
@@ -53,7 +53,11 @@ def check_materials():
 
         # check the first row of the file in question to extract the names of
         # the materials that it contains stress limits for
-        with open(file_directory + file, 'r') as current_file:
+        file_location = os.path.join(
+            file_directory,
+            file
+        )
+        with open(file_location, 'r') as current_file:
             # read the first line, strip off carriage return, and split by
             # comma separators. Ignore first value, as this is temperature.
             materials = current_file.readline().strip().split(',')[1:]
