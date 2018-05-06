@@ -564,14 +564,18 @@ def test_get_pipe_dimensions():
         - bad pipe size
     """
     # good input
-    [outer_diameter, inner_diameter] = accessories.get_pipe_dimensions(
+    [outer_diameter,
+     inner_diameter,
+     wall_thickness] = accessories.get_pipe_dimensions(
         pipe_schedule='80',
         nominal_size='6'
     )
-    assert outer_diameter.magnitude == 6.625
-    assert inner_diameter.magnitude == 5.761
+    assert outer_diameter.magnitude - 6.625 < 1e-7
+    assert inner_diameter.magnitude - 5.761 < 1e-7
+    assert wall_thickness.magnitude - 0.432 < 1e-7
     assert outer_diameter.units.format_babel() == 'inch'
     assert inner_diameter.units.format_babel() == 'inch'
+    assert wall_thickness.units.format_babel() == 'inch'
 
     # bad pipe size
     with pytest.raises(

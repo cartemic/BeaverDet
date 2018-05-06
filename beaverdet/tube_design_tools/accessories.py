@@ -461,7 +461,7 @@ def get_pipe_dimensions(
     Returns
     -------
     list
-        [outer diameter, inner diameter] as pint quantities
+        [outer diameter, inner diameter, wall thickness] as pint quantities
 
     """
     ureg = pint.UnitRegistry()
@@ -483,4 +483,5 @@ def get_pipe_dimensions(
     inner_diameter = outer_diameter - 2 * wall_thickness
 
     return [quant(outer_diameter, ureg.inch),
-            quant(inner_diameter, ureg.inch)]
+            quant(inner_diameter, ureg.inch),
+            quant(wall_thickness, ureg.inch)]
