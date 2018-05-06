@@ -40,7 +40,8 @@ def test_check_materials():
         ),
         '..',
         'tube_design_tools',
-        'lookup_data')
+        'lookup_data'
+    )
 
     class FakeOpen:
         """
@@ -174,7 +175,72 @@ def test_check_materials():
 
 
 def test_collect_tube_materials():
-    pass
+    """
+    Tests collect_tube_materials
+
+    Conditions tested:
+        - file doesn't exist
+        - file is empty
+        - good input
+    """
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        '..',
+        'tube_design_tools',
+        'lookup_data'
+    )
+    file_name = 'materials_list.csv'
+    file_location = os.path.relpath(
+        os.path.join(
+            file_directory,
+            file_name
+        )
+    )
+    new_file_name = 'materials_list_original'
+    new_file_location = os.path.relpath(
+        os.path.join(
+            file_directory,
+            new_file_name
+        )
+    )
+
+    # rename materials_list.csv for testing
+    os.rename(file_location, new_file_location)
+
+    # file doesn't exist
+    with pytest.raises(
+        ValueError,
+        match=file_name+' does not exist'
+    ):
+        accessories.collect_tube_materials()
+
+    # file is empty
+    open(file_location, 'a').close()
+    with pytest.raises(
+        ValueError,
+        match=file_name+' is empty'
+    ):
+        accessories.collect_tube_materials()
+
+    # good input
+    fake_columns = [
+        'Grade', 'Group', 'ElasticModulus', 'Density', 'Poisson'
+    ]
+    fake_data = [
+        304, 2.1, 200, 7.8, 0.28
+    ]
+    test_dataframe = pd.DataFrame(fake_data, fake_columns).transpose()
+    test_dataframe.to_csv(file_location, index=False)
+    test_materials = accessories.collect_tube_materials()
+    assert test_materials.shape[1] == len(fake_data)
+    for column, data in zip(fake_columns, fake_data):
+        assert test_materials[column][0] == data
+
+    # reinstate original materials list
+    os.remove(file_location)
+    os.rename(new_file_location, file_location)
 
 
 def test_get_material_groups():
