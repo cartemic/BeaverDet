@@ -130,6 +130,16 @@ def collect_tube_materials():
         # raise an exception if the file doesn't exist
         raise ValueError(file_name + ' does not exist')
 
+    # apply units
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+    materials_dataframe.ElasticModulus = [
+        quant(item, 'GPa') for item in materials_dataframe.ElasticModulus.values
+    ]
+    materials_dataframe.Density = [
+        quant(item, 'g/cm^3') for item in materials_dataframe.Density.values
+    ]
+
     return materials_dataframe
 
 

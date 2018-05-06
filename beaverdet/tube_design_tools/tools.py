@@ -15,6 +15,7 @@ import os
 from math import sqrt
 import pint
 import pandas as pd
+import numpy as np
 from . import accessories as acc
 
 
@@ -323,6 +324,7 @@ def calculate_window_sf(
 
     return safety_factor
 
+
 def calculate_window_thk(
         length,
         width,
@@ -395,4 +397,63 @@ def calculate_window_thk(
     return quant(thickness, width.to_base_units().units)
 
 
+def get_pipe_dlf(
+        pipe_material,
+        pipe_schedule,
+        nominal_pipe_size,
+        cj_speed,
+        plus_or_minus=0.1
+):
+    acc.check_pint_quantity(
+        cj_speed,
+        'velocity',
+        ensure_positive=True
+    )
 
+    if not (0 < plus_or_minus < 1):
+        raise ValueError('plus_or_minus factor outside of (0, 1)')
+
+    # get pipe dimensions
+    [pipe_id,
+     pipe_od,
+     pipe_thk] = acc.get_pipe_dimensions(
+        pipe_schedule,
+        nominal_pipe_size
+    )
+
+    # get material properties
+    properties_dataframe = acc.collect_tube_materials().set_index('Grade')
+    if pipe_material not in properties_dataframe.index:
+        raise ValueError('Pipe material not found in materials_list.csv')
+    elastic_modulus = properties_dataframe['ElasticModulus'][pipe_material].\
+        to('Pa').magnitude
+    density = properties_dataframe['Density'][pipe_material].\
+        to('kg/m^3').magnitude
+    poisson = properties_dataframe['Poisson'][pipe_material]
+
+    # set geometry
+    pipe_thk = pipe_thk.to('m').magnitude
+    pipe_od = pipe_od.to('m').magnitude
+    pipe_id = pipe_id.to('m').magnitude
+    radius = np.average([pipe_od, pipe_id]) / 2.
+
+    # set limits for 'approximately Vcrit'
+    bounds = cj_speed.to('m/s').magnitude * np.array([
+        1. + plus_or_minus,
+        1. - plus_or_minus
+    ])
+
+    # calculate critical velocity
+    crit_velocity = (
+        (elastic_modulus ** 2 * pipe_thk ** 2) /
+        (3. * density ** 2 * radius ** 2 * (1. - poisson ** 2))
+    ) ** (1. / 4)
+
+    if crit_velocity < bounds[[0]]:
+        dynamic_load_factor = 1.
+    elif crit_velocity > bounds[1]:
+        dynamic_load_factor = 2.
+    else:
+        dynamic_load_factor = 4.
+
+    return dynamic_load_factor

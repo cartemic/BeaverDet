@@ -234,9 +234,23 @@ def test_collect_tube_materials():
     test_dataframe = pd.DataFrame(fake_data, fake_columns).transpose()
     test_dataframe.to_csv(file_location, index=False)
     test_materials = accessories.collect_tube_materials()
+    # check length
     assert test_materials.shape[1] == len(fake_data)
+    # check units
+    assert (test_materials.ElasticModulus[0].units.format_babel()
+            ==
+            'gigapascal')
+    assert (test_materials.Density[0].units.format_babel()
+            ==
+            'gram / centimeter ** 3')
     for column, data in zip(fake_columns, fake_data):
-        assert test_materials[column][0] == data
+        current_item = test_materials[column][0]
+        try:
+            # remove units from pint quantities
+            current_item = current_item.magnitude
+        except AttributeError:
+            pass
+        assert current_item == data
 
     # reinstate original materials list
     os.remove(file_location)
