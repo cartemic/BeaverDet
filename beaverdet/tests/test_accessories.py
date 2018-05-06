@@ -316,8 +316,6 @@ def test_get_material_groups():
     keys_from_dataframe = test_dataframe.Grade.values.astype(str)
     values_from_dataframe = test_dataframe.Group.values.astype(str)
 
-    print(keys_from_dataframe)
-
     for index, key in enumerate(keys_from_dataframe):
         # make sure each set of values are approximately equal
         dict_value = test_output[key]
