@@ -345,3 +345,72 @@ def test_calculate_window_thk():
     test_thickness = test_thickness.to(desired_thickness.units).magnitude
     desired_thickness = desired_thickness.magnitude
     assert abs(test_thickness - desired_thickness) / test_thickness < 0.01
+
+
+def test_get_pipe_dlf():
+    """
+    Tests get_pipe_dlf
+
+    Conditions tested:
+        - good input
+            * load factor is 1
+            * load factor is 2
+            * load factor is 4
+        - plus_or_minus outside of (0, 1)
+        - pipe material not in materials list
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # good input
+    pipe_material = '316L'
+    pipe_schedule = '80'
+    nominal_pipe_size = '6'
+    # from hand calcs, critical velocity is 1457.44 m/s, giving upper and lower
+    # bounds of 1603.188 and 1311.700 m/s
+    cj_speeds = [
+        quant(1200, 'm/s'),     # DLF 1
+        quant(1311, 'm/s'),     # DLF 1
+        quant(1312, 'm/s'),     # DLF 4
+        quant(1400, 'm/s'),     # DLF 4
+        quant(1603, 'm/s'),     # DLF 4
+        quant(1604, 'm/s'),     # DLF 2
+        quant(2000, 'm/s')      # DLF 2
+    ]
+    expected_dlf = [1, 1, 4, 4, 4, 2, 2]
+    for cj_speed, dlf in zip(cj_speeds, expected_dlf):
+        test_dlf = tools.get_pipe_dlf(
+        pipe_material,
+        pipe_schedule,
+        nominal_pipe_size,
+        cj_speed
+        )
+        assert test_dlf == dlf
+
+    # plus_or_minus outside of (0, 1)
+    cj_speed = cj_speeds[0]
+    bad_plus_minus = [-1, 0, 1, 2]
+    for plus_minus in bad_plus_minus:
+        try:
+            tools.get_pipe_dlf(
+                pipe_material,
+                pipe_schedule,
+                nominal_pipe_size,
+                cj_speed,
+                plus_minus
+            )
+        except ValueError as err:
+            assert str(err) == 'plus_or_minus factor outside of (0, 1)'
+
+    # pipe material not in materials list
+    pipe_material = 'cheese'
+    with pytest.raises(
+            ValueError,
+            match='Pipe material not found in materials_list.csv'
+    ):
+        tools.get_pipe_dlf(
+            pipe_material,
+            pipe_schedule,
+            nominal_pipe_size,
+            cj_speed
+        )

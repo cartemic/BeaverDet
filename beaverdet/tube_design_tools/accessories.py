@@ -460,6 +460,8 @@ def get_pipe_dimensions(
         nominal_size
 ):
     """
+    This function finds the inner and outer diameters and wall thickness of a
+    pipe of a given schedule and nominal size.
 
     Parameters
     ----------
@@ -476,6 +478,10 @@ def get_pipe_dimensions(
     """
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
+
+    # enforce string data types
+    pipe_schedule = str(pipe_schedule)
+    nominal_size = str(nominal_size)
 
     # collect pipe schedules
     pipe_schedule_dataframe = import_pipe_schedules()

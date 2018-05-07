@@ -352,8 +352,8 @@ def calculate_window_thk(
 
     Returns
     -------
-    thickness : float
-        Window factor of safety
+    thickness : pint quantity
+        Window thickness
     """
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
@@ -404,6 +404,39 @@ def get_pipe_dlf(
         cj_speed,
         plus_or_minus=0.1
 ):
+    """
+    This function calculates the dynamic load factor by which a detonation
+    tube's static analysis should be scaled in order to account for the tube's
+    response to pressure transients. DLF is based on the work of Shepherd [1].
+    Since the limits of "approximately equal to" are not define we assume a
+    default value of plus or minus ten percent, thus plus_or_minus=0.1.
+
+    [1] Shepherd, J. E. (2009). Structural Response of Piping to Internal Gas
+    Detonation. Journal of Pressure Vessel Technology, 131(3), 031204.
+    https://doi.org/10.1115/1.3089497
+
+    Parameters
+    ----------
+    pipe_material : str
+        Material which the pipe is made of, e.g. '316L', '304'
+    pipe_schedule: str
+        The pipe's schedule, e.g. '40', '80s', 'XXS'
+    nominal_pipe_size : str
+        Nominal pipe size of the detonation tube, e.g. '1/2', '1 1/4', '20'
+    cj_speed : pint quantity
+        A pint quantity with velocity units representing the Chapman-Jouguet
+        wave speed of the detonation in question
+    plus_or_minus : float
+        Defines the band about the critical velocity which is considered
+        "approximately equal to" -- the default value of 0.1 means plue or minus
+        ten percent.
+
+    Returns
+    -------
+    dynamic_load_factor : float
+        Factor by which the tube's static maximum pressure should be de-rated to
+        account for transient response to detonation waves.
+    """
     acc.check_pint_quantity(
         cj_speed,
         'velocity',
@@ -437,23 +470,24 @@ def get_pipe_dlf(
     pipe_id = pipe_id.to('m').magnitude
     radius = np.average([pipe_od, pipe_id]) / 2.
 
-    # set limits for 'approximately Vcrit'
-    bounds = cj_speed.to('m/s').magnitude * np.array([
-        1. + plus_or_minus,
-        1. - plus_or_minus
-    ])
-
     # calculate critical velocity
     crit_velocity = (
         (elastic_modulus ** 2 * pipe_thk ** 2) /
         (3. * density ** 2 * radius ** 2 * (1. - poisson ** 2))
     ) ** (1. / 4)
 
-    if crit_velocity < bounds[[0]]:
-        dynamic_load_factor = 1.
-    elif crit_velocity > bounds[1]:
-        dynamic_load_factor = 2.
+    # set limits for 'approximately Vcrit'
+    bounds = crit_velocity * np.array([
+        1. + plus_or_minus,
+        1. - plus_or_minus
+    ])
+
+    cj_speed = cj_speed.to('m/s').magnitude
+    if  cj_speed < bounds[1]:
+        dynamic_load_factor = 1
+    elif cj_speed > bounds[0]:
+        dynamic_load_factor = 2
     else:
-        dynamic_load_factor = 4.
+        dynamic_load_factor = 4
 
     return dynamic_load_factor
