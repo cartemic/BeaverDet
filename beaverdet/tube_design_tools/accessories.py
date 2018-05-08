@@ -485,13 +485,13 @@ def get_pipe_dimensions(
 
     # collect pipe schedules
     pipe_schedule_dataframe = import_pipe_schedules()
-    avaliable_pipe_sizes = get_available_pipe_sizes(
+    available_pipe_sizes = get_available_pipe_sizes(
         pipe_schedule,
         pipe_schedule_dataframe
     )
 
     # ensure size exists
-    if nominal_size not in avaliable_pipe_sizes:
+    if nominal_size not in available_pipe_sizes:
         raise ValueError('Nominal size not found for given pipe schedule')
 
     outer_diameter = pipe_schedule_dataframe['OD'][nominal_size]
@@ -589,7 +589,7 @@ def get_thread_property(
     if not isinstance(thread_size, str):
         raise TypeError('thread_size expected a string')
     elif thread_size not in thread_specs.index:
-        raise KeyError('Thread size \''+
+        raise KeyError('Thread size \'' +
                        thread_size +
                        '\' not found')
 

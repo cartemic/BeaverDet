@@ -428,7 +428,7 @@ def get_pipe_dlf(
         wave speed of the detonation in question
     plus_or_minus : float
         Defines the band about the critical velocity which is considered
-        "approximately equal to" -- the default value of 0.1 means plue or minus
+        "approximately equal to" -- the default value of 0.1 means plus or minus
         ten percent.
 
     Returns
@@ -483,7 +483,7 @@ def get_pipe_dlf(
     ])
 
     cj_speed = cj_speed.to('m/s').magnitude
-    if  cj_speed < bounds[1]:
+    if cj_speed < bounds[1]:
         dynamic_load_factor = 1
     elif cj_speed > bounds[0]:
         dynamic_load_factor = 2

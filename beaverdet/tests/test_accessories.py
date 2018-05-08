@@ -730,7 +730,7 @@ def test_get_thread_property():
 
     # thread size not in dataframe
     bad_message = (
-            'Thread size \''+
+            'Thread size \'' +
             bad_property +
             '\' not found'
     )
@@ -756,7 +756,7 @@ def test_get_thread_property():
 
     # thread class not in dataframe
     bad_message = (
-            'Thread class \''+
+            'Thread class \'' +
             bad_property +
             '\' not found'
     )

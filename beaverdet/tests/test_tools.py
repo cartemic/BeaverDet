@@ -323,7 +323,7 @@ def test_calculate_window_thk():
             )
 
     # non-numeric safety factor
-    safety_factor = 'BruceCambpell'
+    safety_factor = 'BruceCampbell'
     with pytest.raises(TypeError, match='Non-numeric window safety factor'):
         tools.calculate_window_thk(
             length,
@@ -380,10 +380,10 @@ def test_get_pipe_dlf():
     expected_dlf = [1, 1, 4, 4, 4, 2, 2]
     for cj_speed, dlf in zip(cj_speeds, expected_dlf):
         test_dlf = tools.get_pipe_dlf(
-        pipe_material,
-        pipe_schedule,
-        nominal_pipe_size,
-        cj_speed
+            pipe_material,
+            pipe_schedule,
+            nominal_pipe_size,
+            cj_speed
         )
         assert test_dlf == dlf
 
