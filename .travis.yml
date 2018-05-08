@@ -18,6 +18,5 @@ install:
     - conda config --append channels conda-forge
     - conda env create -qf test-environment.yaml;
     - source activate test-environment;
-    - conda install -c cantera cantera
 script:
     - pytest -vv --cov=./;

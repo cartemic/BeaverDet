@@ -2,6 +2,7 @@ name: test-environment
 channels:
 - defaults
 - conda-forge
+- cantera
 dependencies:
   - numpy>=1.12.0
   - pytest>=3.2.0
@@ -9,3 +10,4 @@ dependencies:
   - pint>=0.7.2
   - pandas
   - sympy
+  - cantera
