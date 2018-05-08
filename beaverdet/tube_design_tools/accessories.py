@@ -603,3 +603,23 @@ def get_thread_property(
 
     # retrieve the property
     return quant(thread_specs[thread_property][thread_size][thread_class], 'in')
+
+
+def get_thread_tpi(
+        thread_size
+):
+    """
+    Gets the number of threads per inch from a string of the thread size, such
+    as '1/4-20' -> 20
+
+    Parameters
+    ----------
+    thread_size : str
+        String of the thread size, such as '1/4-20'
+
+    Returns
+    -------
+    int
+        Integer number of threads per inch
+    """
+    return int(thread_size.split('-')[-1])

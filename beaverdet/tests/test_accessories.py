@@ -767,3 +767,13 @@ def test_get_thread_property():
             bad_property,
             dataframes['internal']
         )
+
+
+def test_get_thread_tpi():
+    """
+    Tests get_thread_tpi
+
+    Conditions tested:
+        - good input
+    """
+    assert accessories.get_thread_tpi('1/4-20') == 20
