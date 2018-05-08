@@ -501,3 +501,105 @@ def get_pipe_dimensions(
     return [quant(outer_diameter, ureg.inch),
             quant(inner_diameter, ureg.inch),
             quant(wall_thickness, ureg.inch)]
+
+
+def import_thread_specs():
+    """
+    Imports thread specifications from .csv files
+
+    Returns
+    -------
+    thread_specs : list
+        [internal thread specs, external thread specs]. Both sets of thread
+        specifications are multi-indexed with (thread size, thread class).
+    """
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        'lookup_data'
+    )
+    file_names = [
+        'ANSI_inch_internal_thread.csv',
+        'ANSI_inch_external_thread.csv'
+    ]
+    file_locations = [
+        os.path.relpath(
+            os.path.join(
+                file_directory,
+                name
+            )
+        )
+        for name in file_names
+    ]
+
+    thread_specs = {
+        key: pd.read_csv(location, index_col=(0, 1)) for location, key in
+        zip(file_locations, ['internal', 'external'])
+    }
+
+    return thread_specs
+
+
+def get_thread_property(
+        thread_property,
+        thread_size,
+        thread_class,
+        thread_specs
+):
+    """
+    Finds a thread property, such as minor diameter, using a dataframe from
+    import_thread_specs(). import_thread_specs is not directly called here to
+    save time by not reading from disk every time a property is requested.
+
+    Parameters
+    ----------
+    thread_property : str
+        Property that is desired, such as 'minor diameter'
+    thread_size : str
+        Thread size for desired property, such as '1/4-20' or '1 1/2-6'
+    thread_class : str
+        Thread class: '2B' or '3B' for internal threads, '2A' or '3A' for
+        external threads
+    thread_specs : pandas.core.frame.DataFrame
+        Pandas dataframe of thread properties, from import_thread_specs()
+
+    Returns
+    -------
+    pint.UnitRegistry().Quantity
+        Property requested, as a pint quantity with units of inches
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # ensure thread_specs is a pandas dataframe
+    if not isinstance(thread_specs, pd.DataFrame):
+        raise TypeError('thread_specs is not a pandas dataframe')
+
+    # ensure property is a string and in the specs dataframe
+    if not isinstance(thread_property, str):
+        raise TypeError('thread_property expected a string')
+    elif thread_property not in thread_specs.keys():
+        raise KeyError('Thread property \'' +
+                       thread_property +
+                       '\' not found. Available specs: ' +
+                       "'" + "', '".join(thread_specs.keys()) + "'")
+
+    # ensure thread size is a string and in the specs dataframe
+    if not isinstance(thread_size, str):
+        raise TypeError('thread_size expected a string')
+    elif thread_size not in thread_specs.index:
+        raise KeyError('Thread size \''+
+                       thread_size +
+                       '\' not found')
+
+    # ensure thread class is a string and in the specs dataframe
+    if not isinstance(thread_class, str):
+        raise TypeError('thread_class expected a string')
+    elif not any(pd.MultiIndex.isin(thread_specs.index, [thread_class], 1)):
+        raise KeyError('Thread class \'' +
+                       thread_class +
+                       '\' not found')
+
+    # retrieve the property
+    return quant(thread_specs[thread_property][thread_size][thread_class], 'in')

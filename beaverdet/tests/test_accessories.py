@@ -598,3 +598,172 @@ def test_get_pipe_dimensions():
             pipe_schedule='80',
             nominal_size='really big'
         )
+
+
+def test_import_thread_specs():
+    """
+    Tests import_thread_specs
+
+    Conditions tested:
+        - good input
+    """
+    # good input
+    test_size = '0-80'
+    test_type = ['external', 'internal']
+    test_property = 'pitch diameter max'
+    test_classes = [['2A', '3A'], ['2B', '3B']]
+    good_result = [[0.0514, 0.0519], [0.0542, 0.0536]]
+    specifications = accessories.import_thread_specs()
+    assert isinstance(specifications, dict)
+    for thread, classes, expected in zip(test_type, test_classes, good_result):
+        # check type
+        current_frame = specifications[thread]
+        assert isinstance(current_frame, pd.DataFrame)
+
+        # check output
+        for thread_class, result in zip(classes, expected):
+            test_result = current_frame[test_property][test_size][thread_class]
+            assert abs(test_result - result) < 1e-7
+
+
+def test_get_thread_property():
+    """
+    Tests get_thread_property
+
+    Conditions tested:
+        - good input
+        - thread_specs not a dataframe
+        - non-string property
+        - property not in dataframe
+        - non-string thread size
+        - thread size not in dataframe
+        - non-string thread class
+        - thread class not in dataframe
+    """
+    dataframes = accessories.import_thread_specs()
+
+    '''
+        thread_property,
+        thread_size,
+        thread_class,
+        thread_specs
+    '''
+    # good input
+    good_args = [
+        [
+            'pitch diameter max',
+            '1/4-20',
+            '2B',
+            dataframes['internal']
+        ],
+        [
+            'pitch diameter max',
+            '1/4-20',
+            '2A',
+            dataframes['external']
+        ]
+    ]
+    good_results = [
+        0.2248,
+        0.2164
+    ]
+    for args, result in zip(good_args, good_results):
+        test_result = accessories.get_thread_property(*args)
+
+        # type/unit check
+        assert test_result.units.format_babel() == 'inch'
+
+        # magnitude check
+        assert abs(test_result.magnitude - result) < 1e-7
+
+    # thread specs not a dataframe
+    with pytest.raises(
+            TypeError,
+            match='thread_specs is not a pandas dataframe'
+    ):
+        accessories.get_thread_property(
+            'pitch diameter max',
+            '1/4-20',
+            '2B',
+            'whoa'
+        )
+
+    # non-string property
+    with pytest.raises(
+          TypeError,
+          match='thread_property expected a string'
+    ):
+        accessories.get_thread_property(
+            58008,
+            '1/4-20',
+            '2B',
+            dataframes['internal']
+        )
+
+    # property not in dataframe
+    bad_property = 'jello'
+    bad_message = (
+            'Thread property \'' +
+            bad_property +
+            '\' not found. Available specs: ' +
+            "'" + "', '".join(dataframes['internal'].keys()) + "'"
+    )
+    with pytest.raises(KeyError, match=bad_message):
+        accessories.get_thread_property(
+            bad_property,
+            '1/4-20',
+            '2B',
+            dataframes['internal']
+        )
+
+    # non-string thread size
+    with pytest.raises(
+          TypeError,
+          match='thread_size expected a string'
+    ):
+        accessories.get_thread_property(
+            'pitch diameter max',
+            58008,
+            '2B',
+            dataframes['internal']
+        )
+
+    # thread size not in dataframe
+    bad_message = (
+            'Thread size \''+
+            bad_property +
+            '\' not found'
+    )
+    with pytest.raises(KeyError, match=bad_message):
+        accessories.get_thread_property(
+            'pitch diameter max',
+            bad_property,
+            '2B',
+            dataframes['internal']
+        )
+
+    # non-string thread class
+    with pytest.raises(
+          TypeError,
+          match='thread_class expected a string'
+    ):
+        accessories.get_thread_property(
+            'pitch diameter max',
+            '1/4-20',
+            58008,
+            dataframes['internal']
+        )
+
+    # thread class not in dataframe
+    bad_message = (
+            'Thread class \''+
+            bad_property +
+            '\' not found'
+    )
+    with pytest.raises(KeyError, match=bad_message):
+        accessories.get_thread_property(
+            'pitch diameter max',
+            '1/4-20',
+            bad_property,
+            dataframes['internal']
+        )
