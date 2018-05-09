@@ -414,3 +414,26 @@ def test_get_pipe_dlf():
             nominal_pipe_size,
             cj_speed
         )
+
+
+# def test_calc_1_bolt_stress_area():
+#     ureg = pint.UnitRegistry()
+#     quant = ureg.Quantity
+#
+#     bolt_size = '1/2-13'
+#     bolt_class = '2A'
+#     test_max_stresses = [quant(101, 'ksi'), quant(99, 'ksi')]
+#     good_solutions = [0.13757, 0.14190]
+#     for (
+#             bolt_max_stress,
+#             solution
+#     ) in zip(
+#         test_max_stresses,
+#         good_solutions
+#     ):
+#         test_area = tools.calc_1_bolt_stress_area(
+#             bolt_size,
+#             bolt_class,
+#             bolt_max_stress
+#         )
+#         assert abs(test_area.to('in^2').magnitude - solution) < 1e-4

@@ -491,3 +491,56 @@ def get_pipe_dlf(
         dynamic_load_factor = 4
 
     return dynamic_load_factor
+
+
+# def calc_single_bolt_stress_areas(
+#         bolt_size,
+#         bolt_class,
+#         bolt_max_stress
+# ):
+#     ureg = pint.UnitRegistry()
+#     quant = ureg.Quantity
+#
+#     acc.check_pint_quantity(
+#         bolt_max_stress,
+#         'pressure',
+#         ensure_positive=True
+#     )
+#
+#     bolt = (
+#     plate = ()
+#
+#     # get bolt thread specs
+#     specs = acc.import_thread_specs()
+#     tpi = acc.get_thread_tpi(bolt_size)
+#
+#     if bolt_max_stress.to('psi').magnitude < 100000:
+#         # http://www.engineersedge.com/thread_stress_area_a.htm < 100 ksi
+#         diameter = quant(
+#             acc.get_thread_property(
+#                 'basic diameter',
+#                 bolt_size,
+#                 bolt_class,
+#                 specs['external']
+#             ).to('in').magnitude, 'in'
+#         )
+#         bolt['tensile'] = (
+#                 np.pi / 4 * (diameter - quant(0.9743, 'inch') / tpi)**2
+#         )
+#
+#     else:
+#         # http://www.engineersedge.com/thread_stress_area_b.htm > 100 ksi
+#         diameter = quant(
+#             acc.get_thread_property(
+#                 'pitch diameter min',
+#                 bolt_size,
+#                 bolt_class,
+#                 specs['external']
+#             ).to('in').magnitude, 'in'
+#         )
+#         bolt['tensile'] = (
+#                 np.pi * (diameter / 2 - quant(0.16238, 'inch') / tpi)**2
+#         )
+#
+#
+#     return [bolt, plate]
