@@ -16,6 +16,7 @@ from math import sqrt
 import pint
 import pandas as pd
 import numpy as np
+import cantera as ct
 from . import accessories as acc
 
 
@@ -493,6 +494,98 @@ def get_pipe_dlf(
     return dynamic_load_factor
 
 
+def calculate_ddt_run_up(
+        blockage_ratio,
+        tube_diameter,
+        initial_temperature,
+        initial_pressure,
+        species_dict,
+        mechanism
+):
+    acc.check_pint_quantity(
+        tube_diameter,
+        'length',
+        ensure_positive=True
+    )
+
+    acc.check_pint_quantity(
+        initial_temperature,
+        'temperature',
+        ensure_positive=True
+    )
+
+    acc.check_pint_quantity(
+        initial_pressure,
+        'pressure',
+        ensure_positive=True
+    )
+
+    # create unit registry and convert tube diameter to avoid ureg issues
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+    tube_diameter = quant(
+        tube_diameter,
+        tube_diameter.units.format_babel()
+    )
+
+    laminar_fs = acc.calculate_laminar_flamespeed(
+        initial_temperature,
+        initial_pressure,
+        species_dict,
+        mechanism
+    )
+    laminar_fs = quant(
+        laminar_fs.magnitude, laminar_fs.units.format_babel()
+    )
+
+    # calculate run-up using eq 4.4
+    aa = 2.
+    bb = 1.5
+
+    # TODO: add blockage ratio checks
+    # TODO: add equation 4.1
+    # TODO: interpolate between regions
+
+    # calculate density ratio across the deflagration assuming adiabatic flame
+    density = np.zeros(2)
+    working_gas = ct.Solution(mechanism)
+    working_gas.TPX = [
+        initial_temperature.to('K').magnitude,
+        initial_pressure.to('Pa').magnitude,
+        species_dict
+    ]
+    density[0] = working_gas.density
+    working_gas.equilibrate('HP')
+    density[1] = 1 / working_gas.density
+    density_ratio = np.prod(density)
+
+    # find sound speed in products at adiabatic flame temperature
+    sound_speed = acc.get_equil_sound_speed(
+        quant(working_gas.T, 'K'),
+        quant(working_gas.P, 'Pa'),
+        species_dict,
+        mechanism
+    )
+    sound_speed = quant(
+        sound_speed.magnitude,
+        sound_speed.units.format_babel()
+    )
+
+    # calculate left and right hand sides of eq 4.4
+    lhs = (
+            2 * 10 * laminar_fs * (density_ratio - 1) /
+            (sound_speed * tube_diameter)
+    )
+    rhs = (
+        aa * (1 - blockage_ratio) /
+        (1 + bb * blockage_ratio)
+    )
+
+    runup_distance = rhs / lhs
+
+    return runup_distance.to(tube_diameter.units.format_babel())
+
+# TODO: fix bolt calcs
 # def calc_single_bolt_stress_areas(
 #         bolt_size,
 #         bolt_class,

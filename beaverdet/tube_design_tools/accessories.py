@@ -623,3 +623,69 @@ def get_thread_tpi(
         Integer number of threads per inch
     """
     return int(thread_size.split('-')[-1])
+
+
+def get_equil_sound_speed(
+        temperature,
+        pressure,
+        species_dict,
+        mechanism
+):
+    """
+    Calculates the equilibrium speed of sound in a mixture
+
+    Parameters
+    ----------
+    temperature : pint quantity
+        Initial mixture temperature
+    pressure : pint quantity
+        Initial mixture pressure
+    species_dict : dict
+        Dictionary of mixture mole fractions
+    mechanism : str
+        Desired chemical mechanism
+
+    Returns
+    -------
+    sound_speed : pint quantity
+        local speed of sound in m/s
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    check_pint_quantity(
+        pressure,
+        'pressure',
+        ensure_positive=True
+    )
+
+    check_pint_quantity(
+        temperature,
+        'temperature',
+        ensure_positive=True
+    )
+
+    working_gas = ct.Solution(mechanism)
+    working_gas.TPX = [
+        temperature.to('K').magnitude,
+        pressure.to('Pa').magnitude,
+        species_dict
+        ]
+
+    pressures = np.zeros(2)
+    densities = np.zeros(2)
+
+    # equilibrate gas at input conditions and collect pressure, density
+    working_gas.equilibrate('TP', maxiter=5000)
+    pressures[0] = working_gas.P
+    densities[0] = working_gas.density
+
+    # perturb pressure and equilibrate with constant P, s to get dp/drho|s
+    pressures[1] = 1.0001 * pressures[0]
+    working_gas.equilibrate('SP')
+    densities[1] = working_gas.density
+
+    # calculate sound speed
+    sound_speed = np.sqrt(np.diff(pressures)/np.diff(densities))
+
+    return quant(sound_speed, 'm/s')

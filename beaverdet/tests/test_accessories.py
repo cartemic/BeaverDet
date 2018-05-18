@@ -777,3 +777,6 @@ def test_get_thread_tpi():
         - good input
     """
     assert accessories.get_thread_tpi('1/4-20') == 20
+
+
+# TODO: write test for get_equil_sound_speed

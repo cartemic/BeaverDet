@@ -416,6 +416,9 @@ def test_get_pipe_dlf():
         )
 
 
+# TODO: tests for calculate_ddt_run_up
+
+# TODO: update bolt calc tests once bolt calculation is fixed
 # def test_calc_1_bolt_stress_area():
 #     ureg = pint.UnitRegistry()
 #     quant = ureg.Quantity
