@@ -503,6 +503,45 @@ def calculate_ddt_run_up(
         mechanism,
         phase_specification=''
 ):
+    """
+    Calculates the runup distance needed for a detonation to develop from a
+    deflagration for a given blockage ratio, tube diameter, and mixture. This is
+    accomplished using equations collected by Ciccarelli and Dorofeev [1] for
+    blockage ratios <= 0.75. If the desired blockage ratio is less than 0.3,
+    the mixture viscosity is needed, and the phase_specification option may be
+    necessary depending on the mechanism.
+
+    [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
+    detonation in ducts,” Prog. Energy Combust. Sci., vol. 34, no. 4, pp.
+    499–550, Aug. 2008.
+
+    Parameters
+    ----------
+    blockage_ratio : float
+        Ratio of the cross-sectional area of the detonation tube and a periodic
+        blockage used to cause DDT
+    tube_diameter : pint quantity
+        Internal diameter of the detonation tube
+    initial_temperature : pint quantity
+        Mixture initial temperature
+    initial_pressure : pint quantity
+        Mixture initial pressure
+    species_dict : dict
+        Dictionary containing the species in the mixture as keys, with total
+        moles or mole fractions as values
+    mechanism : str
+        Mechanism file name for Cantera
+    phase_specification : str
+        (Optional) Phase specification within the mechanism file used to
+        evaluate thermophysical properties. If Gri30.cti is used with no
+        phase specification, viscosity calculations will fail, resulting in an
+        error for all blockage ratios less than 0.3.
+
+    Returns
+    -------
+    runup_distance : pint quantity
+        Predicted DDT distance, with the same units as the tube diameter
+    """
 
     if blockage_ratio < 0 or blockage_ratio > 0.75:
         raise ValueError('Blockage ratio outside of correlation range')
@@ -572,9 +611,9 @@ def calculate_ddt_run_up(
     def eq4_1():
         """
         Calculate runup distance for blockage ratios <= 0.1 using equation 4.1
-        from [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and
-        transition to detonation in ducts,” Prog. Energy Combust. Sci., vol. 34,
-        no. 4, pp. 499–550, Aug. 2008.
+        from G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition
+        to detonation in ducts,” Prog. Energy Combust. Sci., vol. 34, no. 4, pp.
+        499–550, Aug. 2008.
         """
         # define constants
         kappa = 0.4
