@@ -500,8 +500,13 @@ def calculate_ddt_run_up(
         initial_temperature,
         initial_pressure,
         species_dict,
-        mechanism
+        mechanism,
+        phase_specification=''
 ):
+
+    if blockage_ratio < 0 or blockage_ratio > 0.75:
+        raise ValueError('Blockage ratio outside of correlation range')
+
     acc.check_pint_quantity(
         tube_diameter,
         'length',
@@ -528,6 +533,7 @@ def calculate_ddt_run_up(
         tube_diameter.units.format_babel()
     )
 
+    # calculate laminar flamespeed
     laminar_fs = acc.calculate_laminar_flamespeed(
         initial_temperature,
         initial_pressure,
@@ -538,17 +544,9 @@ def calculate_ddt_run_up(
         laminar_fs.magnitude, laminar_fs.units.format_babel()
     )
 
-    # calculate run-up using eq 4.4
-    aa = 2.
-    bb = 1.5
-
-    # TODO: add blockage ratio checks
-    # TODO: add equation 4.1
-    # TODO: interpolate between regions
-
     # calculate density ratio across the deflagration assuming adiabatic flame
     density = np.zeros(2)
-    working_gas = ct.Solution(mechanism)
+    working_gas = ct.Solution(mechanism, phase_specification)
     working_gas.TPX = [
         initial_temperature.to('K').magnitude,
         initial_pressure.to('Pa').magnitude,
@@ -571,19 +569,98 @@ def calculate_ddt_run_up(
         sound_speed.units.format_babel()
     )
 
-    # calculate left and right hand sides of eq 4.4
-    lhs = (
-            2 * 10 * laminar_fs * (density_ratio - 1) /
-            (sound_speed * tube_diameter)
-    )
-    rhs = (
-        aa * (1 - blockage_ratio) /
-        (1 + bb * blockage_ratio)
-    )
+    def eq4_1():
+        """
+        Calculate runup distance for blockage ratios <= 0.1 using equation 4.1
+        from [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and
+        transition to detonation in ducts,” Prog. Energy Combust. Sci., vol. 34,
+        no. 4, pp. 499–550, Aug. 2008.
+        """
+        # define constants
+        kappa = 0.4
+        kk = 5.5
+        cc = 0.2
+        mm = -0.18
+        eta = 2.1
 
-    runup_distance = rhs / lhs
+        # calculate laminar flame thickness, delta
+        rho = quant(working_gas.density_mass, 'kg/m^3')
+        mu = quant(working_gas.viscosity, 'Pa*s')
+        nu = rho / mu
+        delta = nu / laminar_fs
 
-    return runup_distance.to(tube_diameter.units.format_babel())
+        # calculate gamma
+        gamma = (
+            sound_speed /
+            (
+                eta *
+                (density_ratio - 1)**2 *
+                laminar_fs
+            ) *
+            (
+                delta /
+                tube_diameter
+            )**(1./3)
+        )**(1 / (2 * mm + 7. / 3))
+
+        # calculate runup distance
+        d_over_h = (
+            2. /
+            (1 - np.sqrt(1 - blockage_ratio))
+        )
+        runup_distance = (
+            gamma / cc
+        ) * (
+            1 / kappa * np.log(gamma * d_over_h) + kk
+        ) * tube_diameter
+        return runup_distance.to(tube_diameter.units.format_babel())
+
+    def eq4_4():
+        """
+        Calculate runup for blockage ratios between 0.3 and 0.75 using equation
+        4.4 in G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition
+        to detonation in ducts,” Prog. Energy Combust. Sci., vol. 34, no. 4,
+        pp. 499–550, Aug. 2008.
+        """
+        # define constants
+        aa = 2.
+        bb = 1.5
+
+        # calculate left and right hand sides of eq 4.4
+        lhs = (
+                2 * 10 * laminar_fs * (density_ratio - 1) /
+                (sound_speed * tube_diameter)
+        )
+        rhs = (
+            aa * (1 - blockage_ratio) /
+            (1 + bb * blockage_ratio)
+        )
+
+        runup_distance = rhs / lhs
+
+        return runup_distance.to(tube_diameter.units.format_babel())
+
+    # use appropriate equation to calculate runup distance
+    if 0.3 <= blockage_ratio <= 0.75:
+        runup_distance = eq4_4()
+    elif 0.1 >= blockage_ratio:
+        runup_distance = eq4_1()
+    else:
+        interp_distances = np.array([
+            eq4_1().magnitude,
+            eq4_4().magnitude
+        ])
+        runup_distance = np.interp(
+            blockage_ratio,
+            np.array([0.1, 0.3]),
+            interp_distances
+        )
+        runup_distance = quant(
+            runup_distance,
+            tube_diameter.units.format_babel()
+        )
+
+    return runup_distance
 
 # TODO: fix bolt calcs
 # def calc_single_bolt_stress_areas(

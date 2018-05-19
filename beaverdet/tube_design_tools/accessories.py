@@ -335,6 +335,7 @@ def calculate_laminar_flamespeed(
         initial_pressure,
         species_dict,
         mechanism,
+        phase_specifation=''
 ):
     """
     This function uses cantera to calculate the laminar flame speed of a given
@@ -350,12 +351,14 @@ def calculate_laminar_flamespeed(
         Dictionary with species names (all caps) as keys and moles as values
     mechanism : str
         String of mechanism to use (e.g. 'gri30.cti')
+    phase_specifation : str
+        Phase specification for cantera solution
 
     Returns
     -------
     Laminar flame speed in m/s as a pint quantity
     """
-    gas = ct.Solution(mechanism)
+    gas = ct.Solution(mechanism, phase_specifation)
 
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
@@ -629,7 +632,8 @@ def get_equil_sound_speed(
         temperature,
         pressure,
         species_dict,
-        mechanism
+        mechanism,
+        phase_specification=''
 ):
     """
     Calculates the equilibrium speed of sound in a mixture
@@ -644,6 +648,8 @@ def get_equil_sound_speed(
         Dictionary of mixture mole fractions
     mechanism : str
         Desired chemical mechanism
+    phase_specification : str
+        Phase specification for cantera solution
 
     Returns
     -------
@@ -665,7 +671,7 @@ def get_equil_sound_speed(
         ensure_positive=True
     )
 
-    working_gas = ct.Solution(mechanism)
+    working_gas = ct.Solution(mechanism, phase_specification)
     working_gas.TPX = [
         temperature.to('K').magnitude,
         pressure.to('Pa').magnitude,
