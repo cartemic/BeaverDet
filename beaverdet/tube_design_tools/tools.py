@@ -636,28 +636,16 @@ def calculate_ddt_run_up(
         # calculate gamma
         gamma = (
             sound_speed /
-            (
-                eta *
-                (density_ratio - 1)**2 *
-                laminar_fs
-            ) *
-            (
-                delta /
-                tube_diameter
-            )**(1./3)
+            (eta * (density_ratio - 1)**2 * laminar_fs) *
+            (delta / tube_diameter)**(1./3)
         )**(1 / (2 * mm + 7. / 3))
 
         # calculate runup distance
-        d_over_h = (
-            2. /
-            (1 - np.sqrt(1 - blockage_ratio))
-        )
+        d_over_h = (2. / (1 - np.sqrt(1 - blockage_ratio)))
         runup = (
-                (
-                    gamma / cc
-                ) * (
-                    1 / kappa * np.log(gamma * d_over_h) + kk
-                ) * tube_diameter
+                gamma / cc *
+                (1 / kappa * np.log(gamma * d_over_h) + kk) *
+                tube_diameter
         )
         return runup.to(tube_diameter.units.format_babel())
 

@@ -475,7 +475,7 @@ def test_calculate_ddt_run_up():
                 tube_diameter.units.format_babel()
         )
 
-        assert 0.75 * result <= test_runup.magnitude <= 1.25 * result
+        assert 0.5 * result <= test_runup.magnitude <= 1.5 * result
 
 
 # TODO: update bolt calc tests once bolt calculation is fixed

@@ -688,6 +688,7 @@ def get_equil_sound_speed(
 
     # perturb pressure and equilibrate with constant P, s to get dp/drho|s
     pressures[1] = 1.0001 * pressures[0]
+    working_gas.TP = working_gas.T, pressures[1]
     working_gas.equilibrate('SP')
     densities[1] = working_gas.density
 
