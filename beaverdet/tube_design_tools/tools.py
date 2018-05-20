@@ -623,6 +623,11 @@ def calculate_ddt_run_up(
         eta = 2.1
 
         # calculate laminar flame thickness, delta
+        working_gas.TPX = [
+            initial_temperature.to('K').magnitude,
+            initial_pressure.to('Pa').magnitude,
+            species_dict
+        ]
         rho = quant(working_gas.density_mass, 'kg/m^3')
         mu = quant(working_gas.viscosity, 'Pa*s')
         nu = mu / rho

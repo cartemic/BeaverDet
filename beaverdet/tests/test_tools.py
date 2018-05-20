@@ -478,8 +478,6 @@ def test_calculate_ddt_run_up():
         assert 0.75 * result <= test_runup.magnitude <= 1.25 * result
 
 
-# TODO: tests for calculate_ddt_run_up
-
 # TODO: update bolt calc tests once bolt calculation is fixed
 # def test_calc_1_bolt_stress_area():
 #     ureg = pint.UnitRegistry()
