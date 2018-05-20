@@ -692,6 +692,6 @@ def get_equil_sound_speed(
     densities[1] = working_gas.density
 
     # calculate sound speed
-    sound_speed = np.sqrt(np.diff(pressures)/np.diff(densities))
+    sound_speed = np.sqrt(np.diff(pressures)/np.diff(densities))[0]
 
     return quant(sound_speed, 'm/s')

@@ -543,7 +543,7 @@ def calculate_ddt_run_up(
         Predicted DDT distance, with the same units as the tube diameter
     """
 
-    if blockage_ratio < 0 or blockage_ratio > 0.75:
+    if blockage_ratio <= 0 or blockage_ratio > 0.75:
         raise ValueError('Blockage ratio outside of correlation range')
 
     acc.check_pint_quantity(
@@ -568,7 +568,7 @@ def calculate_ddt_run_up(
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
     tube_diameter = quant(
-        tube_diameter,
+        tube_diameter.magnitude,
         tube_diameter.units.format_babel()
     )
 
@@ -625,8 +625,8 @@ def calculate_ddt_run_up(
         # calculate laminar flame thickness, delta
         rho = quant(working_gas.density_mass, 'kg/m^3')
         mu = quant(working_gas.viscosity, 'Pa*s')
-        nu = rho / mu
-        delta = nu / laminar_fs
+        nu = mu / rho
+        delta = (nu / laminar_fs).to_base_units()
 
         # calculate gamma
         gamma = (
@@ -647,12 +647,14 @@ def calculate_ddt_run_up(
             2. /
             (1 - np.sqrt(1 - blockage_ratio))
         )
-        runup_distance = (
-            gamma / cc
-        ) * (
-            1 / kappa * np.log(gamma * d_over_h) + kk
-        ) * tube_diameter
-        return runup_distance.to(tube_diameter.units.format_babel())
+        runup = (
+                (
+                    gamma / cc
+                ) * (
+                    1 / kappa * np.log(gamma * d_over_h) + kk
+                ) * tube_diameter
+        )
+        return runup.to(tube_diameter.units.format_babel())
 
     def eq4_4():
         """
@@ -675,9 +677,9 @@ def calculate_ddt_run_up(
             (1 + bb * blockage_ratio)
         )
 
-        runup_distance = rhs / lhs
+        runup = rhs / lhs
 
-        return runup_distance.to(tube_diameter.units.format_babel())
+        return runup.to(tube_diameter.units.format_babel())
 
     # use appropriate equation to calculate runup distance
     if 0.3 <= blockage_ratio <= 0.75:

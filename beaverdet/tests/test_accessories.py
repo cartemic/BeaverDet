@@ -91,11 +91,6 @@ def test_check_materials():
 
     # run test suite
     with patch('builtins.open', new=FakeOpen):
-        print()
-        print()
-        print(accessories.__file__)
-        print()
-        print()
         patched_module = __name__.split('.')[0] + \
             '.tube_design_tools.accessories.' + \
             'get_material_groups'

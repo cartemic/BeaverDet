@@ -16,6 +16,7 @@ from math import sqrt
 import pytest
 import pint
 import pandas as pd
+import cantera as ct
 from ..tube_design_tools import tools
 
 
@@ -414,6 +415,67 @@ def test_get_pipe_dlf():
             nominal_pipe_size,
             cj_speed
         )
+
+
+def test_calculate_ddt_run_up():
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # use a unit diameter to match diameter-specific values from plot
+    tube_diameter = quant(1, 'meter')
+
+    # define gas mixture and relevant pint quantities
+    mechanism = 'gri30.cti'
+    gas = ct.Solution(mechanism)
+    gas.TP = 300, 101325
+    initial_temperature = quant(gas.T, 'K')
+    initial_pressure = quant(gas.P, 'Pa')
+    gas.set_equivalence_ratio(1, 'CH4', {'O2': 1, 'N2': 3.76})
+    species_dict = gas.mole_fraction_dict()
+
+    # test with bad blockage ratio
+    bad_blockages = [-4., 0, 1]
+    for blockage_ratio in bad_blockages:
+        with pytest.raises(
+                ValueError,
+                match='Blockage ratio outside of correlation range'
+        ):
+            tools.calculate_ddt_run_up(
+                blockage_ratio,
+                tube_diameter,
+                initial_temperature,
+                initial_pressure,
+                species_dict,
+                mechanism
+            )
+
+    # define good blockage ratios and expected result from each
+    good_blockages = [0.1, 0.2, 0.3, 0.75]
+    good_results = [
+        48.51385390428211,
+        29.24433249370277,
+        18.136020151133494,
+        4.76070528967254
+    ]
+
+    # test with good inputs
+    for blockage_ratio, result in zip(good_blockages, good_results):
+        test_runup = tools.calculate_ddt_run_up(
+            blockage_ratio,
+            tube_diameter,
+            initial_temperature,
+            initial_pressure,
+            species_dict,
+            mechanism,
+            phase_specification='gri30_mix'
+        )
+
+        assert (
+                test_runup.units.format_babel() ==
+                tube_diameter.units.format_babel()
+        )
+
+        assert 0.75 * result <= test_runup.magnitude <= 1.25 * result
 
 
 # TODO: tests for calculate_ddt_run_up
