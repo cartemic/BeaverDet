@@ -696,7 +696,7 @@ def calculate_ddt_run_up(
 
     return runup_distance
 
-# TODO: fix bolt calcs
+# TODO: fix/finish bolt calcs
 # def calc_single_bolt_stress_areas(
 #         bolt_size,
 #         bolt_class,
@@ -748,3 +748,7 @@ def calculate_ddt_run_up(
 #
 #
 #     return [bolt, plate]
+
+# TODO: reflection analysis/get P max
+# TODO: Thermal knockdown
+# TODO: Tie everything together
