@@ -682,13 +682,13 @@ def get_equil_sound_speed(
     densities = np.zeros(2)
 
     # equilibrate gas at input conditions and collect pressure, density
-    working_gas.equilibrate('TP', maxiter=5000)
+    working_gas.equilibrate('TP')
     pressures[0] = working_gas.P
     densities[0] = working_gas.density
 
     # perturb pressure and equilibrate with constant P, s to get dp/drho|s
     pressures[1] = 1.0001 * pressures[0]
-    working_gas.TP = working_gas.T, pressures[1]
+    working_gas.SP = working_gas.s, pressures[1]
     working_gas.equilibrate('SP')
     densities[1] = working_gas.density
 

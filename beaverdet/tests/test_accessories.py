@@ -774,4 +774,29 @@ def test_get_thread_tpi():
     assert accessories.get_thread_tpi('1/4-20') == 20
 
 
-# TODO: write test for get_equil_sound_speed
+def test_equil_sound_speed():
+    """
+    Tests get_equil_sound_speed
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # check air at 1 atm and 20°C against ideal gas calculation
+    gamma = 1.4
+    rr = 8.31451
+    tt = 293.15
+    mm = 0.0289645
+    c_ideal = np.sqrt(gamma*rr*tt/mm)
+
+    temp = quant(20, 'degC')
+    press = quant(1, 'atm')
+    species = {'O2': 1, 'N2': 3.76}
+    mech = 'gri30.cti'
+    c_test = accessories.get_equil_sound_speed(
+        temp,
+        press,
+        species,
+        mech
+    )
+
+    assert abs(c_ideal - c_test.to('m/s').magnitude) / c_ideal <= 0.005
