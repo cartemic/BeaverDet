@@ -1,0 +1,47 @@
+package:
+  name: beaverdet
+  version: {{ load_setup_py_data().version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python >=3
+    - setuptools
+
+  run:
+    - python
+    - numpy
+    - pint
+    - pandas
+    - sympy
+    - cantera
+
+test:
+  imports:
+    - beaverdet
+    - numpy
+    - pint
+    - pandas
+    - sympy
+    - cantera
+
+  requires:
+    - pytest
+    - pytest-cov
+
+  commands:
+    - pytest -vv --pyargs beaverdet
+
+about:
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+
+  summary: {{ load_setup_py_data().description }}
+  dev_url: {{ load_setup_py_data().url }}
