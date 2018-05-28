@@ -1,0 +1,2 @@
+[run]
+omit = beaverdet/_version.py, setup.py

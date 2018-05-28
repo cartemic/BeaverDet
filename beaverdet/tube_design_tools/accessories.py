@@ -28,7 +28,7 @@ def check_materials():
     # collect files
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         'lookup_data'
     )
@@ -107,7 +107,7 @@ def collect_tube_materials():
     """
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         'lookup_data'
     )
@@ -412,7 +412,7 @@ def import_pipe_schedules():
     """
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         'lookup_data'
     )
@@ -518,7 +518,7 @@ def import_thread_specs():
     """
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         'lookup_data'
     )
@@ -696,3 +696,44 @@ def get_equil_sound_speed(
     sound_speed = np.sqrt(np.diff(pressures)/np.diff(densities))[0]
 
     return quant(sound_speed, 'm/s')
+
+
+def get_pipe_stress_limits(
+        material,
+        welded=False
+):
+    check_materials()
+
+    # collect files
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.relpath(__file__)
+        ),
+        'lookup_data'
+    )
+    file_name = 'ASME_B31_1_stress_limits_'
+    if welded:
+        file_name += 'welded.csv'
+    else:
+        file_name += 'seamless.csv'
+    file_location = os.path.join(
+        file_directory,
+        file_name
+    )
+    material_limits = pd.read_csv(file_location, index_col=0)
+
+    if material not in material_limits.keys():
+        raise KeyError('material not found')
+
+    material_limits = material_limits[material]
+
+    # apply units
+    limits = {
+        'temperature': ('degF', []),
+        'stress': ('ksi', [])
+    }
+    for temp, stress in material_limits.items():
+        limits['temperature'][1].append(temp)
+        limits['stress'][1].append(stress)
+
+    return limits

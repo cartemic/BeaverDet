@@ -49,7 +49,7 @@ def test_get_flange_limits_from_csv():
 
     # file information
     my_input = 'testfile'
-    file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+    file_directory = os.path.join(os.path.dirname(os.path.relpath(__file__)),
                                   '..', 'tube_design_tools', 'lookup_data')
     file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
     file_location = os.path.relpath(os.path.join(file_directory, file_name))
@@ -500,3 +500,66 @@ def test_calculate_ddt_run_up():
 #             bolt_max_stress
 #         )
 #         assert abs(test_area.to('in^2').magnitude - solution) < 1e-4
+
+
+def test_calculate_max_initial_pressure():
+        ureg = pint.UnitRegistry()
+        quant = ureg.Quantity
+
+        # define required variables
+        pipe_material = '316L'
+        pipe_schedule = '80'
+        pipe_nps = '6'
+        welded = False
+        desired_fs = 4
+        initial_temperature = quant(300, 'K')
+        species_dict = {'H2': 1, 'O2': 0.5}
+        mechanism = 'gri30.cti'
+        max_pressures = [quant(1200, 'psi'), False]
+        error_tol = 1e-4
+
+        max_solutions = [max_pressures[0], quant(14120048.691626951, 'Pa')]
+
+        # test function output
+        for max_pressure, max_solution in zip(max_pressures, max_solutions):
+            test_result = tools.calculate_max_initial_pressure(
+                pipe_material,
+                pipe_schedule,
+                pipe_nps,
+                welded,
+                desired_fs,
+                initial_temperature,
+                species_dict,
+                mechanism,
+                max_pressure=max_pressure,
+                error_tol=error_tol
+            )
+
+            states = tools.calculate_reflected_shock_state(
+                test_result,
+                initial_temperature,
+                species_dict,
+                mechanism
+            )
+
+            # get dynamic load factor
+            dlf = tools.get_pipe_dlf(
+                pipe_material,
+                pipe_schedule,
+                pipe_nps,
+                states['cj']['speed']
+            )
+
+            print(dlf)
+
+            calc_max = states['reflected']['state'].P
+            max_solution = max_solution.to('Pa').magnitude / dlf
+
+            error = abs(max_solution - calc_max) / max_solution
+
+            print(error)
+
+            print('good:   {}'.format(max_solution))
+            print('actual: {}'.format(calc_max))
+
+            assert error <= error_tol

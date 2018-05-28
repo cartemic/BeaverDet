@@ -17,6 +17,7 @@ import pint
 import pandas as pd
 import numpy as np
 import cantera as ct
+import sd2
 from . import accessories as acc
 
 
@@ -40,7 +41,7 @@ def get_flange_limits_from_csv(
 
     # ensure group is valid
     group = str(group).replace('.', '_')
-    file_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+    file_directory = os.path.join(os.path.dirname(os.path.relpath(__file__)),
                                   'lookup_data')
     file_name = 'ASME_B16_5_flange_ratings_group_' + group + '.csv'
     file_location = os.path.relpath(os.path.join(file_directory, file_name))
@@ -749,6 +750,242 @@ def calculate_ddt_run_up(
 #
 #     return [bolt, plate]
 
+
 # TODO: reflection analysis/get P max
+def calculate_reflected_shock_state(
+        initial_pressure,
+        initial_temperature,
+        species_dict,
+        mechanism
+):
+    """
+    Calculates the thermodynamic and chemical state of a reflected shock using
+    sd2.
+
+    Parameters
+    ----------
+    initial_pressure : pint quantity
+        Pint quantity of mixture initial pressure
+    initial_temperature : pint quantity
+        Pint quantity of mixture initial temperature
+    species_dict : dict
+        Dictionary of initial reactant mixture
+    mechanism : str
+        Mechanism to use for chemical calculations, e.g. 'gri30.cti'
+
+    Returns
+    -------
+    dict
+        Dictionary containing keys 'reflected' and, if selected, 'cj'. Each of
+        these contains 'speed', indicating the related wave speed, and 'state',
+        which is a Cantera gas object at the specified state.
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    acc.check_pint_quantity(
+        initial_pressure,
+        'pressure',
+        ensure_positive=True
+    )
+
+    acc.check_pint_quantity(
+        initial_temperature,
+        'temperature',
+        ensure_positive=True
+    )
+
+    # define gas objects
+    initial_gas = ct.Solution(mechanism)
+    reflected_gas = ct.Solution(mechanism)
+
+    # define gas states
+    initial_temperature = initial_temperature.to('K').magnitude
+    initial_pressure = initial_pressure.to('Pa').magnitude
+    initial_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_dict
+    ]
+    reflected_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_dict
+    ]
+
+    # get CJ state
+    [cj_speed,
+     cj_gas] = sd2.detonations.calculate_cj_speed(
+        initial_pressure,
+        initial_temperature,
+        species_dict,
+        mechanism,
+        return_state=True
+    )
+
+    # get reflected state
+    [reflected_pressure,
+     reflected_speed,
+     reflected_gas] = sd2.shocks.get_reflected_equil_state_0(
+        initial_gas,
+        cj_gas,
+        reflected_gas,
+        cj_speed
+    )
+    return {'reflected': {'speed': quant(reflected_speed, 'm/s'),
+                          'state': reflected_gas},
+            'cj': {'speed': quant(cj_speed, 'm/s'),
+                   'state': cj_gas}
+            }
+
+
+def calculate_max_initial_pressure(
+        pipe_material,
+        pipe_schedule,
+        pipe_nps,
+        welded,
+        desired_fs,
+        initial_temperature,
+        species_dict,
+        mechanism,
+        error_tol=1e-4,
+        max_pressure=False,
+        max_iterations=500
+):
+    """
+    Iteratively calculates the maximum initial pressure for a given detonation
+    tube and reactant mixture.
+
+    Parameters
+    ----------
+    pipe_material : str
+        Material that pipe is made of, e.g. '316L'
+    pipe_schedule : str
+        Pipe schedule, e.g. '80', 'XXS'
+    pipe_nps : str
+        Nominal pipe size in inches, e.g. '6' for NPS-6
+    welded : bool
+        True for welded pipe, False for seamless
+    desired_fs : float
+        Desired tube factor of safety
+    initial_temperature : pint quantity
+        Pint quantity of initial mixture temperature
+    species_dict : dict
+        Dictionary of reactant mixture components
+    mechanism : str
+        Mechanism to use for calculations, e.g. 'gri30.cti'
+    error_tol : float
+        Relative error tolerance below which initial pressure calculations are
+        considered 'good enough'
+    max_pressure : pint quantity
+        Pint quantity with maximum total pressure. Defaults to False if nothing
+        is specified, meaning that max pressure will be calculated from pipe
+        material properties.
+    max_iterations : int
+        Maximum number of loop iterations before exit, defaults to 500
+
+    Returns
+    -------
+    initial_pressure : pint quantity
+        Pint quantity of max allowable initial pressure
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # ensure temperature is a pint quantity, and convert it to# the local unit
+    # registry to avoid problems
+    acc.check_pint_quantity(
+        initial_temperature,
+        'temperature',
+        ensure_positive=True
+    )
+    initial_temperature = quant(
+        initial_temperature.magnitude,
+        initial_temperature.units.format_babel()
+    )
+
+    # define tube dimensions
+    [tube_od, _, wall_thickness] = acc.get_pipe_dimensions(
+        pipe_schedule,
+        pipe_nps
+    )
+    tube_od = quant(tube_od.magnitude, tube_od.units.format_babel())
+    wall_thickness = quant(wall_thickness.magnitude,
+                           wall_thickness.units.format_babel())
+
+    # look up max allowable stress
+    stress_limits = acc.get_pipe_stress_limits(
+        pipe_material,
+        welded
+    )
+    max_stress = quant(stress_limits['stress'][1][1],
+                       stress_limits['stress'][0])
+
+    # calculate max allowable pressure
+    if not max_pressure:
+        # user didn't give max pressure; calculate it.
+        asme_fs = 4
+        max_allowable_pressure = (
+                max_stress * (2 * wall_thickness) * asme_fs /
+                (tube_od * desired_fs)
+        )
+    else:
+        # make sure it's a pint quantity with pressure units and use it
+        acc.check_pint_quantity(
+            max_pressure,
+            'pressure',
+            ensure_positive=True
+        )
+        max_allowable_pressure = quant(
+            max_pressure.magnitude,
+            max_pressure.units.format_babel()
+        )
+
+    # define error and pressure initial guesses and start loop
+    initial_pressure = quant(1, 'atm')
+    error = 1000
+    counter = 0
+    while error > error_tol and counter < max_iterations:
+        counter += 1
+
+        # get reflected shock pressure
+        states = calculate_reflected_shock_state(
+                initial_pressure,
+                initial_temperature,
+                species_dict,
+                mechanism
+            )
+
+        reflected_pressure = states['reflected']['state'].P
+        reflected_pressure = quant(
+            reflected_pressure,
+            'Pa'
+        )
+        cj_speed = states['cj']['speed']
+        cj_speed = quant(cj_speed.to('m/s').magnitude, 'm/s')
+
+        # get dynamic load factor
+        dlf = get_pipe_dlf(
+            pipe_material,
+            pipe_schedule,
+            pipe_nps,
+            cj_speed
+        )
+
+        # calculate error, accounting for dynamic load factor
+        error = abs(
+            reflected_pressure.to_base_units().magnitude -
+            max_allowable_pressure.to_base_units().magnitude / dlf) / \
+            (max_allowable_pressure.to_base_units().magnitude / dlf)
+
+        # find new initial pressure
+        initial_pressure = (
+                initial_pressure *
+                max_allowable_pressure.to_base_units().magnitude /
+                dlf /
+                reflected_pressure.to_base_units().magnitude
+        )
+    return initial_pressure
+
 # TODO: Thermal knockdown
 # TODO: Tie everything together

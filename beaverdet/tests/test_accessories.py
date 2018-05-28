@@ -36,7 +36,7 @@ def test_check_materials():
     """
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         '..',
         'tube_design_tools',
@@ -180,7 +180,7 @@ def test_collect_tube_materials():
     """
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         '..',
         'tube_design_tools',
@@ -266,7 +266,7 @@ def test_get_material_groups():
     # file information
     file_directory = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)
+            os.path.relpath(__file__)
         ),
         '..',
         'tube_design_tools',
@@ -800,3 +800,32 @@ def test_equil_sound_speed():
     )
 
     assert abs(c_ideal - c_test.to('m/s').magnitude) / c_ideal <= 0.005
+
+
+def test_get_pipe_stress_limits():
+    material = '304'
+
+    # known values for 304
+    seamless_values = np.array([18.8, 18.8, 15.7, 14.1, 13, 12.2, 11.4, 11.3,
+                                11.1, 10.8, 10.6, 10.4, 10.2, 10, 9.8, 9.5, 8.9,
+                                7.7, 6.1])
+    welded_values = np.array([16, 16, 13.3, 12, 11, 10.5, 9.7, 9.5, 9.4, 9.2, 9,
+                              8.8, 8.7, 8.5, 8.3, 8.1, 7.6, 6.5, 5.4])
+
+    test_limits = accessories.get_pipe_stress_limits(
+        material,
+        welded=True
+    )
+    test_limits = np.array(test_limits['stress'][1])
+    assert np.allclose(welded_values, test_limits)
+
+    test_limits = accessories.get_pipe_stress_limits(
+        material,
+        welded=False
+    )
+    test_limits = np.array(test_limits['stress'][1])
+    assert np.allclose(seamless_values, test_limits)
+
+    with pytest.raises(KeyError,
+                       match='material not found'):
+        accessories.get_pipe_stress_limits('unobtainium')
