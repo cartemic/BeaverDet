@@ -555,4 +555,4 @@ def test_calculate_max_initial_pressure():
 
             error = abs(max_solution - calc_max) / max_solution
 
-            assert error <= 0.00025
+            assert error <= 0.0005
