@@ -550,16 +550,9 @@ def test_calculate_max_initial_pressure():
                 states['cj']['speed']
             )
 
-            print(dlf)
-
             calc_max = states['reflected']['state'].P
             max_solution = max_solution.to('Pa').magnitude / dlf
 
             error = abs(max_solution - calc_max) / max_solution
 
-            print(error)
-
-            print('good:   {}'.format(max_solution))
-            print('actual: {}'.format(calc_max))
-
-            assert error <= error_tol
+            assert error <= 0.00025
