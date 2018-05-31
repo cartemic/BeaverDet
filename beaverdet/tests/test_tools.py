@@ -478,8 +478,8 @@ def test_calculate_ddt_run_up():
         assert 0.5 * result <= test_runup.magnitude <= 1.5 * result
 
 
-# TODO: update bolt calc tests once bolt calculation is fixed
-# def test_calc_1_bolt_stress_area():
+# TODO: finish test_calculate_bolt_stress_areas
+# def test_calculate_bolt_stress_areas():
 #     ureg = pint.UnitRegistry()
 #     quant = ureg.Quantity
 #
@@ -500,6 +500,8 @@ def test_calculate_ddt_run_up():
 #             bolt_max_stress
 #         )
 #         assert abs(test_area.to('in^2').magnitude - solution) < 1e-4
+
+# TODO: test_calculate_window_bolt_sf
 
 
 def test_calculate_max_initial_pressure():

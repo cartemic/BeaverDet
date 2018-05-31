@@ -173,6 +173,7 @@ def check_pint_quantity(
 
     Currently supported dimension types:
         length
+        area
         pressure
         temperature
         velocity
@@ -196,6 +197,7 @@ def check_pint_quantity(
     ureg = pint.UnitRegistry()
     units = {
         'length': ureg.meter.dimensionality.__str__(),
+        'area': (ureg.meter**2).dimensionality.__str__(),
         'temperature': ureg.degC.dimensionality.__str__(),
         'pressure': ureg.psi.dimensionality.__str__(),
         'velocity': (ureg.meter/ureg.second).dimensionality.__str__()
