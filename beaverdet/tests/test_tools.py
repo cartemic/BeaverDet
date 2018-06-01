@@ -478,30 +478,109 @@ def test_calculate_ddt_run_up():
         assert 0.5 * result <= test_runup.magnitude <= 1.5 * result
 
 
-# TODO: finish test_calculate_bolt_stress_areas
-# def test_calculate_bolt_stress_areas():
-#     ureg = pint.UnitRegistry()
-#     quant = ureg.Quantity
-#
-#     bolt_size = '1/2-13'
-#     bolt_class = '2A'
-#     test_max_stresses = [quant(101, 'ksi'), quant(99, 'ksi')]
-#     good_solutions = [0.13757, 0.14190]
-#     for (
-#             bolt_max_stress,
-#             solution
-#     ) in zip(
-#         test_max_stresses,
-#         good_solutions
-#     ):
-#         test_area = tools.calc_1_bolt_stress_area(
-#             bolt_size,
-#             bolt_class,
-#             bolt_max_stress
-#         )
-#         assert abs(test_area.to('in^2').magnitude - solution) < 1e-4
+def test_calculate_bolt_stress_areas():
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
 
-# TODO: test_calculate_window_bolt_sf
+    def compare(manual, tested):
+        for key, value in manual.items():
+            test_value = tested[key].to(
+                value.units.format_babel()).magnitude
+            value = value.magnitude
+            assert abs(test_value - value) / value < 1e-4
+
+    # test bolt > 100ksi
+    thread_size = '1/4-28'
+    thread_class = '2'
+    bolt_max_tensile = quant(120, 'ksi')
+    plate_max_tensile = quant(30, 'ksi')
+    engagement_length = quant(0.5, 'in')
+    hand_calc = {
+        'screw area': quant(0.034934049, 'in^2'),
+        'plate area': quant(0.308744082, 'in^2'),
+        'minimum engagement': quant(0.452595544, 'in')
+    }
+    test_areas = tools.calculate_bolt_stress_areas(
+        thread_size,
+        thread_class,
+        bolt_max_tensile,
+        plate_max_tensile,
+        engagement_length
+    )
+    compare(hand_calc, test_areas)
+
+    # test bolt < 100ksi
+    bolt_max_tensile = quant(80, 'ksi')
+    hand_calc['screw area'] = quant(
+        0.036374073,
+        'in^2'
+    )
+    hand_calc['minimum engagement'] = quant(
+        0.314168053,
+        'in'
+    )
+    test_areas = tools.calculate_bolt_stress_areas(
+        thread_size,
+        thread_class,
+        bolt_max_tensile,
+        plate_max_tensile,
+        engagement_length
+    )
+    compare(hand_calc, test_areas)
+
+    # ensure warning when engagement length < minimum
+    engagement_length = quant(0.05, 'in')
+    with pytest.warns(
+        Warning,
+        match='Screws fail in shear, not tension.' +
+              ' Plate may be damaged.' +
+              ' Consider increasing bolt engagement length'
+    ):
+        tools.calculate_bolt_stress_areas(
+            thread_size,
+            thread_class,
+            bolt_max_tensile,
+            plate_max_tensile,
+            engagement_length
+        )
+
+
+def test_calculate_window_bolt_sf():
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    def compare(manual, tested):
+        for key, value in manual.items():
+            print(key)
+            test_value = tested[key].to('').magnitude
+            assert abs(test_value - value) / value < 1e-4
+
+    max_pressure = quant(1631.7, 'psi')
+    window_area = quant(5.75*2.5, 'in^2')
+    num_bolts = 20
+    thread_size = '1/4-28'
+    thread_class = '2'
+    bolt_max_tensile = quant(120, 'ksi')
+    plate_max_tensile = quant(30, 'ksi')
+    engagement_length = quant(0.5, 'in')
+
+    hand_calc = {
+        'bolt': 3.606968028,
+        'plate': 7.969517321,
+    }
+
+    test_values = tools.calculate_window_bolt_sf(
+        max_pressure,
+        window_area,
+        num_bolts,
+        thread_size,
+        thread_class,
+        bolt_max_tensile,
+        plate_max_tensile,
+        engagement_length
+    )
+
+    compare(hand_calc, test_values)
 
 
 def test_calculate_max_initial_pressure():

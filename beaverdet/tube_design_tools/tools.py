@@ -714,12 +714,12 @@ def calculate_bolt_stress_areas(
     ----------
     thread_size : str
         Size of threads to be evaluated, e.g. '1/4-20' or '1 1/2-6'
-    thread_class
+    thread_class : str
         Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
         automatically appended for internal/external threads
     bolt_max_tensile : pint quantity
         Pint quantity of bolt (ext. thread) tensile failure stress
-    plate_max_tensile
+    plate_max_tensile : pint quantity
         Pint quantity of plate (int. thread) tensile failure stress
     engagement_length : pint quantity
         Pint quantity of total thread engagement length
@@ -753,6 +753,20 @@ def calculate_bolt_stress_areas(
         ensure_positive=True
     )
 
+    # convert to local unit registry
+    bolt_max_tensile = quant(
+        bolt_max_tensile.magnitude,
+        bolt_max_tensile.units.format_babel()
+    )
+    plate_max_tensile = quant(
+        plate_max_tensile.magnitude,
+        plate_max_tensile.units.format_babel()
+    )
+    engagement_length = quant(
+        engagement_length.magnitude,
+        engagement_length.units.format_babel()
+    )
+
     thread = dict()
 
     # look up thread specs for stress area calculations
@@ -768,18 +782,22 @@ def calculate_bolt_stress_areas(
         thread_specs['external']
         ['pitch diameter min']
         [thread_size]
-        [thread_class + 'A']
+        [thread_class + 'A'],
+        'in'
     )
     e_n_max = quant(
         thread_specs['internal']
         ['pitch diameter max']
         [thread_size]
-        [thread_class + 'B']
+        [thread_class + 'B'],
+        'in'
     )
     d_s_min = quant(
         thread_specs['external']
         ['major diameter min']
-        [thread_class + 'A']
+        [thread_size]
+        [thread_class + 'A'],
+        'in'
     )
     tpi = quant(
         float(thread_size.split('-')[-1]),
@@ -788,7 +806,9 @@ def calculate_bolt_stress_areas(
     basic_diameter = quant(
         thread_specs['external']
         ['basic diameter']
-        [thread_class + 'A']
+        [thread_size]
+        [thread_class + 'A'],
+        'in'
     )
 
     if bolt_max_tensile < quant(100000, 'psi'):
@@ -803,7 +823,7 @@ def calculate_bolt_stress_areas(
         screw_area_tensile = np.pi * (
             e_s_min / 2 -
             0.16238 / tpi
-        )
+        )**2
 
     # calculate screw shear area using eq. 5 (p. 1491) in Fasteners section of
     # Machinery's Handbook 26
@@ -817,7 +837,8 @@ def calculate_bolt_stress_areas(
         warnings.warn(
             'Screws fail in shear, not tension.' +
             ' Plate may be damaged.' +
-            ' Consider increasing bolt engagement length'
+            ' Consider increasing bolt engagement length',
+            Warning
         )
         thread['screw area'] = screw_area_shear
     else:
@@ -875,19 +896,21 @@ def calculate_window_bolt_sf(
         Number of bolts used to secure each viewing window
     thread_size : str
         Size of threads to be evaluated, e.g. '1/4-20' or '1 1/2-6'
-    thread_class
+    thread_class : str
         Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
         automatically appended for internal/external threads
     bolt_max_tensile : pint quantity
         Pint quantity of bolt (ext. thread) tensile failure stress
-    plate_max_tensile
+    plate_max_tensile : pint quantity
         Pint quantity of plate (int. thread) tensile failure stress
     engagement_length : pint quantity
         Pint quantity of total thread engagement length
 
     Returns
     -------
-
+    safety_factor : dict
+        Dictionary with keys of 'bolt' and 'plate', giving factors of safety
+        for window bolts and the plate that they are screwed into.
     """
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
@@ -918,6 +941,28 @@ def calculate_window_bolt_sf(
         ensure_positive=True
     )
 
+    # convert all quantities to local unit registry
+    max_pressure = quant(
+        max_pressure.magnitude,
+        max_pressure.units.format_babel()
+    )
+    window_area = quant(
+        window_area.magnitude,
+        window_area.units.format_babel()
+    )
+    bolt_max_tensile = quant(
+        bolt_max_tensile.magnitude,
+        bolt_max_tensile.units.format_babel()
+    )
+    plate_max_tensile = quant(
+        plate_max_tensile.magnitude,
+        plate_max_tensile.units.format_babel()
+    )
+    engagement_length = quant(
+        engagement_length.magnitude,
+        engagement_length.units.format_babel()
+    )
+
     # get total force per bolt
     window_force = (max_pressure - quant(1, 'atm')) * window_area / num_bolts
 
@@ -929,16 +974,27 @@ def calculate_window_bolt_sf(
         plate_max_tensile,
         engagement_length
     )
+    screw_area = thread['screw area']
+    screw_area = quant(
+        screw_area.magnitude,
+        screw_area.units.format_babel()
+    )
+    plate_area = thread['plate area']
+    plate_area = quant(
+        plate_area.magnitude,
+        plate_area.units.format_babel()
+    )
 
     # calculate safety factors
     # TODO: change to .magnitude once units are verified dimensionless
     safety_factor = dict()
     safety_factor['bolt'] = (
-        (window_force / thread['screw area']) / bolt_max_tensile
+        bolt_max_tensile / (window_force / screw_area)
     )
     safety_factor['plate'] = (
-        (window_force / thread['plate area']) / bolt_max_tensile
+        plate_max_tensile / (window_force / plate_area)
     )
+    return safety_factor
 
 
 def calculate_reflected_shock_state(
