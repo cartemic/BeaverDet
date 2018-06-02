@@ -477,7 +477,7 @@ def get_pipe_dimensions(
 
     Returns
     -------
-    list
+    dict
         [outer diameter, inner diameter, wall thickness] as pint quantities
 
     """
@@ -503,9 +503,9 @@ def get_pipe_dimensions(
     wall_thickness = pipe_schedule_dataframe[pipe_schedule][nominal_size]
     inner_diameter = outer_diameter - 2 * wall_thickness
 
-    return [quant(outer_diameter, ureg.inch),
-            quant(inner_diameter, ureg.inch),
-            quant(wall_thickness, ureg.inch)]
+    return {'outer diameter': quant(outer_diameter, ureg.inch),
+            'inner diameter': quant(inner_diameter, ureg.inch),
+            'wall thickness': quant(wall_thickness, ureg.inch)}
 
 
 def import_thread_specs():

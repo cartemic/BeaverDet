@@ -197,11 +197,11 @@ def test_calculate_spiral_diameter():
 
     # define a pipe inner diameter and blockage ratio
     test_diameter = quant(5.76, ureg.inch)
-    test_blockage_ratio = 44
+    test_blockage_ratio = 0.44
 
     # define expected result and actual result
     expected_spiral_diameter = test_diameter / 2 * \
-        (1 - sqrt(1 - test_blockage_ratio / 100.))
+        (1 - sqrt(1 - test_blockage_ratio))
     result = tools.calculate_spiral_diameter(test_diameter,
                                              test_blockage_ratio)
 
@@ -213,10 +213,10 @@ def test_calculate_spiral_diameter():
         tools.calculate_spiral_diameter(test_diameter, 'doompity doo')
 
     # ensure proper handling with blockage ratio outside allowable limits
-    bad_blockage_ratios = [-35.124, 0, 100, 120.34]
+    bad_blockage_ratios = [-35.124, 0, 1, 120.34]
     for ratio in bad_blockage_ratios:
         with pytest.raises(ValueError,
-                           match='Blockage ratio outside of 0<BR<100'):
+                           match='Blockage ratio outside of 0<BR<1'):
             tools.calculate_spiral_diameter(test_diameter, ratio)
 
 
@@ -245,7 +245,7 @@ def test_calculate_blockage_ratio():
     # known good results from hand-calcs
     test_tube_diameter = quant(3.438, ureg.inch)
     test_blockage_diameter = quant(7./16., ureg.inch)
-    hand_calc_blockage_ratio = 0.444242326717679 * 100
+    hand_calc_blockage_ratio = 0.444242326717679
 
     # check for expected result with good input
     test_result = tools.calculate_blockage_ratio(test_tube_diameter,

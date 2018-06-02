@@ -571,12 +571,13 @@ def test_get_pipe_dimensions():
         - bad pipe size
     """
     # good input
-    [outer_diameter,
-     inner_diameter,
-     wall_thickness] = accessories.get_pipe_dimensions(
+    dimensions = accessories.get_pipe_dimensions(
         pipe_schedule='80',
         nominal_size='6'
     )
+    outer_diameter = dimensions['outer diameter']
+    inner_diameter = dimensions['inner diameter']
+    wall_thickness = dimensions['wall thickness']
     assert outer_diameter.magnitude - 6.625 < 1e-7
     assert inner_diameter.magnitude - 5.761 < 1e-7
     assert wall_thickness.magnitude - 0.432 < 1e-7

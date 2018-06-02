@@ -186,7 +186,7 @@ def calculate_spiral_diameter(
     Inputs:
         pipe_id: pint quantity with a length scale representing the inner
             diameter of the pipe used for the detonation tube
-        blockage_ratio: percentage (float between 0 and 100)
+        blockage_ratio: percentage (float between 0 and 1)
 
     Outputs:
         spiral_diameter: pint quantity representing the Shchelkin spiral
@@ -199,9 +199,9 @@ def calculate_spiral_diameter(
     except ValueError:
         raise ValueError('Non-numeric blockage ratio.')
 
-    # ensure blockage ratio is on 0<BR<100
-    if not 0 < blockage_ratio < 100:
-        raise ValueError('Blockage ratio outside of 0<BR<100')
+    # ensure blockage ratio is on 0<BR<1
+    if not 0 < blockage_ratio < 1:
+        raise ValueError('Blockage ratio outside of 0<BR<1')
 
     acc.check_pint_quantity(
         pipe_id,
@@ -210,7 +210,7 @@ def calculate_spiral_diameter(
     )
 
     # calculate Shchelkin spiral diameter
-    spiral_diameter = pipe_id / 2 * (1 - sqrt(1 - blockage_ratio / 100))
+    spiral_diameter = pipe_id / 2 * (1 - sqrt(1 - blockage_ratio))
     return spiral_diameter
 
 
@@ -229,8 +229,7 @@ def calculate_blockage_ratio(
             the OD of a Shchelkin spiral
 
     Outputs:
-        blockage_ratio: float between 0 and 100, representing the resulting
-            blockage ratio in percent
+        blockage_ratio: float between 0 and 1
     """
 
     # check dimensionality and >0
@@ -255,7 +254,7 @@ def calculate_blockage_ratio(
 
     # calculate blockage ratio
     blockage_ratio = (1 - (1 - 2 * blockage_diameter.magnitude /
-                           tube_inner_diameter.magnitude)**2) * 100
+                           tube_inner_diameter.magnitude)**2)
 
     return blockage_ratio
 
@@ -397,7 +396,9 @@ def calculate_window_thk(
         rupture_modulus=rupture_modulus.to_base_units().magnitude
     )
 
-    return quant(thickness, width.to_base_units().units)
+    return quant(
+        thickness,
+        width.to_base_units().units).to(width.units.format_babel())
 
 
 def get_pipe_dlf(
@@ -450,12 +451,13 @@ def get_pipe_dlf(
         raise ValueError('plus_or_minus factor outside of (0, 1)')
 
     # get pipe dimensions
-    [pipe_id,
-     pipe_od,
-     pipe_thk] = acc.get_pipe_dimensions(
+    dimensions = acc.get_pipe_dimensions(
         pipe_schedule,
         nominal_pipe_size
     )
+    pipe_od = dimensions['outer diameter']
+    pipe_id = dimensions['inner diameter']
+    pipe_thk = dimensions['wall thickness']
 
     # get material properties
     properties_dataframe = acc.collect_tube_materials().set_index('Grade')
@@ -881,7 +883,6 @@ def calculate_window_bolt_sf(
         bolt_max_tensile,
         plate_max_tensile,
         engagement_length
-
 ):
     """
     Calculates bolt and plate safety factors for viewing window bolts
@@ -986,14 +987,13 @@ def calculate_window_bolt_sf(
     )
 
     # calculate safety factors
-    # TODO: change to .magnitude once units are verified dimensionless
     safety_factor = dict()
     safety_factor['bolt'] = (
         bolt_max_tensile / (window_force / screw_area)
-    )
+    ).to_base_units()
     safety_factor['plate'] = (
         plate_max_tensile / (window_force / plate_area)
-    )
+    ).to_base_units()
     return safety_factor
 
 
@@ -1021,9 +1021,9 @@ def calculate_reflected_shock_state(
     Returns
     -------
     dict
-        Dictionary containing keys 'reflected' and, if selected, 'cj'. Each of
-        these contains 'speed', indicating the related wave speed, and 'state',
-        which is a Cantera gas object at the specified state.
+        Dictionary containing keys 'reflected' and 'cj'. Each of these contains
+        'speed', indicating the related wave speed, and 'state', which is a
+        Cantera gas object at the specified state.
     """
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
@@ -1150,11 +1150,15 @@ def calculate_max_initial_pressure(
     )
 
     # define tube dimensions
-    [tube_od, _, wall_thickness] = acc.get_pipe_dimensions(
+    dimensions = acc.get_pipe_dimensions(
         pipe_schedule,
         pipe_nps
     )
+    tube_od = dimensions['outer diameter']
+    tube_id = dimensions['inner diameter']
+    wall_thickness = dimensions['wall thickness']
     tube_od = quant(tube_od.magnitude, tube_od.units.format_babel())
+    tube_id = quant(tube_id.magnitude, tube_id.units.format_babel())
     wall_thickness = quant(wall_thickness.magnitude,
                            wall_thickness.units.format_babel())
 
@@ -1168,11 +1172,14 @@ def calculate_max_initial_pressure(
 
     # calculate max allowable pressure
     if not max_pressure:
-        # user didn't give max pressure; calculate it.
+        # user didn't give max pressure; calculate it using basic longitudinal
+        # joint formula on page 14 of Megyesy's Pressure Vessel Handbook, 8th
+        # ed.
+        mean_diameter = (tube_od + tube_id) / 2
         asme_fs = 4
         max_allowable_pressure = (
                 max_stress * (2 * wall_thickness) * asme_fs /
-                (tube_od * desired_fs)
+                (mean_diameter * desired_fs)
         )
     else:
         # make sure it's a pint quantity with pressure units and use it
