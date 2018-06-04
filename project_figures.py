@@ -226,9 +226,16 @@ y2 = [ynum / xnum for xnum, ynum in zip(x, y)]
 
 bg_color = '#222222'
 fg_color = '#ffffff'
+axis_font_size = 16
+title_font_size = 36
+plot_title = 'Nice.'
+xlabel = 'humdingers'
+ylabel = 'whizzbangs'
+file_name = 'test_plot'
 
-fig = plt.figure(facecolor=bg_color, edgecolor=fg_color)
+fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12, 6))
 axes = fig.add_subplot(111)
+axes.set_aspect(0.1875)
 # axes.set_frame_on(False)
 bmap = brewer2mpl.get_map('Dark2', 'Qualitative', 3)
 axes.set_color_cycle(bmap.mpl_colors)
@@ -236,13 +243,23 @@ axes.grid(True, alpha=0.5, linestyle=':')
 axes.patch.set_facecolor(bg_color)
 axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
 axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+axes.set_xlabel(xlabel, color=fg_color, weight='bold')
+axes.set_ylabel(ylabel, color=fg_color, weight='bold')
+axes.xaxis.label.set_size(axis_font_size*1.25)
+axes.yaxis.label.set_size(axis_font_size*1.25)
+axes.set_title(plot_title, color=fg_color, weight='bold')
+axes.title.set_size(title_font_size)
 for ctr, spine in enumerate(axes.spines.values()):
     spine.set_color(fg_color)
     if ctr % 2:
         spine.set_visible(False)
     else:
         spine.set_linewidth(2)
-
+for xtick, ytick in zip(axes.xaxis.get_major_ticks(), axes.yaxis.get_major_ticks()):
+    xtick.label1.set_fontsize(axis_font_size)
+    xtick.label1.set_fontweight('bold')
+    ytick.label1.set_fontsize(axis_font_size)
+    ytick.label1.set_fontweight('bold')
 plt.plot(x, y, axes=axes, linewidth=2)
 plt.plot(x, y2, '--', axes=axes, linewidth=2)
-plt.show()
+plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
