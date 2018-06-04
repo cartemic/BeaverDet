@@ -85,6 +85,12 @@ def build_pipe(
         species_dict=gas_mixture,
         mechanism=mechanism
     )
+    a_0 = acc.get_equil_sound_speed(
+        temperature=initial_temperature,
+        pressure=pipe_properties['pressures']['initial'],
+        species_dict=gas_mixture,
+        mechanism=mechanism
+    )
     pipe_properties['pressures']['cj'] = quant(
         states['cj']['state'].P,
         'Pa'
@@ -104,6 +110,7 @@ def build_pipe(
     pipe_properties['speeds'] = dict()
     pipe_properties['speeds']['cj'] = states['cj']['speed']
     pipe_properties['speeds']['reflected'] = states['reflected']['speed']
+    pipe_properties['speeds']['product sound'] = a_0
 
     # collect dynamic load factor
     pipe_properties['dynamic load factor'] = tools.get_pipe_dlf(
@@ -192,7 +199,7 @@ if __name__ == '__main__':
         oxidizer
     )
     gas_mixture = gas.mole_fraction_dict()
-
+'''
     pipe = build_pipe(
         pipe_schedule,
         nominal_size,
@@ -211,3 +218,31 @@ if __name__ == '__main__':
     )
 
     pprint.pprint(pipe, indent=4)
+'''
+
+x = [1, 2, 3, 4, 5]
+y = [4, 6, 8, 8, 9]
+y2 = [ynum / xnum for xnum, ynum in zip(x, y)]
+
+bg_color = '#222222'
+fg_color = '#ffffff'
+
+fig = plt.figure(facecolor=bg_color, edgecolor=fg_color)
+axes = fig.add_subplot(111)
+# axes.set_frame_on(False)
+bmap = brewer2mpl.get_map('Dark2', 'Qualitative', 3)
+axes.set_color_cycle(bmap.mpl_colors)
+axes.grid(True, alpha=0.5, linestyle=':')
+axes.patch.set_facecolor(bg_color)
+axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+for ctr, spine in enumerate(axes.spines.values()):
+    spine.set_color(fg_color)
+    if ctr % 2:
+        spine.set_visible(False)
+    else:
+        spine.set_linewidth(2)
+
+plt.plot(x, y, axes=axes, linewidth=2)
+plt.plot(x, y2, '--', axes=axes, linewidth=2)
+plt.show()

@@ -551,7 +551,6 @@ def test_calculate_window_bolt_sf():
 
     def compare(manual, tested):
         for key, value in manual.items():
-            print(key)
             test_value = tested[key].to('').magnitude
             assert abs(test_value - value) / value < 1e-4
 
