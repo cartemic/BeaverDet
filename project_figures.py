@@ -9,6 +9,9 @@ from matplotlib import pyplot as plt
 import json
 import numbers
 import numpy as np
+import warnings
+import multiprocessing as mp
+warnings.filterwarnings("ignore")
 
 
 def build_pipe(
@@ -276,23 +279,34 @@ if __name__ == '__main__':
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
 
-    pipe_schedule = '80'
-    nominal_size = '6'
+    # constant kwargs
     pipe_material = '316L'
     desired_fs = 4
     desired_blockage_ratio = 0.45
     window_width = quant(2.5, 'in')
     window_height = quant(5.75, 'in')
     window_desired_fs = 2
-    num_window_bolts = 20
     bolt_engagement_length = quant(0.5, 'inch')
     bolt_thread_size = '1/4-28'
-    initial_temperature = quant(300, 'K')
     mechanism = 'gri30.cti'
 
-    fuel = 'CH4'
-    oxidizer = {'O2': 1, 'N2': 3.76}
+    # varying kwargs
+    different_sizes = ['1', '2', '3', '4', '5', '6']
+    different_num_bolts = list(np.linspace(5, 20, 6, dtype=int))
+    different_schedules = ['5', '10', '40', '80', '160', 'XXH']
+    different_temps = list(np.linspace(300, 475, 6))
+    different_equivs = list(np.linspace(0.75, 1.25, 6))
+    different_fuels = ['CH4', 'H2']
+
+    # variable kwargs
+    pipe_schedule = '80'
+    nominal_size = '6'
+    num_window_bolts = 20
+    initial_temperature = quant(300, 'K')
     equivalence = 1
+    fuel = 'CH4'
+
+    oxidizer = {'O2': 1, 'N2': 3.76}
     gas = ct.Solution(mechanism)
     gas.set_equivalence_ratio(
         equivalence,
