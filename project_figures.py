@@ -6,6 +6,9 @@ import math
 import pprint
 import brewer2mpl
 from matplotlib import pyplot as plt
+import json
+import numbers
+import numpy as np
 
 
 def build_pipe(
@@ -171,6 +174,104 @@ def build_pipe(
     return pipe_properties
 
 
+def quantity_remover(mydict):
+    """
+    removes pint quantities to make json output happy
+
+    Parameters
+    ----------
+    mydict
+
+    Returns
+    -------
+
+    """
+    newdict = dict()
+    for key, item in mydict.items():
+        try:
+            item.magnitude
+            newdict[key] = (item.magnitude, item.units.format_babel())
+        except AttributeError:
+            if isinstance(item, str) or isinstance(item, numbers.Number):
+                newdict[key] = item
+            else:
+                newdict[key] = [quantity_remover(item)]
+    return newdict
+
+
+def quantity_putter_backer(mydict):
+    """
+    undoes the work of quantity_remover
+
+    Parameters
+    ----------
+    mydict
+
+    Returns
+    -------
+
+    """
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    newdict = dict()
+    for key, item in mydict.items():
+        if isinstance(item, list):
+            newdict[key] = quant(item[0], item[1])
+        elif isinstance(item, str) or isinstance(item, numbers.Number):
+            newdict[key] = item
+        else:
+            newdict[key] = quantity_putter_backer(item)
+    return newdict
+
+
+def plotify(x_array,
+            y_array,
+            plot_title,
+            xlabel,
+            ylabel,
+            file_name
+):
+    bg_color = '#222222'
+    fg_color = '#ffffff'
+    axis_font_size = 16
+    title_font_size = 36
+    fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12, 6))
+    axes = fig.add_subplot(111)
+    axes.set_aspect(0.1875)
+    bmap = brewer2mpl.get_map('Dark2', 'Qualitative', 8)
+    axes.set_color_cycle(bmap.mpl_colors)
+    axes.grid(True, alpha=0.5, linestyle=':')
+    axes.patch.set_facecolor(bg_color)
+    axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+    axes.set_xlabel(xlabel, color=fg_color, weight='bold')
+    axes.set_ylabel(ylabel, color=fg_color, weight='bold')
+    axes.xaxis.label.set_size(axis_font_size*1.25)
+    axes.yaxis.label.set_size(axis_font_size*1.25)
+    axes.set_title(plot_title, color=fg_color, weight='bold')
+    axes.title.set_size(title_font_size)
+    for ctr, spine in enumerate(axes.spines.values()):
+        spine.set_color(fg_color)
+        if ctr % 2:
+            spine.set_visible(False)
+        else:
+            spine.set_linewidth(2)
+    for xtick, ytick in zip(axes.xaxis.get_major_ticks(), axes.yaxis.get_major_ticks()):
+        xtick.label1.set_fontsize(axis_font_size)
+        xtick.label1.set_fontweight('bold')
+        ytick.label1.set_fontsize(axis_font_size)
+        ytick.label1.set_fontweight('bold')
+
+    styles = ['-', '--', ':', '.-']
+    if len(y_array.shape) > 1:
+        for idx, y_subarray in enumerate(y_array):
+            plt.plot(x_array, y_subarray, styles[idx%len(styles)], axes=axes, linewidth=2)
+    else:
+        plt.plot(x_array, y_array, axes=axes, linewidth=2)
+    plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
+
+
 if __name__ == '__main__':
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
@@ -199,67 +300,46 @@ if __name__ == '__main__':
         oxidizer
     )
     gas_mixture = gas.mole_fraction_dict()
-'''
-    pipe = build_pipe(
-        pipe_schedule,
-        nominal_size,
-        pipe_material,
-        desired_fs,
-        desired_blockage_ratio,
-        window_width,
-        window_height,
-        window_desired_fs,
-        num_window_bolts,
-        bolt_engagement_length,
-        bolt_thread_size,
-        initial_temperature,
-        gas_mixture,
-        mechanism
-    )
+    # pipe = build_pipe(
+    #     pipe_schedule,
+    #     nominal_size,
+    #     pipe_material,
+    #     desired_fs,
+    #     desired_blockage_ratio,
+    #     window_width,
+    #     window_height,
+    #     window_desired_fs,
+    #     num_window_bolts,
+    #     bolt_engagement_length,
+    #     bolt_thread_size,
+    #     initial_temperature,
+    #     gas_mixture,
+    #     mechanism
+    # )
+    #
+    # pprint.pprint(pipe, indent=4)
+    #
+    # with open('test_output.json', 'w') as file:
+    #     json.dump(quantity_remover(pipe), file)
+    #
+    # with open('test_output.json', 'r') as file:
+    #     print()
+    #     print('loads')
+    #     pprint.pprint(json.load(file))
+    #     print()
+    #     # print('load')
+    #     # for line in file:
+    #     #     pprint.pprint(json.loads(file))
 
-    pprint.pprint(pipe, indent=4)
-'''
+    x = np.array([1, 2, 3, 4, 5])
+    y = np.array([4, 6, 8, 8, 9])
+    y = np.array([y, x/y, y/x])
 
-x = [1, 2, 3, 4, 5]
-y = [4, 6, 8, 8, 9]
-y2 = [ynum / xnum for xnum, ynum in zip(x, y)]
 
-bg_color = '#222222'
-fg_color = '#ffffff'
-axis_font_size = 16
-title_font_size = 36
-plot_title = 'Nice.'
-xlabel = 'humdingers'
-ylabel = 'whizzbangs'
-file_name = 'test_plot'
+    plot_title = 'Nice.'
+    xlabel = 'humdingers'
+    ylabel = 'whizzbangs'
+    file_name = 'test_plot'
 
-fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12, 6))
-axes = fig.add_subplot(111)
-axes.set_aspect(0.1875)
-# axes.set_frame_on(False)
-bmap = brewer2mpl.get_map('Dark2', 'Qualitative', 3)
-axes.set_color_cycle(bmap.mpl_colors)
-axes.grid(True, alpha=0.5, linestyle=':')
-axes.patch.set_facecolor(bg_color)
-axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
-axes.set_xlabel(xlabel, color=fg_color, weight='bold')
-axes.set_ylabel(ylabel, color=fg_color, weight='bold')
-axes.xaxis.label.set_size(axis_font_size*1.25)
-axes.yaxis.label.set_size(axis_font_size*1.25)
-axes.set_title(plot_title, color=fg_color, weight='bold')
-axes.title.set_size(title_font_size)
-for ctr, spine in enumerate(axes.spines.values()):
-    spine.set_color(fg_color)
-    if ctr % 2:
-        spine.set_visible(False)
-    else:
-        spine.set_linewidth(2)
-for xtick, ytick in zip(axes.xaxis.get_major_ticks(), axes.yaxis.get_major_ticks()):
-    xtick.label1.set_fontsize(axis_font_size)
-    xtick.label1.set_fontweight('bold')
-    ytick.label1.set_fontsize(axis_font_size)
-    ytick.label1.set_fontweight('bold')
-plt.plot(x, y, axes=axes, linewidth=2)
-plt.plot(x, y2, '--', axes=axes, linewidth=2)
-plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
+    plotify(x, y, plot_title, xlabel, ylabel, file_name)
+
