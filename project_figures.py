@@ -198,7 +198,7 @@ def quantity_remover(mydict):
             if isinstance(item, str) or isinstance(item, numbers.Number):
                 newdict[key] = item
             else:
-                newdict[key] = [quantity_remover(item)]
+                newdict[key] = quantity_remover(item)
     return newdict
 
 
@@ -275,10 +275,7 @@ def plotify(x_array,
     plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
 
 
-if __name__ == '__main__':
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
+def run_studies():
     # constant kwargs
     pipe_material = '316L'
     desired_fs = 4
@@ -294,7 +291,7 @@ if __name__ == '__main__':
     different_sizes = ['1', '2', '3', '4', '5', '6']
     different_num_bolts = list(np.linspace(5, 20, 6, dtype=int))
     different_schedules = ['5', '10', '40', '80', '160', 'XXH']
-    different_temps = list(np.linspace(300, 475, 6))
+    different_temps = list(np.linspace(300, 400, 6))
     different_equivs = list(np.linspace(0.75, 1.25, 6))
     different_fuels = ['CH4', 'H2']
 
@@ -304,16 +301,207 @@ if __name__ == '__main__':
     num_window_bolts = 20
     initial_temperature = quant(300, 'K')
     equivalence = 1
-    fuel = 'CH4'
+    # fuel = 'CH4'
 
-    oxidizer = {'O2': 1, 'N2': 3.76}
-    gas = ct.Solution(mechanism)
-    gas.set_equivalence_ratio(
-        equivalence,
-        fuel,
-        oxidizer
-    )
-    gas_mixture = gas.mole_fraction_dict()
+    # oxidizer = {'O2': 1, 'N2': 3.76}
+    # gas = ct.Solution(mechanism)
+    # gas.set_equivalence_ratio(
+    #     equivalence,
+    #     fuel,
+    #     oxidizer
+    # )
+    # gas_mixture = gas.mole_fraction_dict()
+    # print('\nstarting sizes')
+    # # run size study
+    # results = dict()
+    # for varied_size in different_sizes:
+    #     print('running ', varied)
+    #     results[varied_size] = dict()
+    #     for fuel in different_fuels:
+    #         print('    ', fuel)
+    #         # set oxidizer and get gas mixture
+    #         oxidizer = {'O2': 1, 'N2': 3.76}
+    #         gas = ct.Solution(mechanism)
+    #         gas.set_equivalence_ratio(
+    #             equivalence,
+    #             fuel,
+    #             oxidizer
+    #         )
+    #         gas_mixture = gas.mole_fraction_dict()
+    #         results[varied_size][fuel] = build_pipe(
+    #             pipe_schedule,
+    #             varied_size,  # varying
+    #             pipe_material,
+    #             desired_fs,
+    #             desired_blockage_ratio,
+    #             window_width,
+    #             window_height,
+    #             window_desired_fs,
+    #             num_window_bolts,
+    #             bolt_engagement_length,
+    #             bolt_thread_size,
+    #             initial_temperature,
+    #             gas_mixture,  # varying
+    #             mechanism
+    #         )
+    # results = quantity_remover(results)
+    # with open('size_study.json', 'w') as file:
+    #     json.dump(results, file)
+    # print('\nstarting bolts')
+    # # run bolt study
+    # results = dict()
+    # for varied in different_num_bolts:
+    #     print('running ', varied)
+    #     results[str(varied)] = dict()
+    #     for fuel in different_fuels:
+    #         print('    ', fuel)
+    #         # set oxidizer and get gas mixture
+    #         oxidizer = {'O2': 1, 'N2': 3.76}
+    #         gas = ct.Solution(mechanism)
+    #         gas.set_equivalence_ratio(
+    #             equivalence,
+    #             fuel,
+    #             oxidizer
+    #         )
+    #         gas_mixture = gas.mole_fraction_dict()
+    #         results[str(varied)][fuel] = build_pipe(
+    #             pipe_schedule,
+    #             nominal_size,
+    #             pipe_material,
+    #             desired_fs,
+    #             desired_blockage_ratio,
+    #             window_width,
+    #             window_height,
+    #             window_desired_fs,
+    #             int(varied),  # varying
+    #             bolt_engagement_length,
+    #             bolt_thread_size,
+    #             initial_temperature,
+    #             gas_mixture,  # varying
+    #             mechanism
+    #         )
+    # results = quantity_remover(results)
+    # pprint.pprint(results)
+    # with open('bolt_study.json', 'w') as file:
+    #     json.dump(results, file)
+    #
+    # print ('\nstarting sched')
+    # # run schedule study
+    # results = dict()
+    # for varied in different_schedules:
+    #     print('running ', varied)
+    #     results[str(varied)] = dict()
+    #     for fuel in different_fuels:
+    #         print('    ', fuel)
+    #         # set oxidizer and get gas mixture
+    #         oxidizer = {'O2': 1, 'N2': 3.76}
+    #         gas = ct.Solution(mechanism)
+    #         gas.set_equivalence_ratio(
+    #             equivalence,
+    #             fuel,
+    #             oxidizer
+    #         )
+    #         gas_mixture = gas.mole_fraction_dict()
+    #         results[str(varied)][fuel] = build_pipe(
+    #             varied,  # varying
+    #             nominal_size,
+    #             pipe_material,
+    #             desired_fs,
+    #             desired_blockage_ratio,
+    #             window_width,
+    #             window_height,
+    #             window_desired_fs,
+    #             num_window_bolts,
+    #             bolt_engagement_length,
+    #             bolt_thread_size,
+    #             initial_temperature,
+    #             gas_mixture,  # varying
+    #             mechanism
+    #         )
+    # results = quantity_remover(results)
+    # with open('schedule_study.json', 'w') as file:
+    #     json.dump(results, file)
+    #
+    # print('\starting temps')
+    # # run temperature study
+    # results = dict()
+    # for varied in different_temps:
+    #     print('running ', varied)
+    #     results[str(varied)] = dict()
+    #     for fuel in different_fuels:
+    #         print('    ', fuel)
+    #         # set oxidizer and get gas mixture
+    #         oxidizer = {'O2': 1, 'N2': 3.76}
+    #         gas = ct.Solution(mechanism)
+    #         gas.set_equivalence_ratio(
+    #             equivalence,
+    #             fuel,
+    #             oxidizer
+    #         )
+    #         gas_mixture = gas.mole_fraction_dict()
+    #         results[str(varied)][fuel] = build_pipe(
+    #             pipe_schedule,
+    #             nominal_size,
+    #             pipe_material,
+    #             desired_fs,
+    #             desired_blockage_ratio,
+    #             window_width,
+    #             window_height,
+    #             window_desired_fs,
+    #             num_window_bolts,
+    #             bolt_engagement_length,
+    #             bolt_thread_size,
+    #             quant(varied, 'K'),  # varying
+    #             gas_mixture,  # varying
+    #             mechanism
+    #         )
+    # results = quantity_remover(results)
+    # with open('temperature_study.json', 'w') as file:
+    #     json.dump(results, file)
+    print('\nstarting equivs')
+    # run equivalence study
+    results = dict()
+    for varied in different_equivs:
+        print('running ', varied)
+        results[str(varied)] = dict()
+        for fuel in different_fuels:
+            print('    ', fuel)
+            # set oxidizer and get gas mixture
+            oxidizer = {'O2': 1, 'N2': 3.76}
+            gas = ct.Solution(mechanism)
+            gas.set_equivalence_ratio(
+                varied,
+                fuel,
+                oxidizer
+            )
+            gas_mixture = gas.mole_fraction_dict()
+            results[str(varied)][fuel] = build_pipe(
+                pipe_schedule,
+                nominal_size,
+                pipe_material,
+                desired_fs,
+                desired_blockage_ratio,
+                window_width,
+                window_height,
+                window_desired_fs,
+                num_window_bolts,
+                bolt_engagement_length,
+                bolt_thread_size,
+                initial_temperature,
+                gas_mixture,  # varying
+                mechanism
+            )
+    results = quantity_remover(results)
+    with open('schedule_study.json', 'w') as file:
+        json.dump(results, file)
+
+if __name__ == '__main__':
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    run_studies()
+
+
     # pipe = build_pipe(
     #     pipe_schedule,
     #     nominal_size,
@@ -345,15 +533,15 @@ if __name__ == '__main__':
     #     # for line in file:
     #     #     pprint.pprint(json.loads(file))
 
-    x = np.array([1, 2, 3, 4, 5])
-    y = np.array([4, 6, 8, 8, 9])
-    y = np.array([y, x/y, y/x])
-
-
-    plot_title = 'Nice.'
-    xlabel = 'humdingers'
-    ylabel = 'whizzbangs'
-    file_name = 'test_plot'
-
-    plotify(x, y, plot_title, xlabel, ylabel, file_name)
+    # x = np.array([1, 2, 3, 4, 5])
+    # y = np.array([4, 6, 8, 8, 9])
+    # y = np.array([y, x/y, y/x])
+    #
+    #
+    # plot_title = 'Nice.'
+    # xlabel = 'humdingers'
+    # ylabel = 'whizzbangs'
+    # file_name = 'test_plot'
+    #
+    # plotify(x, y, plot_title, xlabel, ylabel, file_name)
 
