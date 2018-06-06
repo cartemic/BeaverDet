@@ -232,8 +232,7 @@ def plotify(x_array,
             y_array,
             plot_title,
             xlabel,
-            ylabel,
-            file_name
+            ylabel
 ):
     bg_color = '#222222'
     fg_color = '#ffffff'
@@ -241,7 +240,7 @@ def plotify(x_array,
     title_font_size = 36
     fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12, 6))
     axes = fig.add_subplot(111)
-    axes.set_aspect(0.1875)
+    # axes.set_aspect(0.1875)
     bmap = brewer2mpl.get_map('Dark2', 'Qualitative', 8)
     axes.set_color_cycle(bmap.mpl_colors)
     axes.grid(True, alpha=0.5, linestyle=':')
@@ -270,9 +269,14 @@ def plotify(x_array,
     if len(y_array.shape) > 1:
         for idx, y_subarray in enumerate(y_array):
             plt.plot(x_array, y_subarray, styles[idx%len(styles)], axes=axes, linewidth=2)
+            leg = plt.legend(['Methane', 'Hydrogen'], fontsize=axis_font_size, facecolor=None, edgecolor=None, frameon=False)
+            for text in leg.get_texts():
+                text.set_color(fg_color)
+                text.set_weight('bold')
     else:
         plt.plot(x_array, y_array, axes=axes, linewidth=2)
-    plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
+    # plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
+    return axes, fig
 
 
 def run_studies():
@@ -499,8 +503,50 @@ if __name__ == '__main__':
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
 
-    run_studies()
+    # run_studies()
 
+    bg_color = '#222222'
+
+    with open('schedule_study.json', 'r') as file:
+        data = json.loads(file.read())
+
+        keys = data.keys()
+        methane = []
+        hydrogen = []
+        for key in keys:
+            methane.append(data[key]['CH4']['pressures']['initial'][0])
+            hydrogen.append(data[key]['H2']['pressures']['initial'][0])
+
+        (axes, fig) = plotify(range(len(keys)-1),
+                np.array([methane[:-1], hydrogen[:-1]]),
+                'Initial Pressure vs. Pipe Schedule',
+                'Schedule',
+                'Initial Pressure (atm)')
+        file_name = 'temperature_study'
+        axes.xaxis.set_ticks(range(len(keys)-1))
+        axes.xaxis.set_ticklabels(list(keys)[:-1])
+        plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+
+
+    with open('size_study.json', 'r') as file:
+        data = json.loads(file.read())
+
+        keys = data.keys()
+        methane = []
+        hydrogen = []
+        for key in keys:
+            methane.append(data[key]['CH4']['pressures']['reflected'][0])
+            hydrogen.append(data[key]['H2']['pressures']['reflected'][0])
+
+        (axes, fig) = plotify([int(size) for size in data.keys()],
+                              np.array([methane, hydrogen]),
+                              'Initial Pressure vs. NPS',
+                              'NPS (in)',
+                              'Initial Pressure (atm)')
+        file_name = 'size_study'
+        plt.show()
+        # axes.xaxis.set_ticks(range(len(keys) - 1))
+        # axes.xaxis.set_ticklabels(list(keys)[:-1])
 
     # pipe = build_pipe(
     #     pipe_schedule,
