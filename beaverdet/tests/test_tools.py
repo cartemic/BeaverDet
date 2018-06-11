@@ -598,7 +598,7 @@ def test_calculate_max_initial_pressure():
         max_pressures = [quant(1200, 'psi'), False]
         error_tol = 1e-4
 
-        max_solutions = [max_pressures[0], quant(14120048.691626951, 'Pa')]
+        max_solutions = [max_pressures[0], quant(149.046409603932, 'atm')]
 
         # test function output
         for max_pressure, max_solution in zip(max_pressures, max_solutions):

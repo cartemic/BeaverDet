@@ -4,8 +4,9 @@ import cantera as ct
 import pint
 import math
 import pprint
-import brewer2mpl
+import palettable
 from matplotlib import pyplot as plt
+from matplotlib import rc
 import json
 import numbers
 import numpy as np
@@ -40,7 +41,6 @@ def build_pipe(
     pipe_properties['safety factor'] = desired_fs
     pipe_properties['temperatures'] = dict()
     pipe_properties['temperatures']['initial'] = initial_temperature
-
     pipe_dimensions = acc.get_pipe_dimensions(
         pipe_schedule,
         nominal_size
@@ -70,7 +70,8 @@ def build_pipe(
         desired_fs=desired_fs,
         initial_temperature=initial_temperature,
         species_dict=gas_mixture,
-        mechanism=mechanism
+        mechanism=mechanism,
+        max_iterations=7
     )
 
     # calculate DDT runup distance
@@ -84,6 +85,8 @@ def build_pipe(
     )
     pipe_properties['dimensions'] = pipe_dimensions
 
+    print('     initial:', pipe_properties['pressures']['initial'].to('atm'))
+
     # calculate cj and reflected states
     states = tools.calculate_reflected_shock_state(
         initial_pressure=pipe_properties['pressures']['initial'],
@@ -91,6 +94,7 @@ def build_pipe(
         species_dict=gas_mixture,
         mechanism=mechanism
     )
+
     a_0 = acc.get_equil_sound_speed(
         temperature=initial_temperature,
         pressure=pipe_properties['pressures']['initial'],
@@ -113,6 +117,9 @@ def build_pipe(
         states['reflected']['state'].T,
         'K'
     )
+
+    print('     max:', pipe_properties['pressures']['reflected'].to('atm'))
+
     pipe_properties['speeds'] = dict()
     pipe_properties['speeds']['cj'] = states['cj']['speed']
     pipe_properties['speeds']['reflected'] = states['reflected']['speed']
@@ -234,16 +241,22 @@ def plotify(x_array,
             xlabel,
             ylabel
 ):
-    bg_color = '#222222'
-    fg_color = '#ffffff'
+    plot_title = '\\textbf{' + plot_title + '}'
+    xlabel = '\\textbf{' + xlabel + '}'
+    ylabel = '\\textbf{' + ylabel + '}'
+    rc('font', **{'family': 'serif', 'serif': ['cm10']})
+    rc('font', weight='heavy')
+    rc('text', usetex=True)
+    bg_color = '#ffffff'
+    fg_color = '#222222'
     axis_font_size = 16
     title_font_size = 36
     fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12, 6))
     axes = fig.add_subplot(111)
     # axes.set_aspect(0.1875)
-    bmap = brewer2mpl.get_map('Dark2', 'Qualitative', 8)
+    bmap = palettable.tableau.get_map('ColorBlind_10')
     axes.set_color_cycle(bmap.mpl_colors)
-    axes.grid(True, alpha=0.5, linestyle=':')
+    axes.grid(True, alpha=0.5, linestyle='-')
     axes.patch.set_facecolor(bg_color)
     axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
     axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
@@ -276,6 +289,13 @@ def plotify(x_array,
     else:
         plt.plot(x_array, y_array, axes=axes, linewidth=2)
     # plt.savefig(file_name+'.png', bbox='tight', facecolor=bg_color)
+
+    ticks = axes.get_xticks()
+    step = 0.005 * (ticks[1] - ticks[0])
+    axes.set_xlim(ticks[1] - step, ticks[-2] + step)
+    ticks = axes.get_yticks()
+    step = 0.005 * (ticks[1] - ticks[0])
+    axes.set_ylim(ticks[0] - step, ticks[-1] + step)
     return axes, fig
 
 
@@ -295,7 +315,7 @@ def run_studies():
     different_sizes = ['1', '2', '3', '4', '5', '6']
     different_num_bolts = list(np.linspace(5, 20, 6, dtype=int))
     different_schedules = ['5', '10', '40', '80', '160', 'XXH']
-    different_temps = list(np.linspace(300, 400, 6))
+    different_temps = list(np.linspace(75, 400, 6))
     different_equivs = list(np.linspace(0.75, 1.25, 6))
     different_fuels = ['CH4', 'H2']
 
@@ -318,9 +338,9 @@ def run_studies():
     # print('\nstarting sizes')
     # # run size study
     # results = dict()
-    # for varied_size in different_sizes:
+    # for varied in different_sizes:
     #     print('running ', varied)
-    #     results[varied_size] = dict()
+    #     results[varied] = dict()
     #     for fuel in different_fuels:
     #         print('    ', fuel)
     #         # set oxidizer and get gas mixture
@@ -332,9 +352,9 @@ def run_studies():
     #             oxidizer
     #         )
     #         gas_mixture = gas.mole_fraction_dict()
-    #         results[varied_size][fuel] = build_pipe(
+    #         results[varied][fuel] = build_pipe(
     #             pipe_schedule,
-    #             varied_size,  # varying
+    #             varied,  # varying
     #             pipe_material,
     #             desired_fs,
     #             desired_blockage_ratio,
@@ -426,46 +446,10 @@ def run_studies():
     # with open('schedule_study.json', 'w') as file:
     #     json.dump(results, file)
     #
-    # print('\starting temps')
-    # # run temperature study
-    # results = dict()
-    # for varied in different_temps:
-    #     print('running ', varied)
-    #     results[str(varied)] = dict()
-    #     for fuel in different_fuels:
-    #         print('    ', fuel)
-    #         # set oxidizer and get gas mixture
-    #         oxidizer = {'O2': 1, 'N2': 3.76}
-    #         gas = ct.Solution(mechanism)
-    #         gas.set_equivalence_ratio(
-    #             equivalence,
-    #             fuel,
-    #             oxidizer
-    #         )
-    #         gas_mixture = gas.mole_fraction_dict()
-    #         results[str(varied)][fuel] = build_pipe(
-    #             pipe_schedule,
-    #             nominal_size,
-    #             pipe_material,
-    #             desired_fs,
-    #             desired_blockage_ratio,
-    #             window_width,
-    #             window_height,
-    #             window_desired_fs,
-    #             num_window_bolts,
-    #             bolt_engagement_length,
-    #             bolt_thread_size,
-    #             quant(varied, 'K'),  # varying
-    #             gas_mixture,  # varying
-    #             mechanism
-    #         )
-    # results = quantity_remover(results)
-    # with open('temperature_study.json', 'w') as file:
-    #     json.dump(results, file)
-    print('\nstarting equivs')
-    # run equivalence study
+    print('\starting temps')
+    # run temperature study
     results = dict()
-    for varied in different_equivs:
+    for varied in different_temps:
         print('running ', varied)
         results[str(varied)] = dict()
         for fuel in different_fuels:
@@ -474,7 +458,7 @@ def run_studies():
             oxidizer = {'O2': 1, 'N2': 3.76}
             gas = ct.Solution(mechanism)
             gas.set_equivalence_ratio(
-                varied,
+                equivalence,
                 fuel,
                 oxidizer
             )
@@ -491,13 +475,50 @@ def run_studies():
                 num_window_bolts,
                 bolt_engagement_length,
                 bolt_thread_size,
-                initial_temperature,
+                quant(varied, 'degF'),  # varying
                 gas_mixture,  # varying
                 mechanism
             )
     results = quantity_remover(results)
-    with open('schedule_study.json', 'w') as file:
+    with open('temperature_study.json', 'w') as file:
         json.dump(results, file)
+
+    # print('\nstarting equivs')
+    # # run equivalence study
+    # results = dict()
+    # for varied in different_equivs:
+    #     print('running ', varied)
+    #     results[str(varied)] = dict()
+    #     for fuel in different_fuels:
+    #         print('    ', fuel)
+    #         # set oxidizer and get gas mixture
+    #         oxidizer = {'O2': 1, 'N2': 3.76}
+    #         gas = ct.Solution(mechanism)
+    #         gas.set_equivalence_ratio(
+    #             varied,
+    #             fuel,
+    #             oxidizer
+    #         )
+    #         gas_mixture = gas.mole_fraction_dict()
+    #         results[str(varied)][fuel] = build_pipe(
+    #             pipe_schedule,
+    #             nominal_size,
+    #             pipe_material,
+    #             desired_fs,
+    #             desired_blockage_ratio,
+    #             window_width,
+    #             window_height,
+    #             window_desired_fs,
+    #             num_window_bolts,
+    #             bolt_engagement_length,
+    #             bolt_thread_size,
+    #             initial_temperature,
+    #             gas_mixture,  # varying
+    #             mechanism
+    #         )
+    # results = quantity_remover(results)
+    # with open('equivalence_study.json', 'w') as file:
+    #     json.dump(results, file)
 
 if __name__ == '__main__':
     ureg = pint.UnitRegistry()
@@ -505,48 +526,202 @@ if __name__ == '__main__':
 
     # run_studies()
 
-    bg_color = '#222222'
+    bg_color = '#ffffff'
+    fg_color = '#222222'
+    axis_font_size = 16
 
     with open('schedule_study.json', 'r') as file:
         data = json.loads(file.read())
+    keys = data.keys()
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        methane.append(data[key]['CH4']['pressures']['initial'][0])
+        hydrogen.append(data[key]['H2']['pressures']['initial'][0])
 
-        keys = data.keys()
-        methane = []
-        hydrogen = []
-        for key in keys:
-            methane.append(data[key]['CH4']['pressures']['initial'][0])
-            hydrogen.append(data[key]['H2']['pressures']['initial'][0])
+    (axes, fig) = plotify(range(len(keys)),
+            np.array([methane, hydrogen]),
+            'Initial Pressure vs. Pipe Schedule',
+            'Schedule',
+            'Initial Pressure (atm)')
+    file_name = 'schedule_study'
+    axes.xaxis.set_ticks(range(len(keys)))
+    axes.xaxis.set_ticklabels(list(keys))
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        methane.append(data[key]['CH4']['pressures']['reflected'][0])
+        hydrogen.append(data[key]['H2']['pressures']['reflected'][0])
 
-        (axes, fig) = plotify(range(len(keys)-1),
-                np.array([methane[:-1], hydrogen[:-1]]),
-                'Initial Pressure vs. Pipe Schedule',
-                'Schedule',
-                'Initial Pressure (atm)')
-        file_name = 'temperature_study'
-        axes.xaxis.set_ticks(range(len(keys)-1))
-        axes.xaxis.set_ticklabels(list(keys)[:-1])
-        plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
-
+    (axes, fig) = plotify(range(len(keys)),
+            np.array([methane, hydrogen]),
+            'Reflected Pressure vs. Pipe Schedule',
+            'Schedule',
+            'Reflected Pressure (atm)')
+    file_name = 'schedule_study_max'
+    axes.xaxis.set_ticks(range(len(keys)))
+    axes.xaxis.set_ticklabels(list(keys))
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    (axes, fig) = plotify(range(len(keys)),
+            np.array([methane_dlf, hydrogen_dlf]),
+            'DLF vs. Pipe Schedule',
+            'Schedule',
+            'Dynamic Load Factor')
+    file_name = 'schedule_study_dlf'
+    axes.xaxis.set_ticks(range(len(keys)))
+    axes.xaxis.set_ticklabels(list(keys))
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
 
     with open('size_study.json', 'r') as file:
         data = json.loads(file.read())
+    keys = data.keys()
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        methane.append(data[key]['CH4']['pressures']['initial'][0])
+        hydrogen.append(data[key]['H2']['pressures']['initial'][0])
 
-        keys = data.keys()
-        methane = []
-        hydrogen = []
-        for key in keys:
-            methane.append(data[key]['CH4']['pressures']['reflected'][0])
-            hydrogen.append(data[key]['H2']['pressures']['reflected'][0])
+    (axes, fig) = plotify([int(size) for size in data.keys()],
+                          np.array([methane, hydrogen]),
+                          'Initial Pressure vs. NPS',
+                          'NPS (in)',
+                          'Initial Pressure (atm)')
+    file_name = 'size_study'
 
-        (axes, fig) = plotify([int(size) for size in data.keys()],
-                              np.array([methane, hydrogen]),
-                              'Initial Pressure vs. NPS',
-                              'NPS (in)',
-                              'Initial Pressure (atm)')
-        file_name = 'size_study'
-        plt.show()
-        # axes.xaxis.set_ticks(range(len(keys) - 1))
-        # axes.xaxis.set_ticklabels(list(keys)[:-1])
+    ticks = axes.get_yticks()
+    step = 0.005 * (ticks[1] - ticks[0])
+    axes.set_ylim(ticks[0] - step, ticks[-1] + step)
+
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        methane.append(data[key]['CH4']['pressures']['reflected'][0])
+        hydrogen.append(data[key]['H2']['pressures']['reflected'][0])
+
+    (axes, fig) = plotify([int(size) for size in data.keys()],
+                          np.array([methane, hydrogen]),
+                          'Reflected Pressure vs. NPS',
+                          'NPS (in)',
+                          'Reflected Pressure (atm)')
+    file_name = 'size_study_max'
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    (axes, fig) = plotify([int(size) for size in data.keys()],
+                          np.array([methane_dlf, hydrogen_dlf]),
+                          'DLF vs. NPS',
+                          'NPS (in)',
+                          'Dynamic Load Factor')
+    file_name = 'size_study_dlf'
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+
+    with open('temperature_study.json', 'r') as file:
+        data = json.loads(file.read())
+    keys = data.keys()
+    x_array = []
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        x_array.append(key)
+        methane.append(data[key]['CH4']['pressures']['initial'][0])
+        hydrogen.append(data[key]['H2']['pressures']['initial'][0])
+
+        pmax = data[key]['CH4']['pressures']['reflected'][0]
+
+        print('temp:', x_array[-1])
+        print('    initial:', methane[-1])
+        print('    max:    ', pmax)
+
+    (axes, fig) = plotify(range(len(keys)),
+            np.array([methane, hydrogen]),
+            'Initial Pressure vs. Initial Temp',
+            'Initial Temperature (K)',
+            'Initial Pressure (atm)')
+    file_name = 'temperature_study'
+    axes.xaxis.set_ticks(range(len(keys)))
+    axes.xaxis.set_ticklabels(x_array)
+    pprint.pprint(data)
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    x_array = []
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        x_array.append(key)
+        methane.append(data[key]['CH4']['pressures']['reflected'][0])
+        hydrogen.append(data[key]['H2']['pressures']['reflected'][0])
+        print(x_array[-1], methane[-1])
+
+    (axes, fig) = plotify(range(len(keys)),
+            np.array([methane, hydrogen]),
+            'Reflected Pressure vs. Initial Temp',
+            'Initial Temperature (K)',
+            'Max Pressure (atm)')
+    file_name = 'temperature_study_max'
+    axes.xaxis.set_ticks(range(len(keys)))
+    axes.xaxis.set_ticklabels(x_array)
+    pprint.pprint(keys)
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    (axes, fig) = plotify(range(len(keys)),
+            np.array([methane_dlf, hydrogen_dlf]),
+            'DLF vs. Initial Temp',
+            'Initial Temperature (K)',
+            'Dynamic Load Factor')
+    file_name = 'temperature_study_dlf'
+    axes.xaxis.set_ticks(range(len(keys)))
+    axes.xaxis.set_ticklabels(x_array)
+    pprint.pprint(keys)
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+
+    with open('bolt_study.json', 'r') as file:
+        data = json.loads(file.read())
+    keys = data.keys()
+    methane_dlf = []
+    hydrogen_dlf = []
+    methane = []
+    hydrogen = []
+    for key in keys:
+        methane_dlf.append(data[key]['CH4']['dynamic load factor'])
+        hydrogen_dlf.append(data[key]['H2']['dynamic load factor'])
+        methane.append(data[key]['H2']['viewing section']['safety factors']['bolt'][0])
+        hydrogen.append(data[key]['H2']['viewing section']['safety factors']['plate'][0])
+
+    (axes, fig) = plotify([int(size) for size in data.keys()],
+                          np.array([methane, hydrogen]),
+                          'Safety Factor vs. Number of Bolts',
+                          'Number of Bolts',
+                          'Safety Factor')
+    file_name = 'bolt_study'
+    leg = plt.legend(['Bolt', 'Plate'], fontsize=axis_font_size,
+                     facecolor=None, edgecolor=None, frameon=False)
+    for text in leg.get_texts():
+        text.set_color(fg_color)
+        text.set_weight('bold')
+    plt.savefig(file_name + '.png', bbox='tight', facecolor=bg_color)
+    plt.show()
 
     # pipe = build_pipe(
     #     pipe_schedule,

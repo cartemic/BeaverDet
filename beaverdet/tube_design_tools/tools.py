@@ -18,9 +18,14 @@ import pint
 import pandas as pd
 import numpy as np
 import cantera as ct
-import sd2
+# import sd2
 from . import accessories as acc
 
+
+import imp
+mypath = os.path.relpath(os.path.join(os.path.curdir, '../', 'SD2'))
+found = imp.find_module('sd2', [mypath])
+sd2 = imp.load_module('sd2', *found)
 
 def get_flange_limits_from_csv(
         group=2.3
@@ -1077,6 +1082,7 @@ def calculate_reflected_shock_state(
         reflected_gas,
         cj_speed
     )
+
     return {'reflected': {'speed': quant(reflected_speed, 'm/s'),
                           'state': reflected_gas},
             'cj': {'speed': quant(cj_speed, 'm/s'),
@@ -1167,8 +1173,18 @@ def calculate_max_initial_pressure(
         pipe_material,
         welded
     )
-    max_stress = quant(stress_limits['stress'][1][1],
-                       stress_limits['stress'][0])
+    temp_units = stress_limits['temperature'][0]
+    temperatures = stress_limits['temperature'][1]
+    # ensure material stress limits have monotonically increasing temperatures,
+    # otherwise the np.interp "results are nonsense" per scipy docs
+    if not np.all(np.diff(temperatures) > 0):
+        raise ValueError('Stress limits require temperatures to be ' +
+                         'monotonically increasing')
+    stress_units = stress_limits['stress'][0]
+    stresses = stress_limits['stress'][1]
+    current_temp = initial_temperature.to(temp_units).magnitude
+    max_stress = quant(np.interp(current_temp, temperatures, stresses),
+                       stress_units)
 
     # calculate max allowable pressure
     if not max_pressure:
@@ -1199,7 +1215,6 @@ def calculate_max_initial_pressure(
     counter = 0
     while error > error_tol and counter < max_iterations:
         counter += 1
-
         # get reflected shock pressure
         states = calculate_reflected_shock_state(
                 initial_pressure,
@@ -1237,6 +1252,11 @@ def calculate_max_initial_pressure(
                 dlf /
                 reflected_pressure.to_base_units().magnitude
         )
+
+    print('      calculated initial:', initial_pressure.to('atm'))
+    print('      calculated max:    ', max_allowable_pressure.to('atm') / dlf)
+    print('      calculated reflect:', reflected_pressure.to('atm'))
+
     return initial_pressure
 
 # TODO: Thermal knockdown
