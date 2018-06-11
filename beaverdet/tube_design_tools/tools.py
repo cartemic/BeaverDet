@@ -18,14 +18,9 @@ import pint
 import pandas as pd
 import numpy as np
 import cantera as ct
-# import sd2
+import sd2
 from . import accessories as acc
 
-
-import imp
-mypath = os.path.relpath(os.path.join(os.path.curdir, '../', 'SD2'))
-found = imp.find_module('sd2', [mypath])
-sd2 = imp.load_module('sd2', *found)
 
 def get_flange_limits_from_csv(
         group=2.3
