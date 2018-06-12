@@ -20,6 +20,72 @@ import pandas as pd
 import cantera as ct
 
 
+def get_flange_limits_from_csv(
+        group=2.3
+):
+    """
+    Reads in flange pressure limits as a function of temperature for different
+    pressure classes per ASME B16.5. Temperature is in Centigrade and pressure
+    is in bar.
+
+    Inputs:
+        group: float or string of ASME B16.5 material group (defaults to 2.3).
+             Only groups 2.1, 2.2, and 2.3 are included in the current release.
+
+    Outputs:
+        flange_limits: pandas dataframe, the first column of which is
+             temperature. All other columns' keys are flange classes, and the
+             values are the appropriate pressure limits in bar.
+    """
+
+    # ensure group is valid
+    group = str(group).replace('.', '_')
+    file_directory = os.path.join(os.path.dirname(os.path.relpath(__file__)),
+                                  'lookup_data')
+    file_name = 'ASME_B16_5_flange_ratings_group_' + group + '.csv'
+    file_location = os.path.relpath(os.path.join(file_directory, file_name))
+
+    # initialize unit registry and quantity for unit handling
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+    if os.path.exists(file_location):
+        # import the correct .csv file as a pandas dataframe
+        flange_limits = pd.read_csv(file_location)
+
+        # ensure all temperatures and pressures are floats, and check to make
+        # sure pressures are greater than zero
+        values = flange_limits.values
+        for row_number, row in enumerate(values):
+            for column_number, item in enumerate(row):
+                # ensure each item is a float and assign non-numeric values
+                # a value of zero
+                try:
+                    values[row_number][column_number] = float(item)
+                except ValueError:
+                    values[row_number][column_number] = 0.
+
+                if column_number > 0:
+                    # these are pressures, which must be positive
+                    if values[row_number][column_number] < 0:
+                        raise ValueError('Pressure less than zero.')
+
+        # add units to temperature column
+        flange_limits['Temperature'] = [quant(temp, ureg.degC) for temp in
+                                        flange_limits['Temperature']]
+
+        # add units to pressure columns
+        for key in flange_limits.keys():
+            if key != 'Temperature':
+                flange_limits[key] = [quant(pressure, ureg.bar) for pressure in
+                                      flange_limits[key]]
+
+        return flange_limits
+
+    else:
+        # the user gave a bad group label
+        raise ValueError('{0} is not a valid group'.format(group))
+
+
 def check_materials():
     """
     Makes sure that the materials in materials_list.csv have stress limits and

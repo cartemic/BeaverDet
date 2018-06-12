@@ -19,6 +19,102 @@ import pint
 from ..tube_design_tools import accessories
 
 
+
+def test_get_flange_limits_from_csv():
+    """
+    Tests the get_flange_limits_from_csv() function, which reads flange
+    pressure limits as a function of temperature for various flange classes.
+
+    Conditions tested:
+        - proper error handling with bad .csv file name
+        - imported dataframe has correct keys
+        - imported dataframe has correct values and units
+        - non-float values are properly ignored
+        - proper error handling when a pressure value is negative
+    """
+    # ----------------------------INPUT TESTING----------------------------
+    # ensure proper handling when a bad material group is requested
+
+    # provide a bad input and the error that should result from it
+    my_input = 'batman'
+    bad_output = my_input + ' is not a valid group'
+
+    # ensure the error is handled properly
+    with pytest.raises(ValueError, match=bad_output):
+        accessories.get_flange_limits_from_csv(my_input)
+
+    # ----------------------------OUTPUT TESTING---------------------------
+    # ensure proper output when a good material group is requested by
+    # comparing output to a known result
+
+    # file information
+    my_input = 'testfile'
+    file_directory = os.path.join(os.path.dirname(os.path.relpath(__file__)),
+                                  '..', 'tube_design_tools', 'lookup_data')
+    file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
+    file_location = os.path.relpath(os.path.join(file_directory, file_name))
+
+    # incorporate units with pint
+    ureg = pint.UnitRegistry()
+    quant = ureg.Quantity
+
+    # create test dataframe and write it to a .csv file
+    test_dataframe = pd.DataFrame(data=[[0, 1],     # temperatures
+                                        [2, 3]],    # pressures
+                                  columns=['Temperature', 'Class'])
+    test_dataframe.to_csv(file_location, index=False)
+
+    # add units to test dataframe
+    test_dataframe['Temperature'] = [quant(temp, ureg.degC) for temp in
+                                     test_dataframe['Temperature']]
+    test_dataframe['Class'] = [quant(pressure, ureg.bar) for pressure in
+                               test_dataframe['Class']]
+
+    # read in test dataframe using get_flange_limits_from_csv()
+    test_result = accessories.get_flange_limits_from_csv(my_input)
+
+    # check that dataframes have the same number of keys and that they match
+    assert len(test_dataframe.keys()) == len(test_result.keys())
+    assert all(key1 == key2 for key1, key2 in zip(test_dataframe.keys(),
+                                                  test_result.keys()))
+
+    # flatten list of values and check that all dataframe values match
+    test_dataframe_values = [item for column in test_dataframe.values
+                             for item in column]
+    test_result_values = [item for column in test_result.values
+                          for item in column]
+    assert len(test_dataframe_values) == len(test_result_values)
+    assert all(val1 == val2 for val1, val2 in zip(test_dataframe_values,
+                                                  test_result_values))
+
+    # ensure rejection of tabulated pressures less than zero
+    with pytest.raises(ValueError, match='Pressure less than zero.'):
+        # create test dataframe and write it to a .csv file
+        test_dataframe = pd.DataFrame(data=[[0, 1],     # temperatures
+                                            [2, -3]],   # pressures
+                                      columns=['Temperature', 'Class'])
+        test_dataframe.to_csv(file_location, index=False)
+
+        # run the test
+        accessories.get_flange_limits_from_csv(my_input)
+
+    # create .csv to test non-numeric pressure and temperature values
+    test_temperatures = [9, 's', 'd']
+    test_pressures = ['a', 3, 'f']
+    test_dataframe = pd.DataFrame({'Temperature': test_temperatures,
+                                   'Pressure': test_pressures})
+    test_dataframe.to_csv(file_location, index=False)
+
+    # ensure non-numeric pressures and temperatures are zeroed out
+    test_limits = accessories.get_flange_limits_from_csv(my_input)
+    for index, my_temperature in enumerate(test_temperatures):
+        if isinstance(my_temperature, str):
+            assert test_limits.Temperature[index].magnitude == 0
+
+    # delete test .csv file from disk
+    os.remove(file_location)
+
+
 def test_check_materials():
     """
     Tests the check_materials function, which checks the materials_list
