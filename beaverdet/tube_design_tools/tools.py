@@ -1180,10 +1180,6 @@ def calculate_max_initial_pressure(
                 reflected_pressure.to_base_units().magnitude
         )
 
-    print('      calculated initial:', initial_pressure.to('atm'))
-    print('      calculated max:    ', max_allowable_pressure.to('atm') / dlf)
-    print('      calculated reflect:', reflected_pressure.to('atm'))
-
     return initial_pressure
 
 # TODO: Thermal knockdown
