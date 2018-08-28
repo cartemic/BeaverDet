@@ -41,7 +41,7 @@ needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 setup_requires = ['pytest-runner'] if needs_pytest else []
 
 setup(
-    name='sd2',
+    name='beaverdet',
     version=__version__,
     description='A collection of detonation tools',
     long_description=desc,
@@ -51,10 +51,10 @@ setup(
     license='MIT',
     python_requires='>=3.6.*',
     packages=['beaverdet',
-              'beaverdet.tube_design_tools',
+              'beaverdet.tube_design',
               'beaverdet.tests'],
     package_dir={'beaverdet': 'beaverdet'},
-    package_data={'beaverdet': ['tube_design_tools/lookup_data/*']},
+    package_data={'beaverdet': ['tube_design/lookup_data/*']},
     install_requires=install_requires,
     tests_require=tests_require,
     setup_requires=setup_requires
