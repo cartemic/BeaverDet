@@ -12,14 +12,17 @@ CREATED BY:
 
 
 import warnings
+import os
 from math import sqrt
 import pint
+import pandas as pd
 import numpy as np
 import cantera as ct
 import sd2
 from . import tools
 
 
+# TODO: needs get_material_groups. move lookup_flange_class to Tube() first.
 def lookup_flange_class(
         temperature,
         pressure,
@@ -42,7 +45,7 @@ def lookup_flange_class(
         raise ValueError('Desired material non-string input.')
 
     # read in available materials and their associated groups
-    materials_dict = tools.get_material_groups()
+    materials_dict = self._get_material_groups()
 
     # ensure desired_material is in materials_dict
     if desired_material not in materials_dict.keys():
@@ -333,101 +336,7 @@ def calculate_window_thk(
         width.to_base_units().units).to(width.units.format_babel())
 
 
-def get_pipe_dlf(
-        pipe_material,
-        pipe_schedule,
-        nominal_pipe_size,
-        cj_speed,
-        plus_or_minus=0.1
-):
-    """
-    This function calculates the dynamic load factor by which a detonation
-    tube's static analysis should be scaled in order to account for the tube's
-    response to pressure transients. DLF is based on the work of Shepherd [1].
-    Since the limits of "approximately equal to" are not define we assume a
-    default value of plus or minus ten percent, thus plus_or_minus=0.1.
-
-    [1] Shepherd, J. E. (2009). Structural Response of Piping to Internal Gas
-    Detonation. Journal of Pressure Vessel Technology, 131(3), 031204.
-    https://doi.org/10.1115/1.3089497
-
-    Parameters
-    ----------
-    pipe_material : str
-        Material which the pipe is made of, e.g. '316L', '304'
-    pipe_schedule: str
-        The pipe's schedule, e.g. '40', '80s', 'XXS'
-    nominal_pipe_size : str
-        Nominal pipe size of the detonation tube, e.g. '1/2', '1 1/4', '20'
-    cj_speed : pint quantity
-        A pint quantity with velocity units representing the Chapman-Jouguet
-        wave speed of the detonation in question
-    plus_or_minus : float
-        Defines the band about the critical velocity which is considered
-        "approximately equal to" -- the default value of 0.1 means plus or minus
-        ten percent.
-
-    Returns
-    -------
-    dynamic_load_factor : float
-        Factor by which the tube's static maximum pressure should be de-rated to
-        account for transient response to detonation waves.
-    """
-    tools.check_pint_quantity(
-        cj_speed,
-        'velocity',
-        ensure_positive=True
-    )
-
-    if not (0 < plus_or_minus < 1):
-        raise ValueError('plus_or_minus factor outside of (0, 1)')
-
-    # get pipe dimensions
-    dimensions = tools.get_pipe_dimensions(
-        pipe_schedule,
-        nominal_pipe_size
-    )
-    pipe_od = dimensions['outer diameter']
-    pipe_id = dimensions['inner diameter']
-    pipe_thk = dimensions['wall thickness']
-
-    # get material properties
-    properties_dataframe = tools.collect_tube_materials().set_index('Grade')
-    if pipe_material not in properties_dataframe.index:
-        raise ValueError('Pipe material not found in materials_list.csv')
-    elastic_modulus = properties_dataframe['ElasticModulus'][pipe_material].\
-        to('Pa').magnitude
-    density = properties_dataframe['Density'][pipe_material].\
-        to('kg/m^3').magnitude
-    poisson = properties_dataframe['Poisson'][pipe_material]
-
-    # set geometry
-    pipe_thk = pipe_thk.to('m').magnitude
-    pipe_od = pipe_od.to('m').magnitude
-    pipe_id = pipe_id.to('m').magnitude
-    radius = np.average([pipe_od, pipe_id]) / 2.
-
-    # calculate critical velocity
-    crit_velocity = (
-        (elastic_modulus ** 2 * pipe_thk ** 2) /
-        (3. * density ** 2 * radius ** 2 * (1. - poisson ** 2))
-    ) ** (1. / 4)
-
-    # set limits for 'approximately Vcrit'
-    bounds = crit_velocity * np.array([
-        1. + plus_or_minus,
-        1. - plus_or_minus
-    ])
-
-    cj_speed = cj_speed.to('m/s').magnitude
-    if cj_speed < bounds[1]:
-        dynamic_load_factor = 1
-    elif cj_speed > bounds[0]:
-        dynamic_load_factor = 2
-    else:
-        dynamic_load_factor = 4
-
-    return dynamic_load_factor
+# TODO: moved get_pipe_dlf to Tube()
 
 
 def calculate_ddt_run_up(
@@ -929,257 +838,586 @@ def calculate_window_bolt_sf(
     return safety_factor
 
 
-def calculate_reflected_shock_state(
-        initial_pressure,
-        initial_temperature,
-        species_dict,
-        mechanism
-):
-    """
-    Calculates the thermodynamic and chemical state of a reflected shock using
-    sd2.
+# TODO: moved calculate_reflected_shock_state to Tube()
+# TODO: removed calculate_max_initial_pressure
 
-    Parameters
-    ----------
-    initial_pressure : pint quantity
-        Pint quantity of mixture initial pressure
-    initial_temperature : pint quantity
-        Pint quantity of mixture initial temperature
-    species_dict : dict
-        Dictionary of initial reactant mixture
-    mechanism : str
-        Mechanism to use for chemical calculations, e.g. 'gri30.cti'
-
-    Returns
-    -------
-    dict
-        Dictionary containing keys 'reflected' and 'cj'. Each of these contains
-        'speed', indicating the related wave speed, and 'state', which is a
-        Cantera gas object at the specified state.
-    """
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    tools.check_pint_quantity(
-        initial_pressure,
-        'pressure',
-        ensure_positive=True
-    )
-
-    tools.check_pint_quantity(
-        initial_temperature,
-        'temperature',
-        ensure_positive=True
-    )
-
-    # define gas objects
-    initial_gas = ct.Solution(mechanism)
-    reflected_gas = ct.Solution(mechanism)
-
-    # define gas states
-    initial_temperature = initial_temperature.to('K').magnitude
-    initial_pressure = initial_pressure.to('Pa').magnitude
-    initial_gas.TPX = [
-        initial_temperature,
-        initial_pressure,
-        species_dict
-    ]
-    reflected_gas.TPX = [
-        initial_temperature,
-        initial_pressure,
-        species_dict
-    ]
-
-    # get CJ state
-    [cj_speed,
-     cj_gas] = sd2.detonations.calculate_cj_speed(
-        initial_pressure,
-        initial_temperature,
-        species_dict,
-        mechanism,
-        return_state=True
-    )
-
-    # get reflected state
-    [_,
-     reflected_speed,
-     reflected_gas] = sd2.shocks.get_reflected_equil_state_0(
-        initial_gas,
-        cj_gas,
-        reflected_gas,
-        cj_speed
-    )
-
-    return {'reflected': {'speed': quant(reflected_speed, 'm/s'),
-                          'state': reflected_gas},
-            'cj': {'speed': quant(cj_speed, 'm/s'),
-                   'state': cj_gas}
-            }
+# TODO: Tie everything together
 
 
-def calculate_max_initial_pressure(
-        pipe_material,
-        pipe_schedule,
-        pipe_nps,
-        welded,
-        desired_fs,
-        initial_temperature,
-        species_dict,
-        mechanism,
-        error_tol=1e-4,
-        max_pressure=False,
-        max_iterations=500
-):
-    """
-    Iteratively calculates the maximum initial pressure for a given detonation
-    tube and reactant mixture.
+class UnitSystem:
+    def __init__(
+            self
+    ):
+        self.ureg = pint.UnitRegistry
+        self.quant = self.ureg.Quantity
 
-    Parameters
-    ----------
-    pipe_material : str
-        Material that pipe is made of, e.g. '316L'
-    pipe_schedule : str
-        Pipe schedule, e.g. '80', 'XXS'
-    pipe_nps : str
-        Nominal pipe size in inches, e.g. '6' for NPS-6
-    welded : bool
-        True for welded pipe, False for seamless
-    desired_fs : float
-        Desired tube factor of safety
-    initial_temperature : pint quantity
-        Pint quantity of initial mixture temperature
-    species_dict : dict
-        Dictionary of reactant mixture components
-    mechanism : str
-        Mechanism to use for calculations, e.g. 'gri30.cti'
-    error_tol : float
-        Relative error tolerance below which initial pressure calculations are
-        considered 'good enough'
-    max_pressure : pint quantity
-        Pint quantity with maximum total pressure. Defaults to False if nothing
-        is specified, meaning that max pressure will be calculated from pipe
-        material properties.
-    max_iterations : int
-        Maximum number of loop iterations before exit, defaults to 500
 
-    Returns
-    -------
-    initial_pressure : pint quantity
-        Pint quantity of max allowable initial pressure
-    """
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
+class Dimensions:
+    def __init__(
+            self
+    ):
+        self.inner_diameter = None
+        self.outer_diameter = None
+        self.wall_thickness = None
 
-    # ensure temperature is a pint quantity, and convert it to# the local unit
-    # registry to avoid problems
-    tools.check_pint_quantity(
-        initial_temperature,
-        'temperature',
-        ensure_positive=True
-    )
-    initial_temperature = quant(
-        initial_temperature.magnitude,
-        initial_temperature.units.format_babel()
-    )
 
-    # define tube dimensions
-    dimensions = tools.get_pipe_dimensions(
-        pipe_schedule,
-        pipe_nps
-    )
-    tube_od = dimensions['outer diameter']
-    tube_id = dimensions['inner diameter']
-    wall_thickness = dimensions['wall thickness']
-    tube_od = quant(tube_od.magnitude, tube_od.units.format_babel())
-    tube_id = quant(tube_id.magnitude, tube_id.units.format_babel())
-    wall_thickness = quant(wall_thickness.magnitude,
-                           wall_thickness.units.format_babel())
+class Tube:
+    def __init__(
+            self,
+            material,
+            schedule,
+            nominal_size,
+            welded,
+            safety_factor
+    ):
+        """
+        Parameters
+        ----------
+        material : str
+            Material that pipe is made of, e.g. '316L'
+        schedule : str
+            Pipe schedule, e.g. '80', 'XXS'
+        nominal_size : str
+            Nominal pipe size in inches, e.g. '6' for NPS-6 or '1/4' for
+            NPS-1/4
+        welded : bool
+            True for welded pipe, False for seamless
+        safety_factor : float
+            Desired tube factor of safety
+        """
+        # build local unit registry
+        self._units = UnitSystem()
 
-    # look up max allowable stress
-    stress_limits = tools.get_pipe_stress_limits(
-        pipe_material,
-        welded
-    )
-    temp_units = stress_limits['temperature'][0]
-    temperatures = stress_limits['temperature'][1]
-    # ensure material stress limits have monotonically increasing temperatures,
-    # otherwise the np.interp "results are nonsense" per scipy docs
-    if not np.all(np.diff(temperatures) > 0):
-        raise ValueError('Stress limits require temperatures to be ' +
-                         'monotonically increasing')
-    stress_units = stress_limits['stress'][0]
-    stresses = stress_limits['stress'][1]
-    current_temp = initial_temperature.to(temp_units).magnitude
-    max_stress = quant(np.interp(current_temp, temperatures, stresses),
-                       stress_units)
+        # assign tube information to self
+        self.safety_factor = safety_factor
+        self.material = material
+        self.schedule = schedule
+        self.nominal_size = nominal_size
+        self.welded = welded
 
-    # calculate max allowable pressure
-    if not max_pressure:
-        # user didn't give max pressure; calculate it using basic longitudinal
-        # joint formula on page 14 of Megyesy's Pressure Vessel Handbook, 8th
-        # ed.
-        mean_diameter = (tube_od + tube_id) / 2
-        asme_fs = 4
-        max_allowable_pressure = (
-                max_stress * (2 * wall_thickness) * asme_fs /
-                (mean_diameter * desired_fs)
+        # allocate blank instance attributes as None
+        self.max_stress = None
+        self.initial_temperature = None
+        self.initial_pressure = None
+        self.max_pressure = None
+        self.cj_speed = None
+
+        # get dimensions
+        self.dimensions = Dimensions()
+        self._get_dimensions()
+
+    def change_nominal_size(
+            self,
+            nominal_size
+    ):
+        """
+        Parameters
+        ----------
+        nominal_size : str
+            Nominal pipe size in inches, e.g. '6' for NPS-6 or '1/4' for
+            NPS-1/4
+        """
+        self.nominal_size = nominal_size
+        self._get_dimensions()
+
+    def change_schedule(
+            self,
+            schedule
+    ):
+        """
+        Parameters
+        ----------
+        schedule : str
+            Pipe schedule, e.g. '80', 'XXS'
+        """
+        self.schedule = schedule
+        self._get_dimensions()
+
+    def change_material(
+            self,
+            material
+    ):
+        """
+        Parameters
+        ----------
+        material : str
+            Material that pipe is made of, e.g. '316L'
+        """
+        self.material = material
+
+        # recalculate max stress if initial temperature exists
+        if self.initial_temperature:
+            self.calculate_max_stress(self.initial_temperature)
+
+    def _get_dimensions(
+            self
+    ):
+        # collect pipe schedules
+        file_directory = os.path.join(
+            os.path.dirname(
+                os.path.relpath(__file__)
+            ),
+            'lookup_data'
         )
-    else:
-        # make sure it's a pint quantity with pressure units and use it
+        file_name = 'pipe_schedules.csv'
+        file_location = os.path.relpath(
+            os.path.join(
+                file_directory,
+                file_name
+            )
+        )
+        schedule_info = pd.read_csv(file_location, index_col=0)
+
+        # find which pipe sizes are available
+        try:
+            available_sizes = list(
+                schedule_info[self.schedule].dropna().to_dict().keys()
+            )
+        except KeyError:
+            raise ValueError('Pipe class not found')
+
+        # ensure size exists
+        if self.nominal_size not in available_sizes:
+            raise ValueError('Nominal size not found for given pipe schedule')
+
+        # look up/calculate dimensions
+        self.dimensions.outer_diameter = (
+            schedule_info['OD'][self.nominal_size]
+        )
+        self.dimensions.wall_thickness = (
+            schedule_info[self.schedule][self.nominal_size]
+        )
+        self.dimensions.inner_diameter = (
+                self.dimensions.outer_diameter -
+                2 * self.dimensions.wall_thickness
+        )
+
+        # convert units to local registry
+        self.dimensions.outer_diameter = self._units.quant(
+            self.dimensions.outer_diameter.magnitude,
+            self.dimensions.outer_diameter.units.format_babel()
+        )
+        self.dimensions.inner_diameter = self._units.quant(
+            self.dimensions.inner_diameter.magnitude,
+            self.dimensions.inner_diameter.units.format_babel()
+        )
+        self.dimensions.wall_thickness = self._units.quant(
+            self.dimensions.wall_thickness.magnitude,
+            self.dimensions.wall_thickness.units.format_babel()
+        )
+
+    def calculate_max_stress(
+            self,
+            initial_temperature
+    ):
+        """
+        Parameters
+        ----------
+        initial_temperature : pint quantity
+            Pint quantity of initial mixture temperature
+
+        Returns
+        -------
+        max_stress : pint quantity
+            Pint quantity of maximum allowable tube stress
+        """
+        # ensure temperature is a pint quantity, and convert it to the local
+        # unit registry to avoid problems
         tools.check_pint_quantity(
-            max_pressure,
-            'pressure',
+            initial_temperature,
+            'temperature',
             ensure_positive=True
         )
-        max_allowable_pressure = quant(
-            max_pressure.magnitude,
-            max_pressure.units.format_babel()
+        initial_temperature = self._units.quant(
+            initial_temperature.magnitude,
+            initial_temperature.units.format_babel()
+        )
+        self.initial_temperature = initial_temperature
+
+        # look up stress-temperature limits and units
+        stress_limits = tools.get_pipe_stress_limits(
+            self.material,
+            self.welded
+        )
+        stress_units = stress_limits['stress'][0]
+        stresses = stress_limits['stress'][1]
+        temp_units = stress_limits['temperature'][0]
+        temperatures = stress_limits['temperature'][1]
+
+        # ensure material stress limits have monotonically increasing
+        # temperatures, otherwise the np.interp "results are nonsense" per
+        # scipy docs
+        if not np.all(np.diff(temperatures) > 0):
+            raise ValueError('Stress limits require temperatures to be ' +
+                             'monotonically increasing')
+
+        # interpolate max stress
+        self.max_stress = self._units.quant(
+            np.interp(
+                initial_temperature.to(temp_units).magnitude,
+                temperatures,
+                stresses
+            ),
+            stress_units
         )
 
-    # define error and pressure initial guesses and start loop
-    initial_pressure = quant(1, 'atm')
-    error = 1000
-    counter = 0
-    while error > error_tol and counter < max_iterations:
-        counter += 1
-        # get reflected shock pressure
-        states = calculate_reflected_shock_state(
+        return self.max_stress
+
+    def calculate_max_pressure(
+            self,
+            max_pressure=False
+    ):
+        """
+        Parameters
+        ----------
+        max_pressure : False or pint quantity
+            Max pressure input may be either a pint quantity, in which case
+            it represents the maximum allowable pressure from hydrostatic
+            testing, or a boolean False (default), in which case the maximum
+            allowable pressure will be calculated from the limits found in
+            ASME B31.1.
+
+        Returns
+        -------
+        max_pressure : pint quantity
+            Maximum allowable tube pressure
+        """
+        if not max_pressure:
+            # user didn't give max pressure
+            # ensure that max stress has been calculated
+            if not self.max_stress:
+                raise ValueError('cannot calculate max pressure' +
+                                 ' without max stress')
+
+            # calculate max pressure using basic longitudinal joint formula
+            # on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
+            mean_diameter = (self.dimensions.outer_diameter +
+                             self.dimensions.inner_diameter) / 2.
+            asme_fs = 4
+            self.max_pressure = (
+                    self.max_stress *
+                    (2 * self.dimensions.wall_thickness) *
+                    asme_fs /
+                    (mean_diameter * self.safety_factor)
+            )
+        else:
+            # make sure input pressure is a pint quantity with pressure units
+            # and use it
+            tools.check_pint_quantity(
+                max_pressure,
+                'pressure',
+                ensure_positive=True
+            )
+            self.max_pressure = self._units.quant(
+                self.max_pressure.magnitude,
+                self.max_pressure.units.format_babel()
+            )
+
+        return self.max_pressure
+
+    def calculate_initial_pressure(
+            self,
+            species_dict,
+            mechanism,
+            error_tol=1e-4,
+            max_iterations=500
+    ):
+        """
+        Parameters
+        ----------
+        species_dict: dict
+            Dictionary of reactant mixture components
+        mechanism : str
+            Mechanism to use for calculations, e.g. 'gri30.cti'
+        error_tol : float
+            Relative error tolerance below which initial pressure calculations
+            are considered 'good enough'
+        max_iterations : int
+            Maximum number of loop iterations before exit, defaults to 500
+
+        Returns
+        -------
+        initial_pressure : pint quantity
+            Initial mixture pressure corresponding to the tube's maximum
+            allowable pressure.
+        """
+        # ensure that initial temperature and max pressure have been calculated
+        if not (self.initial_temperature and self.max_pressure):
+            raise ValueError('cannot calculate initial pressure' +
+                             ' without initial temperature' +
+                             ' and max pressure')
+        elif not self.initial_temperature:
+            raise ValueError('cannot calculate initial pressure' +
+                             ' without initial temperature')
+        elif not self.max_pressure:
+            raise ValueError('cannot calculate initial pressure' +
+                             ' without max pressure')
+
+        # define error and pressure initial guesses and start solution loop
+        initial_pressure = self._units.quant(101325, 'Pa')
+        error = 1000
+        counter = 0
+        while error > error_tol and counter < max_iterations:
+            counter += 1
+            # get reflected shock pressure
+            states = self._calculate_reflected_shock_state(
                 initial_pressure,
-                initial_temperature,
                 species_dict,
                 mechanism
             )
 
-        reflected_pressure = states['reflected']['state'].P
-        reflected_pressure = quant(
-            reflected_pressure,
-            'Pa'
-        )
-        cj_speed = states['cj']['speed']
-        cj_speed = quant(cj_speed.to('m/s').magnitude, 'm/s')
+            reflected_pressure = states['reflected']['state'].P
+            reflected_pressure = self._units.quant(
+                reflected_pressure,
+                'Pa'
+            )
+            cj_speed = states['cj']['speed']
+            self.cj_speed = self._units.quant(
+                cj_speed.to('m/s').magnitude,
+                'm/s')
 
-        # get dynamic load factor
-        dlf = get_pipe_dlf(
-            pipe_material,
-            pipe_schedule,
-            pipe_nps,
+            # get dynamic load factor
+            dlf = self._get_pipe_dlf()
+
+            # calculate error, accounting for dynamic load factor
+            error = abs(
+                reflected_pressure.to_base_units().magnitude -
+                self.max_pressure.to_base_units().magnitude / dlf) / \
+                (self.max_pressure.to_base_units().magnitude / dlf)
+
+            # find new initial pressure
+            initial_pressure = (
+                    initial_pressure *
+                    self.max_pressure.to_base_units().magnitude /
+                    dlf /
+                    reflected_pressure.to_base_units().magnitude
+            )
+
+        self.initial_pressure = initial_pressure
+        return initial_pressure
+
+    def _calculate_reflected_shock_state(
+            self,
+            initial_pressure,
+            species_dict,
+            mechanism
+    ):
+        """
+        Calculates the thermodynamic and chemical state of a reflected shock
+        using sd2.
+
+        Parameters
+        ----------
+        initial_pressure : pint quantity
+            Pint quantity of mixture initial pressure
+        species_dict : dict
+            Dictionary of initial reactant mixture
+        mechanism : str
+            Mechanism to use for chemical calculations, e.g. 'gri30.cti'
+
+        Returns
+        -------
+        dict
+            Dictionary containing keys 'reflected' and 'cj'. Each of these
+            contains 'speed', indicating the related wave speed, and 'state',
+            which is a Cantera gas object at the specified state.
+        """
+
+        # define gas objects
+        initial_gas = ct.Solution(mechanism)
+        reflected_gas = ct.Solution(mechanism)
+
+        # define gas states
+        initial_temperature = self.initial_temperature.to('K').magnitude
+        initial_gas.TPX = [
+            initial_temperature,
+            initial_pressure,
+            species_dict
+        ]
+        reflected_gas.TPX = [
+            initial_temperature,
+            initial_pressure,
+            species_dict
+        ]
+
+        # get CJ state
+        [cj_speed,
+         cj_gas] = sd2.detonations.calculate_cj_speed(
+            initial_pressure,
+            initial_temperature,
+            species_dict,
+            mechanism,
+            return_state=True
+        )
+
+        # get reflected state
+        [_,
+         reflected_speed,
+         reflected_gas] = sd2.shocks.get_reflected_equil_state_0(
+            initial_gas,
+            cj_gas,
+            reflected_gas,
             cj_speed
         )
 
-        # calculate error, accounting for dynamic load factor
-        error = abs(
-            reflected_pressure.to_base_units().magnitude -
-            max_allowable_pressure.to_base_units().magnitude / dlf) / \
-            (max_allowable_pressure.to_base_units().magnitude / dlf)
+        return {
+            'reflected': {
+                'speed': self._units.quant(
+                    reflected_speed,
+                    'm/s'
+                ),
+                'state': reflected_gas
+            },
+            'cj': {
+                'speed': self._units.quant(
+                    cj_speed,
+                    'm/s'),
+                'state': cj_gas
+            }
+        }
 
-        # find new initial pressure
-        initial_pressure = (
-                initial_pressure *
-                max_allowable_pressure.to_base_units().magnitude /
-                dlf /
-                reflected_pressure.to_base_units().magnitude
+    def _get_pipe_dlf(
+            self,
+            plus_or_minus=0.1
+    ):
+        """
+        This function calculates the dynamic load factor by which a detonation
+        tube's static analysis should be scaled in order to account for the
+        tube's response to pressure transients. DLF is based on the work of
+        Shepherd [1]. Since the limits of "approximately equal to" are not
+        define we assume a default value of plus or minus ten percent, thus
+        plus_or_minus=0.1.
+
+        [1] Shepherd, J. E. (2009). Structural Response of Piping to
+        Internal Gas Detonation. Journal of Pressure Vessel Technology,
+        131(3), 031204. https://doi.org/10.1115/1.3089497
+
+        Parameters
+        ----------
+        plus_or_minus : float
+            Defines the band about the critical velocity which is considered
+            "approximately equal to" -- the default value of 0.1 means plus
+            or minus ten percent.
+
+        Returns
+        -------
+        dynamic_load_factor : float
+            Factor by which the tube's static maximum pressure should be
+            de-rated to account for transient response to detonation waves.
+        """
+        if not (0 < plus_or_minus < 1):
+            raise ValueError('plus_or_minus factor outside of (0, 1)')
+
+        # get material properties
+        properties_dataframe = self._collect_tube_materials().\
+            set_index('Grade')
+        if self.material not in properties_dataframe.index:
+            raise ValueError('Pipe material not found in materials_list.csv')
+        elastic_modulus = (
+            properties_dataframe['ElasticModulus'][self.material].to
+            ('Pa').magnitude
+        )
+        density = (
+            properties_dataframe['Density'][self.material].to
+            ('kg/m^3').magnitude
+        )
+        poisson = properties_dataframe['Poisson'][self.material]
+
+        # set geometry
+        radius = np.average([self.dimensions.outer_diameter,
+                             self.dimensions.inner_diameter]) / 2.
+
+        # calculate critical velocity
+        crit_velocity = (
+                ((elastic_modulus ** 2 * self.dimensions.wall_thickness
+                  ** 2) /
+                 (3. * density ** 2 * radius ** 2 * (1. - poisson ** 2))
+                 ) **(1. / 4)
         )
 
-    return initial_pressure
+        # set limits for 'approximately Vcrit'
+        bounds = crit_velocity * np.array([
+            1. + plus_or_minus,
+            1. - plus_or_minus
+        ])
 
-# TODO: Tie everything together
+        if self.cj_speed < bounds[1]:
+            dynamic_load_factor = 1
+        elif self.cj_speed > bounds[0]:
+            dynamic_load_factor = 2
+        else:
+            dynamic_load_factor = 4
+
+        return dynamic_load_factor
+
+    @staticmethod
+    def _collect_tube_materials(
+    ):
+        """
+        Reads in a csv file containing tube materials, their corresponding
+        ASME B16.5 material groups, and selected material properties.
+
+        Returns
+        -------
+        materials_dataframe : pandas dataframe
+            Dataframe of materials and their corresponding material groups and
+            properties
+        """
+        file_directory = os.path.join(
+            os.path.dirname(
+                os.path.relpath(__file__)
+            ),
+            'lookup_data'
+        )
+        file_name = 'materials_list.csv'
+        file_location = os.path.relpath(
+            os.path.join(
+                file_directory,
+                file_name
+            )
+        )
+
+        # read in csv and extract information
+        if os.path.exists(file_location):
+            try:
+                materials_dataframe = pd.read_csv(file_location)
+            except pd.errors.EmptyDataError:
+                raise ValueError(file_name + ' is empty')
+
+        else:
+            # raise an exception if the file doesn't exist
+            raise ValueError(file_name + ' does not exist')
+
+        # apply units
+        ureg = pint.UnitRegistry()
+        quant = ureg.Quantity
+        materials_dataframe.ElasticModulus = [
+            quant(item, 'GPa') for item in
+            materials_dataframe.ElasticModulus.values
+        ]
+        materials_dataframe.Density = [
+            quant(item, 'g/cm^3') for item in
+            materials_dataframe.Density.values
+        ]
+
+        return materials_dataframe
+
+    def get_material_groups(
+            self
+    ):
+        """
+        Collects materials and their associated ASME B16.5 material groups
+        from a dataframe of material properties
+
+        Returns
+        -------
+        groups_dict
+        """
+        materials_dataframe = self._collect_tube_materials()
+        grades = materials_dataframe.Grade.values.astype(str)
+        groups = materials_dataframe.Group.values.astype(str)
+        groups_dict = {}
+        for [grade, group] in zip(grades, groups):
+            groups_dict[grade] = group
+
+        return groups_dict

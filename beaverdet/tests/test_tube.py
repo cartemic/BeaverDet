@@ -539,3 +539,23 @@ def test_calculate_max_initial_pressure():
             error = abs(max_solution - calc_max) / max_solution
 
             assert error <= 0.0005
+
+
+def test_init():
+    pass
+
+
+def test_get_dimensions():
+    pass
+
+
+def test_calculate_max_stress():
+    pass
+
+
+def test_calculate_max_pressure():
+    pass
+
+
+def test_calculate_initial_pressure():
+    pass
