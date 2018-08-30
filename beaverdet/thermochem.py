@@ -92,7 +92,8 @@ def calculate_laminar_flamespeed(
     return quant(flame.u[0], 'm/s')
 
 
-def get_equil_sound_speed(
+# noinspection SpellCheckingInspection
+def get_eq_sound_speed(
         temperature,
         pressure,
         species_dict,
@@ -169,7 +170,7 @@ def get_equil_sound_speed(
 
 
 # TODO: IN WORK
-class Detonation:
+class Mixture:
     def __init__(
             self,
             initial_pressure,
@@ -326,6 +327,7 @@ class Detonation:
                 species
             )
 
+    # noinspection SpellCheckingInspection
     def get_mass(
             self,
             tube_volume,

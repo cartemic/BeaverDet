@@ -522,7 +522,7 @@ class DDT:
         density_ratio = np.prod(density)
 
         # find sound speed in products at adiabatic flame temperature
-        sound_speed = thermochem.get_equil_sound_speed(
+        sound_speed = thermochem.get_eq_sound_speed(
             quant(working_gas.T, 'K'),
             quant(working_gas.P, 'Pa'),
             species_dict,
@@ -983,7 +983,8 @@ class Window:
             thread_class,
             bolt_max_tensile,
             plate_max_tensile,
-            engagement_length
+            engagement_length,
+            unit_registry
         )
         screw_area = thread['screw area']
         screw_area = quant(
