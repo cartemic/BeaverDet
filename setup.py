@@ -54,7 +54,7 @@ setup(
               'beaverdet.tube_design',
               'beaverdet.tests'],
     package_dir={'beaverdet': 'beaverdet'},
-    package_data={'beaverdet': ['tube_design/lookup_data/*']},
+    package_data={'beaverdet': ['lookup_data/*']},
     install_requires=install_requires,
     tests_require=tests_require,
     setup_requires=setup_requires

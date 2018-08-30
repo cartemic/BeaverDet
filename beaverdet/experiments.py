@@ -1,7 +1,7 @@
 import pint
 import pandas as pd
 import cantera as ct
-from . import tools
+from . import tools, thermochem
 
 
 class TestMatrix:
