@@ -1,6 +1,6 @@
-import pint
 import pandas as pd
-import cantera as ct
+import datetime
+import os
 from . import tools, thermochem
 
 
@@ -42,7 +42,9 @@ class TestMatrix:
         self.diluent = diluent
         self.tube_volume = tube_volume
         self.base_replicate = None
-        self.replicates = [None for item in range(num_replicates)] # initialize dataframe
+        self.replicates = [
+            None for _ in range(num_replicates)
+        ]
 
         # ensure that equivalence is iterable and numeric
         try:
@@ -85,25 +87,148 @@ class TestMatrix:
 
         self.diluent_mole_fraction = diluent_mole_fraction
 
-    def build_replicate(
+    def _build_replicate(
             self
     ):
         # initialize dataframe
+        current_replicate = pd.DataFrame(
+            columns=[
+                'Equivalence',
+                'Diluent Mol Fraction',
+                '{} (Pa)'.format(self.diluent),
+                self.oxidizer + ' (Pa)',
+                self.fuel + ' (Pa)',
+                '{} (kg)'.format(self.diluent),
+                self.oxidizer + ' (kg)',
+                self.fuel + ' (kg)'
+            ]
+        )
 
         for phi in self.equivalence:
             # set mixture undiluted equivalence ratio
-            if self.diluent:
-                for dil_mf in self.diluent_mole_fraction:
+            self.mixture.set_equivalence(phi)
+
+            for dil_mf in self.diluent_mole_fraction:
+                if self.diluent and dil_mf:
                     # dilute mixture
+                    self.mixture.add_diluent(
+                        self.diluent,
+                        dil_mf
+                    )
+
+                    # calculate partial pressures and total masses of used gas
+                    fill_pressure = self.mixture.diluted.P  # Pascals
+                    partials = {
+                        gas: mol_fraction * fill_pressure for gas, mol_fraction
+                        in self.mixture.diluted.mole_fraction_dict().items()
+                    }
+                    masses = self.mixture.get_mass(
+                        self.tube_volume,
+                        diluted=True
+                    )
+
+                    # build test matrix row
+                    current_row = [
+                        phi,
+                        dil_mf,
+                        partials[self.diluent],
+                        (
+                            partials[self.diluent] +
+                            partials[self.oxidizer]
+                        ),
+                        (
+                            partials[self.diluent] +
+                            partials[self.oxidizer] +
+                            partials[self.fuel]
+                        ),
+                        masses[self.diluent].to('kg').magnitude,
+                        masses[self.oxidizer].to('kg').magnitude,
+                        masses[self.fuel].to('kg').magnitude
+                    ]
+
                     # add row to dataframe
-                    pass
-            else:
-                # add row to dataframe
-                pass
+                    tools.add_dataframe_row(
+                        current_replicate,
+                        current_row
+                    )
+                else:
+                    # calculate partial pressures and total masses of used gas
+                    fill_pressure = self.mixture.undiluted.P  # Pascals
+                    partials = {
+                        gas: mol_fraction * fill_pressure for gas, mol_fraction
+                        in self.mixture.undiluted.mole_fraction_dict().items()
+                    }
+                    masses = self.mixture.get_mass(
+                        self.tube_volume,
+                        diluted=False
+                    )
 
-        # save dataframe to self
+                    # build test matrix row
+                    current_row = [
+                        phi,
+                        0,  # diluent mole fraction
+                        0,  # diluent fill pressure
+                        partials[self.oxidizer],
+                        (
+                                partials[self.oxidizer] +
+                                partials[self.fuel]
+                        ),
+                        0,  # diluent mass (kg)
+                        masses[self.oxidizer].to('kg').magnitude,
+                        masses[self.fuel].to('kg').magnitude
+                    ]
 
-    def randomize_replicate(
+                    # add row to dataframe
+                    tools.add_dataframe_row(
+                        current_replicate,
+                        current_row
+                    )
+
+        return current_replicate
+
+    def generate_test_matrices(
             self
     ):
-        pass
+        initial_replicate = self._build_replicate()
+        self.replicates = [
+            initial_replicate.copy().sample(frac=1).reset_index(drop=True) for
+            _ in self.replicates
+        ]
+
+    def save(
+            self,
+            directory
+    ):
+        # make sure that replicates have been generated
+        if any([item is None for item in self.replicates]):
+            self.generate_test_matrices()
+
+        # avoid weirdness when self.diluent=None
+        if not self.diluent:
+            diluent = ''
+        else:
+            diluent = self.diluent + '_'
+
+        for num, replicate in enumerate(self.replicates):
+            # build file save path and export to .csv
+            now = datetime.datetime.now()
+            file_name = (
+                    '{0}{1:02}{2}_{3:02}{4:02}{5:02}_{6}_{7}_{8}replicate_' +
+                    '{9:02}.csv'
+            ).format(
+                now.year,
+                now.month,
+                now.day,
+                now.hour,
+                now.minute,
+                now.second,
+                self.fuel,
+                self.oxidizer,
+                diluent,
+                num
+            )
+            save_path = os.path.join(
+                directory,
+                file_name
+            )
+            self.replicates[num].to_csv(save_path, index=False)

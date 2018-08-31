@@ -185,6 +185,9 @@ class Mixture:
     ):
         if not unit_registry:
             unit_registry = pint.UnitRegistry()
+            self._internal_registry = True
+        else:
+            self._internal_registry = False
         self._quant = unit_registry.Quantity
 
         tools.check_pint_quantity(
@@ -197,6 +200,13 @@ class Mixture:
             initial_temperature,
             'temperature',
             ensure_positive=True
+        )
+
+        # initialize diluted and undiluted gas solution in Cantera
+        self.undiluted = ct.Solution(mechanism)
+        self.undiluted.TP = (
+            initial_temperature.to('degK').magnitude,
+            initial_pressure.to('Pa').magnitude
         )
 
         # make sure the user input species that are in the mechanism file
@@ -216,16 +226,15 @@ class Mixture:
 
         # define givens
         self.mechanism = mechanism
-        self.initial_pressure = initial_pressure
-        self.initial_temperature = initial_temperature
-        self.diluent_mol_fraction = diluent_mole_fraction
-
-        # initialize diluted and undiluted gas solution in Cantera
-        self.undiluted = ct.Solution(mechanism)
-        self.undiluted.TP = (
-            self.initial_temperature.to('degK').magnitude,
-            self.initial_pressure.to('Pa').magnitude
+        self.initial_pressure = self._quant(
+            initial_pressure.magnitude,
+            initial_pressure.units.format_babel()
         )
+        self.initial_temperature = self._quant(
+            initial_temperature.magnitude,
+            initial_temperature.units.format_babel()
+        )
+        self.diluent_mol_fraction = diluent_mole_fraction
 
         # set equivalence ratio
         self.equivalence = None
@@ -255,10 +264,11 @@ class Mixture:
         self.undiluted.set_equivalence_ratio(equivalence_ratio,
                                              self.fuel,
                                              self.oxidizer)
-        try:
-            self.add_diluent(self.diluent, self.diluent_mol_fraction)
-        except AttributeError:
-            pass
+        if self.diluent:
+            try:
+                self.add_diluent(self.diluent, self.diluent_mol_fraction)
+            except AttributeError:
+                pass
 
         # ensure good inputs were given and record new equivalence ratio
         if sum([self.undiluted.X > 0][0]) < 2:
@@ -292,7 +302,7 @@ class Mixture:
         """
         # make sure diluent is available in mechanism and isn't the fuel or ox
         if diluent not in self.undiluted.species_names:
-            raise ValueError('Bad diluent:', diluent)
+            raise ValueError('Bad diluent: {}'.format(diluent))
         elif diluent in [self.fuel, self.oxidizer]:
             raise ValueError('You can\'t dilute with fuel or oxidizer!')
         elif mole_fraction > 1.:
@@ -315,17 +325,14 @@ class Mixture:
             self.oxidizer,
             new_ox
         )
-        try:
-            # add to diluted cantera solution
-            self.diluted.X = species
-        except AttributeError:
-            # create cantera solution if one doesn't exist
-            self.diluted = ct.Solution(self.mechanism)
-            self.diluted.TPX = (
-                self.initial_temperature.to('degK').magnitude,
-                self.initial_pressure.to('Pa').magnitude,
-                species
-            )
+
+        # create cantera solution if one doesn't exist
+        self.diluted = ct.Solution(self.mechanism)
+        self.diluted.TPX = (
+            self.initial_temperature.to('degK').magnitude,
+            self.initial_pressure.to('Pa').magnitude,
+            species
+        )
 
     # noinspection SpellCheckingInspection
     def get_mass(
@@ -344,6 +351,11 @@ class Mixture:
             tube_volume,
             'volume',
             ensure_positive=True
+        )
+
+        tube_volume = self._quant(
+            tube_volume.magnitude,
+            tube_volume.units.format_babel()
         )
 
         if diluted:

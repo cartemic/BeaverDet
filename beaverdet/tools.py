@@ -95,3 +95,25 @@ def check_pint_quantity(
         )
 
     return True
+
+
+def add_dataframe_row(
+        dataframe,
+        row
+):
+    """
+    Adds a row to a pandas dataframe
+
+    https://stackoverflow.com/questions/10715965/
+    add-one-row-in-a-pandas-dataframe
+
+    Parameters
+    ----------
+    dataframe : pd.DataFrame
+    row : list or tuple or np.ndarray
+
+    Returns
+    -------
+
+    """
+    dataframe.loc[len(dataframe.index)] = row
