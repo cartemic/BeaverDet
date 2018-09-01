@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+"""
+PURPOSE:
+    Tools for conducting detonation experiments and analyzing the data
+
+CREATED BY:
+    Mick Carter
+    Oregon State University
+    CIRE and Propulsion Lab
+    cartemic@oregonstate.edu
+"""
+
 import pandas as pd
 import datetime
 import os
@@ -7,28 +19,33 @@ from . import tools, thermochem
 class TestMatrix:
     def __init__(
             self,
-            initial_temperature,
             initial_pressure,
+            initial_temperature,
             fuel,
             oxidizer,
             diluent,
             equivalence,
-            num_replicates,
             diluent_mole_fraction,
+            num_replicates,
             tube_volume
     ):
-        tools.check_pint_quantity(
-            initial_temperature,
-            'temperature'
-        )
         tools.check_pint_quantity(
             initial_pressure,
             'pressure'
         )
         tools.check_pint_quantity(
+            initial_temperature,
+            'temperature'
+        )
+        tools.check_pint_quantity(
             tube_volume,
             'volume'
         )
+
+        # enforce num_replicates as int, and ensure > 0
+        num_replicates = int(num_replicates)
+        if num_replicates <= 0:
+            raise ValueError('bad number of replicates')
 
         self.mixture = thermochem.Mixture(
             initial_pressure,
@@ -46,23 +63,22 @@ class TestMatrix:
             None for _ in range(num_replicates)
         ]
 
-        # ensure that equivalence is iterable and numeric
+        # ensure that equivalence is iterable
         try:
             len(equivalence)
         except TypeError:
-            # equivalence is not iterable. ensure that it is numeric and then
-            #  make it iterable
-            try:
-                equivalence / 7
-                equivalence = [equivalence]
-            except TypeError:
-                # neither iterable nor numeric
-                raise TypeError('equivalence is neither iterable nor numeric')
+            # make equivalence iterable
+            equivalence = [equivalence]
         try:
             # check that all items are numeric
             [item / 7 for item in equivalence]
         except TypeError:
             raise TypeError('equivalence has non-numeric items')
+
+        # ensure equivalence >= 0
+        for test_equivalence in equivalence:
+            if test_equivalence <= 0:
+                raise ValueError('equivalence <= 0')
 
         self.equivalence = equivalence
 
@@ -70,20 +86,18 @@ class TestMatrix:
         try:
             len(diluent_mole_fraction)
         except TypeError:
-            # equivalence is not iterable. ensure that it is numeric and then
-            #  make it iterable
-            try:
-                diluent_mole_fraction / 7
-                diluent_mole_fraction = [diluent_mole_fraction]
-            except TypeError:
-                # neither iterable nor numeric
-                raise TypeError('diluent_mole_fraction is neither iterable' +
-                                ' nor numeric')
+            # make diluent_mole_fraction iterable
+            diluent_mole_fraction = [diluent_mole_fraction]
         try:
             # check that all items are numeric
             [item / 7 for item in diluent_mole_fraction]
         except TypeError:
             raise TypeError('diluent_mole_fraction has non-numeric items')
+
+        # ensure diluent mole fraction is on [0, 1)
+        for test_mole_fraction in diluent_mole_fraction:
+            if (test_mole_fraction < 0) or (test_mole_fraction >= 1):
+                raise ValueError('diluent mole fraction <0 or >= 1')
 
         self.diluent_mole_fraction = diluent_mole_fraction
 

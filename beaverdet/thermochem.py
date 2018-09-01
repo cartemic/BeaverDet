@@ -92,7 +92,6 @@ def calculate_laminar_flamespeed(
     return quant(flame.u[0], 'm/s')
 
 
-# noinspection SpellCheckingInspection
 def get_eq_sound_speed(
         temperature,
         pressure,
@@ -169,7 +168,6 @@ def get_eq_sound_speed(
     return quant(sound_speed, 'm/s')
 
 
-# TODO: IN WORK
 class Mixture:
     def __init__(
             self,
@@ -185,9 +183,7 @@ class Mixture:
     ):
         if not unit_registry:
             unit_registry = pint.UnitRegistry()
-            self._internal_registry = True
-        else:
-            self._internal_registry = False
+
         self._quant = unit_registry.Quantity
 
         tools.check_pint_quantity(
@@ -270,30 +266,7 @@ class Mixture:
             except AttributeError:
                 pass
 
-        # ensure good inputs were given and record new equivalence ratio
-        if sum([self.undiluted.X > 0][0]) < 2:
-            raise ValueError('You can\'t detonate that, ya dingus')
         self.equivalence = equivalence_ratio
-
-    def get_mixture_string(
-            self,
-            diluted=False
-    ):
-        """
-        Gets a mixture string from either the diluted or undiluted Cantera
-        solution object, which is then used to calculate CJ velocity using
-        SDToolbox
-        """
-        if diluted:
-            cantera_solution = self.diluted
-        else:
-            cantera_solution = self.undiluted
-        mixture_list = []
-        for i, species in enumerate(cantera_solution.species_names):
-            if cantera_solution.X[i] > 0:
-                mixture_list.append(species + ':' +
-                                    str(cantera_solution.X[i]))
-        return ' '.join(mixture_list)
 
     def add_diluent(self, diluent, mole_fraction):
         """
@@ -334,7 +307,6 @@ class Mixture:
             species
         )
 
-    # noinspection SpellCheckingInspection
     def get_mass(
             self,
             tube_volume,
