@@ -21,13 +21,13 @@ class TestMatrix:
             self,
             initial_pressure,
             initial_temperature,
-            fuel,
-            oxidizer,
-            diluent,
             equivalence,
             diluent_mole_fraction,
             num_replicates,
-            tube_volume
+            tube_volume,
+            fuel,
+            oxidizer,
+            diluent=None
     ):
         tools.check_pint_quantity(
             initial_pressure,
@@ -46,22 +46,6 @@ class TestMatrix:
         num_replicates = int(num_replicates)
         if num_replicates <= 0:
             raise ValueError('bad number of replicates')
-
-        self.mixture = thermochem.Mixture(
-            initial_pressure,
-            initial_temperature,
-            fuel,
-            oxidizer,
-            diluent=diluent
-        )
-        self.fuel = fuel
-        self.oxidizer = oxidizer
-        self.diluent = diluent
-        self.tube_volume = tube_volume
-        self.base_replicate = None
-        self.replicates = [
-            None for _ in range(num_replicates)
-        ]
 
         # ensure that equivalence is iterable
         try:
@@ -93,6 +77,26 @@ class TestMatrix:
             [item / 7 for item in diluent_mole_fraction]
         except TypeError:
             raise TypeError('diluent_mole_fraction has non-numeric items')
+
+        # make sure mixture is undiluted if all mole fractions are zero
+        if all(mole_fraction == 0 for mole_fraction in diluent_mole_fraction):
+            diluent = None
+        self.diluent = diluent
+
+        self.mixture = thermochem.Mixture(
+            initial_pressure,
+            initial_temperature,
+            fuel,
+            oxidizer,
+            diluent=diluent
+        )
+        self.fuel = fuel
+        self.oxidizer = oxidizer
+        self.tube_volume = tube_volume
+        self.base_replicate = None
+        self.replicates = [
+            None for _ in range(num_replicates)
+        ]
 
         # ensure diluent mole fraction is on [0, 1)
         for test_mole_fraction in diluent_mole_fraction:
@@ -203,9 +207,9 @@ class TestMatrix:
     def generate_test_matrices(
             self
     ):
-        initial_replicate = self._build_replicate()
+        self.base_replicate = self._build_replicate()
         self.replicates = [
-            initial_replicate.copy().sample(frac=1).reset_index(drop=True) for
+            self.base_replicate.copy().sample(frac=1).reset_index(drop=True) for
             _ in self.replicates
         ]
 

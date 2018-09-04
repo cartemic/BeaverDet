@@ -225,11 +225,11 @@ class Mixture:
         self.initial_pressure = self._quant(
             initial_pressure.magnitude,
             initial_pressure.units.format_babel()
-        )
+        ).to_base_units()
         self.initial_temperature = self._quant(
             initial_temperature.magnitude,
             initial_temperature.units.format_babel()
-        )
+        ).to_base_units()
         self.diluent_mol_fraction = diluent_mole_fraction
 
         # set equivalence ratio
