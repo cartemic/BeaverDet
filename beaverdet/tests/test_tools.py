@@ -566,57 +566,6 @@ def test_window_sympy_solver():
         assert abs(test_output - good_solutions[index]) < 0.1
 
 
-def test_calculate_laminar_flamespeed():
-    """
-    Tests the calculate_laminar_flamespeed function
-    """
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    initial_temperature = quant(300, 'K')
-    initial_pressure = quant(1, 'atm')
-
-    # test with bad species
-    species = {
-        'Wayne': 3,
-        'CH4': 7,
-        'Garth': 5
-    }
-    bad_string = 'Species not in mechanism:\nWayne\nGarth\n'
-    with pytest.raises(ValueError, match=bad_string):
-        tools.calculate_laminar_flamespeed(
-            initial_temperature,
-            initial_pressure,
-            species,
-            'gri30.cti'
-        )
-
-    # test with no species
-    species = {}
-    with pytest.raises(ValueError, match='Empty species dictionary'):
-        tools.calculate_laminar_flamespeed(
-            initial_temperature,
-            initial_pressure,
-            species,
-            'gri30.cti'
-        )
-
-    # test with good species
-    species = {
-        'CH4': 0.095057034220532327,
-        'O2': 0.19011406844106465,
-        'N2': 0.71482889733840305
-    }
-    good_result = 0.39  # value approximated from Law fig. 7.7.7
-    test_flamespeed = tools.calculate_laminar_flamespeed(
-        initial_temperature,
-        initial_pressure,
-        species,
-        'gri30.cti'
-    )
-    assert abs(test_flamespeed.magnitude - good_result) / good_result < 0.05
-
-
 def test_import_pipe_schedules():
     """
     Tests import_pipe_schedules
@@ -866,34 +815,6 @@ def test_get_thread_tpi():
         - good input
     """
     assert tools.get_thread_tpi('1/4-20') == 20
-
-
-def test_equil_sound_speed():
-    """
-    Tests get_equil_sound_speed
-    """
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    # check air at 1 atm and 20°C against ideal gas calculation
-    gamma = 1.4
-    rr = 8.31451
-    tt = 293.15
-    mm = 0.0289645
-    c_ideal = np.sqrt(gamma*rr*tt/mm)
-
-    temp = quant(20, 'degC')
-    press = quant(1, 'atm')
-    species = {'O2': 1, 'N2': 3.76}
-    mech = 'gri30.cti'
-    c_test = tools.get_equil_sound_speed(
-        temp,
-        press,
-        species,
-        mech
-    )
-
-    assert abs(c_ideal - c_test.to('m/s').magnitude) / c_ideal <= 0.005
 
 
 def test_get_pipe_stress_limits():

@@ -2,8 +2,8 @@
 
 ## `experiments.py`
 
-* [ ] `TestMatrix()`
-  * [ ] `__init__()`
+* [x] `TestMatrix()`
+  * [x] `__init__()`
     * [x] num_replicates <= 0
       * ValueError('bad number of replicates')
         * [x] <0
@@ -29,19 +29,16 @@
       * [x] good
         * [x] =0
         * [x] =0.99
-  * [ ] `_build_replicate()`
-    * [ ] compare output current_replicate to hand-calcs
-      * [ ] diluted
-      * [ ] undiluted
-  * [ ] `generate_test_matrices()`
-    * [ ] `self.replicates` contains no `None`
-    * [ ] each replicate contains the same items
-    * [ ] each replicate is in a different order
-  * [ ] `save()`
-    * [ ] files write to disk as expected (delete)
-      * [ ] correct number
-      * [ ] `.csv`
-      * [ ] contain same information as dataframes
+  * [x] `_build_replicate()`
+    * [x] compare output current_replicate to hand-calcs
+      * [x] diluted
+      * [x] undiluted
+  * [x] `generate_test_matrices()`
+    * [x] `self.replicates` contains no `None`
+    * [x] each replicate contains the same items
+    * [x] each replicate is in a different order
+  * [x] `save()`
+    * [x] files write to disk as expected (delete)
 
 ## `thermochem.py`
 
