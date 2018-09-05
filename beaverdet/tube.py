@@ -287,33 +287,26 @@ class Bolt:
         quant = unit_registry.Quantity
         thread_specs = cls._import_thread_specs()
 
-        # ensure thread_specs is a pandas dataframe
-        if not isinstance(thread_specs, pd.DataFrame):
-            raise TypeError('thread_specs is not a pandas dataframe')
+        # determine if internal or external
+        if 'A' in thread_class and ('2' in thread_class or '3' in thread_class):
+            thread_specs = thread_specs['external']
+        elif 'B' in thread_class and ('2' in thread_class
+                                      or '3' in thread_class):
+            thread_specs = thread_specs['internal']
+        else:
+            raise ValueError('bad thread class')
 
-        # ensure property is a string and in the specs dataframe
-        if not isinstance(thread_property, str):
-            raise TypeError('thread_property expected a string')
-        elif thread_property not in thread_specs.keys():
+        # ensure property is in the specs dataframe
+        if thread_property not in thread_specs.keys():
             raise KeyError('Thread property \'' +
                            thread_property +
                            '\' not found. Available specs: ' +
                            "'" + "', '".join(thread_specs.keys()) + "'")
 
-        # ensure thread size is a string and in the specs dataframe
-        if not isinstance(thread_size, str):
-            raise TypeError('thread_size expected a string')
-        elif thread_size not in thread_specs.index:
+        # ensure thread size is in the specs dataframe
+        if thread_size not in thread_specs.index:
             raise KeyError('Thread size \'' +
                            thread_size +
-                           '\' not found')
-
-        # ensure thread class is a string and in the specs dataframe
-        if not isinstance(thread_class, str):
-            raise TypeError('thread_class expected a string')
-        elif not any(pd.MultiIndex.isin(thread_specs.index, [thread_class], 1)):
-            raise KeyError('Thread class \'' +
-                           thread_class +
                            '\' not found')
 
         # retrieve the property
@@ -388,7 +381,7 @@ class DDT:
             Ratio of blocked to open area (between 0 and 1)
         """
 
-        # check dimensionality and >0
+        # check dimensionality and >=0
         tools.check_pint_quantity(
             tube_inner_diameter,
             'length',
@@ -405,7 +398,9 @@ class DDT:
         tube_inner_diameter = tube_inner_diameter.to_base_units()
 
         # ensure blockage diameter < tube diameter
-        if blockage_diameter >= tube_inner_diameter:
+        if tube_inner_diameter.magnitude == 0:
+            raise ValueError('tube ID cannot be 0')
+        elif blockage_diameter >= tube_inner_diameter:
             raise ValueError('blockage diameter >= tube diameter')
 
         # calculate blockage ratio
@@ -623,11 +618,6 @@ class DDT:
 
 
 class Window:
-    def __init__(
-            self
-    ):
-        pass
-
     @classmethod
     def safety_factor(
             cls,

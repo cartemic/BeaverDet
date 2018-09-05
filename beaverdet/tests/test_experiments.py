@@ -21,11 +21,7 @@ ureg = pint.UnitRegistry()
 quant = ureg.Quantity
 
 
-def compare_dataframe():
-    pass
-
-
-def test_test_matrix():
+class TestTestMatrix:
     good_initial_pressure = quant(1, 'atm')
     good_initial_temperature = quant(70, 'degF')
     good_equivalence = [1]
@@ -36,240 +32,282 @@ def test_test_matrix():
     good_oxidizer = 'O2'
     good_diluent = 'AR'
 
-    # <editor-fold desc="__init__()">
-    # num_replicates <= 0
-    with pytest.raises(
-        ValueError,
-        match='bad number of replicates'
-    ):
-        experiments.TestMatrix(
-            good_initial_pressure,
-            good_initial_temperature,
-            good_equivalence,
-            good_diluent_mole_fraction,
-            0,
-            good_tube_volume,
-            good_fuel,
-            good_oxidizer,
-            good_diluent
-        )
-
-    # non-iterable numeric equivalence
-    matrix = experiments.TestMatrix(
-        good_initial_pressure,
-        good_initial_temperature,
-        1,
-        good_diluent_mole_fraction,
-        good_num_replicates,
-        good_tube_volume,
-        good_fuel,
-        good_oxidizer,
-        good_diluent
-    )
-
-    # check to make sure that matrix.equivalence is iterable
-    assert len(matrix.equivalence) == 1
-
-    # iterable equivalence with non-numeric values
-    with pytest.raises(
-        TypeError,
-        match='equivalence has non-numeric items'
-    ):
-        experiments.TestMatrix(
-            good_initial_pressure,
-            good_initial_temperature,
-            'iterable and non numeric',
-            good_diluent_mole_fraction,
-            good_num_replicates,
-            good_tube_volume,
-            good_fuel,
-            good_oxidizer,
-            good_diluent
-        )
-
-    # equivalence <= 0
-    for bad_equivalence in [[0], [-1]]:
+    def test_initialize_negative_replicates(self):
+        # num_replicates <= 0
         with pytest.raises(
             ValueError,
-            match='equivalence <= 0'
+            match='bad number of replicates'
         ):
             experiments.TestMatrix(
-                good_initial_pressure,
-                good_initial_temperature,
-                bad_equivalence,
-                good_diluent_mole_fraction,
-                good_num_replicates,
-                good_tube_volume,
-                good_fuel,
-                good_oxidizer,
-                good_diluent
+                self.good_initial_pressure,
+                self.good_initial_temperature,
+                self.good_equivalence,
+                self.good_diluent_mole_fraction,
+                0,
+                self.good_tube_volume,
+                self.good_fuel,
+                self.good_oxidizer,
+                self.good_diluent
             )
 
-    # non-iterable numeric diluent_mole_fraction
-    matrix = experiments.TestMatrix(
-        good_initial_pressure,
-        good_initial_temperature,
-        good_equivalence,
-        0.2,
-        good_num_replicates,
-        good_tube_volume,
-        good_fuel,
-        good_oxidizer,
-        good_diluent
-    )
-
-    # check to make sure that matrix.diluent_mole_fraction is iterable
-    assert len(matrix.diluent_mole_fraction) == 1
-
-    # iterable diluent_mole_fraction with non-numeric values
-    with pytest.raises(
-        TypeError,
-        match='diluent_mole_fraction has non-numeric items'
-    ):
-        experiments.TestMatrix(
-            good_initial_pressure,
-            good_initial_temperature,
-            good_equivalence,
-            'iterable and non numeric',
-            good_num_replicates,
-            good_tube_volume,
-            good_fuel,
-            good_oxidizer,
-            good_diluent
+    def test_initialize_non_iterable_equivalence(self):
+        # non-iterable numeric equivalence
+        matrix = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            1,
+            self.good_diluent_mole_fraction,
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
         )
 
-    # diluent_mole_fraction outside of [0, 1)
-    for bad_diluent_mole_fraction in [-1., 7, 1]:
+        # check to make sure that matrix.equivalence is iterable
+        assert len(matrix.equivalence) == 1
+
+    def test_initialize_non_numeric_equivalence(self):
+        # iterable equivalence with non-numeric values
         with pytest.raises(
-            ValueError,
-            match='diluent mole fraction <0 or >= 1'
+            TypeError,
+            match='equivalence has non-numeric items'
         ):
             experiments.TestMatrix(
-                good_initial_pressure,
-                good_initial_temperature,
-                good_equivalence,
-                bad_diluent_mole_fraction,
-                good_num_replicates,
-                good_tube_volume,
-                good_fuel,
-                good_oxidizer,
-                good_diluent
+                self.good_initial_pressure,
+                self.good_initial_temperature,
+                'iterable and non numeric',
+                self.good_diluent_mole_fraction,
+                self.good_num_replicates,
+                self.good_tube_volume,
+                self.good_fuel,
+                self.good_oxidizer,
+                self.good_diluent
             )
 
-    # edge cases for diluent_mole_fraction
-    for okay_diluent_mole_fraction in [0, 0.99]:
-        experiments.TestMatrix(
-            good_initial_pressure,
-            good_initial_temperature,
-            good_equivalence,
-            okay_diluent_mole_fraction,
-            good_num_replicates,
-            good_tube_volume,
-            good_fuel,
-            good_oxidizer,
-            good_diluent
+    def test_initialize_negative_equivalence(self):
+        # equivalence <= 0
+        for bad_equivalence in [[0], [-1]]:
+            with pytest.raises(
+                ValueError,
+                match='equivalence <= 0'
+            ):
+                experiments.TestMatrix(
+                    self.good_initial_pressure,
+                    self.good_initial_temperature,
+                    bad_equivalence,
+                    self.good_diluent_mole_fraction,
+                    self.good_num_replicates,
+                    self.good_tube_volume,
+                    self.good_fuel,
+                    self.good_oxidizer,
+                    self.good_diluent
+                )
+
+    def test_initialize_non_iterable_diluent_mf(self):
+        # non-iterable numeric diluent_mole_fraction
+        matrix = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            self.good_equivalence,
+            0.2,
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
         )
 
-    # </editor-fold>
+        # check to make sure that matrix.diluent_mole_fraction is iterable
+        assert len(matrix.diluent_mole_fraction) == 1
 
-    # <editor-fold desc="_build_replicate()/generate_test_matrices()">
-    undiluted = [
-        experiments.TestMatrix(
-            good_initial_pressure,
-            good_initial_temperature,
-            [0.75, 1],
-            [0.2],
-            good_num_replicates,
-            good_tube_volume,
-            good_fuel,
-            good_oxidizer,
-            diluent=None
-        ),
-        experiments.TestMatrix(
-            good_initial_pressure,
-            good_initial_temperature,
-            [0.75, 1],
-            [0],
-            good_num_replicates,
-            good_tube_volume,
-            good_fuel,
-            good_oxidizer,
-            good_diluent
+    def test_initialize_non_numeric_diluent_mf(self):
+        # iterable diluent_mole_fraction with non-numeric values
+        with pytest.raises(
+            TypeError,
+            match='diluent_mole_fraction has non-numeric items'
+        ):
+            experiments.TestMatrix(
+                self.good_initial_pressure,
+                self.good_initial_temperature,
+                self.good_equivalence,
+                'iterable and non numeric',
+                self.good_num_replicates,
+                self.good_tube_volume,
+                self.good_fuel,
+                self.good_oxidizer,
+                self.good_diluent
+            )
+
+    def test_initialize_diluent_mf_out_of_range(self):
+        # diluent_mole_fraction outside of [0, 1)
+        for bad_diluent_mole_fraction in [-1., 7, 1]:
+            with pytest.raises(
+                ValueError,
+                match='diluent mole fraction <0 or >= 1'
+            ):
+                experiments.TestMatrix(
+                    self.good_initial_pressure,
+                    self.good_initial_temperature,
+                    self.good_equivalence,
+                    bad_diluent_mole_fraction,
+                    self.good_num_replicates,
+                    self.good_tube_volume,
+                    self.good_fuel,
+                    self.good_oxidizer,
+                    self.good_diluent
+                )
+
+    def test_initialize_diluent_mf_edge_cases(self):
+        # edge cases for diluent_mole_fraction
+        for okay_diluent_mole_fraction in [0, 0.99]:
+            experiments.TestMatrix(
+                self.good_initial_pressure,
+                self.good_initial_temperature,
+                self.good_equivalence,
+                okay_diluent_mole_fraction,
+                self.good_num_replicates,
+                self.good_tube_volume,
+                self.good_fuel,
+                self.good_oxidizer,
+                self.good_diluent
+            )
+
+    def test_undiluted(self):
+        undiluted = [
+            experiments.TestMatrix(
+                self.good_initial_pressure,
+                self.good_initial_temperature,
+                [0.75, 1],
+                [0.2],
+                self.good_num_replicates,
+                self.good_tube_volume,
+                self.good_fuel,
+                self.good_oxidizer,
+                diluent=None
+            ),
+            experiments.TestMatrix(
+                self.good_initial_pressure,
+                self.good_initial_temperature,
+                [0.75, 1],
+                [0],
+                self.good_num_replicates,
+                self.good_tube_volume,
+                self.good_fuel,
+                self.good_oxidizer,
+                self.good_diluent
+            )
+            ]
+        undiluted_correct_path = os.path.join(
+            os.path.abspath(os.path.curdir),
+            'beaverdet',
+            'tests',
+            'test_data',
+            'undiluted_test.csv'
         )
-        ]
-    undiluted_correct_path = os.path.join(
-        os.path.abspath(os.path.curdir),
-        'beaverdet',
-        'tests',
-        'test_data',
-        'undiluted_test.csv'
-    )
-    undiluted_correct = pd.read_csv(
-        undiluted_correct_path,
-        dtype=np.float64
-    )
+        undiluted_correct = pd.read_csv(
+            undiluted_correct_path,
+            dtype=np.float64
+        )
 
-    for mixture in undiluted:
-        mixture.generate_test_matrices()
+        for mixture in undiluted:
+            mixture.generate_test_matrices()
+            pd.testing.assert_frame_equal(
+                mixture.base_replicate,
+                undiluted_correct
+            )
+
+    def test_diluted(self):
+        diluted = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            [0.75, 1],
+            [0.1, 0.2],
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
+        )
+        diluted_correct_path = os.path.join(
+            os.path.abspath(os.path.curdir),
+            'beaverdet',
+            'tests',
+            'test_data',
+            'diluted_test.csv'
+        )
+        diluted_correct = pd.read_csv(
+            diluted_correct_path,
+            dtype=np.float64
+        )
+        diluted.generate_test_matrices()
         pd.testing.assert_frame_equal(
-            mixture.base_replicate,
-            undiluted_correct
+            diluted.base_replicate,
+            diluted_correct
         )
 
-    diluted = experiments.TestMatrix(
-        good_initial_pressure,
-        good_initial_temperature,
-        [0.75, 1],
-        [0.1, 0.2],
-        good_num_replicates,
-        good_tube_volume,
-        good_fuel,
-        good_oxidizer,
-        good_diluent
-    )
-    diluted_correct_path = os.path.join(
-        os.path.abspath(os.path.curdir),
-        'beaverdet',
-        'tests',
-        'test_data',
-        'diluted_test.csv'
-    )
-    diluted_correct = pd.read_csv(
-        diluted_correct_path,
-        dtype=np.float64
-    )
-    diluted.generate_test_matrices()
-    pd.testing.assert_frame_equal(
-        diluted.base_replicate,
-        diluted_correct
-    )
+    def test_replicates_not_none(self):
+        # make sure mixture.replicates contains no None
+        diluted = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            [0.75, 1],
+            [0.1, 0.2],
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
+        )
+        diluted.generate_test_matrices()
+        assert all(item is not None for item in diluted.replicates)
 
-    # make sure mixture.replicates contains no None
-    assert all(item is not None for item in diluted.replicates)
+    def test_replicate_randomization(self):
+        # make sure replicates are randomized
+        diluted = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            [0.75, 1],
+            [0.1, 0.2],
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
+        )
+        diluted.generate_test_matrices()
+        assert not diluted.replicates[0].equals(diluted.replicates[1])
 
-    # make sure replicates are randomized
-    assert not diluted.replicates[0].equals(diluted.replicates[1])
+    def test_save(self):
+        # make sure test matrix save works as planned
+        diluted = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            [0.75, 1],
+            [0.1, 0.2],
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
+        )
+        diluted.generate_test_matrices()
+        test_save_directory = os.path.join(
+            os.path.abspath(os.path.curdir),
+            'beaverdet',
+            'tests',
+            'test_data'
+        )
+        # collect list of files in directory
+        start_files = os.listdir(test_save_directory)
 
-    # </editor-fold>/gen
+        diluted.save(test_save_directory)
+        end_files = os.listdir(test_save_directory)
+        delete_files = [file for file in end_files if file not in start_files]
+        print(start_files)
+        print(end_files)
 
-    # <editor-fold desc="save()">
-    test_save_directory = os.path.join(
-        os.path.abspath(os.path.curdir),
-        'beaverdet',
-        'tests',
-        'test_data'
-    )
-    # collect list of files in directory
-    start_files = os.listdir(test_save_directory)
+        assert len(delete_files) == self.good_num_replicates
 
-    diluted.save(test_save_directory)
-    end_files = os.listdir(test_save_directory)
-    delete_files = [file for file in end_files if file not in start_files]
-    print(start_files)
-    print(end_files)
-
-    assert len(delete_files) == good_num_replicates
-
-    [os.remove(os.path.join(test_save_directory, file)) for file in
-     delete_files]
-    # </editor-fold>
+        [os.remove(os.path.join(test_save_directory, file)) for file in
+         delete_files]

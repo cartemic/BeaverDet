@@ -15,7 +15,503 @@ from math import sqrt
 import pytest
 import pint
 import cantera as ct
+import numpy as np
 from .. import tube
+
+ureg = pint.UnitRegistry()
+quant = ureg.Quantity
+
+
+def compare(manual, tested):
+    for key, value in manual.items():
+        try:
+            test_value = tested[key].to(value.units.format_babel()).magnitude
+            value = value.magnitude
+        except AttributeError:
+            test_value = tested[key]
+
+        assert abs(test_value - value) / value < 1e-4
+
+
+class TestBolt:
+    thread_size = '1/4-28'
+    thread_class = '2'
+    plate_max_tensile = quant(30, 'ksi')
+    engagement_length = quant(0.5, 'in')
+    bolt_max_tensile = quant(80, 'ksi')
+
+    def test_calculate_stress_areas_over_100ksi(self):
+        # test bolt > 100ksi
+        bolt_max_tensile = quant(120, 'ksi')
+        hand_calc = {
+            'screw area': quant(0.034934049, 'in^2'),
+            'plate area': quant(0.308744082, 'in^2'),
+            'minimum engagement': quant(0.452595544, 'in')
+        }
+        test_areas = tube.Bolt.calculate_stress_areas(
+            self.thread_size,
+            self.thread_class,
+            bolt_max_tensile,
+            self.plate_max_tensile,
+            self.engagement_length,
+            ureg
+        )
+        compare(hand_calc, test_areas)
+
+    def test_calculate_stress_areas_under_100ksi(self):
+        # test bolt < 100ksi
+        bolt_max_tensile = quant(80, 'ksi')
+        hand_calc = {
+            'screw area': quant(0.036374073, 'in^2'),
+            'minimum engagement': quant(0.314168053, 'in')
+        }
+        test_areas = tube.Bolt.calculate_stress_areas(
+            self.thread_size,
+            self.thread_class,
+            bolt_max_tensile,
+            self.plate_max_tensile,
+            self.engagement_length,
+            ureg
+        )
+        compare(hand_calc, test_areas)
+
+    def test_calculate_stress_areas_length_too_short(self):
+        # ensure warning when engagement length < minimum
+        engagement_length = quant(0.05, 'in')
+        with pytest.warns(
+                Warning,
+                match='Screws fail in shear, not tension.' +
+                      ' Plate may be damaged.' +
+                      ' Consider increasing bolt engagement length'
+        ):
+            tube.Bolt.calculate_stress_areas(
+                self.thread_size,
+                self.thread_class,
+                self.bolt_max_tensile,
+                self.plate_max_tensile,
+                engagement_length,
+                ureg
+            )
+
+    @staticmethod
+    def test_import_thread_specs():
+        # good input
+        test_size = '0-80'
+        test_type = ['external', 'internal']
+        test_property = 'pitch diameter max'
+        test_classes = [['2A', '3A'], ['2B', '3B']]
+        good_result = [[0.0514, 0.0519], [0.0542, 0.0536]]
+        specifications = tube.Bolt._import_thread_specs()
+        for thread, classes, expected in zip(test_type, test_classes,
+                                             good_result):
+            # check for correct output
+            current_frame = specifications[thread]
+            for thread_class, result in zip(classes, expected):
+                test_result = current_frame[test_property][test_size][
+                    thread_class]
+                assert abs(test_result - result) < 1e-7
+
+    @staticmethod
+    def test_get_thread_property():
+        # good input
+        good_args = [
+            [
+                'pitch diameter max',
+                '1/4-20',
+                '2B',
+                ureg
+            ],
+            [
+                'pitch diameter max',
+                '1/4-20',
+                '2A',
+                ureg
+            ]
+        ]
+        good_results = [
+            0.2248,
+            0.2164
+        ]
+        for args, result in zip(good_args, good_results):
+            test_result = tube.Bolt.get_thread_property(*args)
+
+            assert abs(test_result.magnitude - result) < 1e-7
+
+    @staticmethod
+    def test_get_thread_property_not_in_dataframe():
+        dataframes = tube.Bolt._import_thread_specs()
+        # property not in dataframe
+        bad_property = 'jello'
+        bad_message = (
+                'Thread property \'' +
+                bad_property +
+                '\' not found. Available specs: ' +
+                "'" + "', '".join(dataframes['internal'].keys()) + "'"
+        )
+        with pytest.raises(
+                KeyError,
+                match=bad_message
+        ):
+            tube.Bolt.get_thread_property(
+                bad_property,
+                '1/4-20',
+                '2B',
+                ureg
+            )
+
+    @staticmethod
+    def test_get_thread_property_invalid_class():
+        bad_args = [
+            [
+                'pitch diameter max',
+                '1/4-20',
+                '2F',
+                ureg
+            ],
+            [
+                'pitch diameter max',
+                '1/4-20',
+                '6A',
+                ureg
+            ]
+        ]
+        for args in bad_args:
+            with pytest.raises(
+                ValueError,
+                match='bad thread class'
+            ):
+                tube.Bolt.get_thread_property(*args)
+
+    @staticmethod
+    def test_get_thread_property_invalid_size():
+        bad_size = '1290-33'
+        bad_message = (
+                'Thread size \'' +
+                bad_size +
+                '\' not found'
+        )
+        with pytest.raises(
+                KeyError,
+                match=bad_message
+        ):
+            tube.Bolt.get_thread_property(
+                'pitch diameter max',
+                bad_size,
+                '2B',
+                ureg
+            )
+
+
+class TestDDT:
+    diameter = quant(5.76, ureg.inch)
+
+    # use a unit diameter to match diameter-specific values from plot
+    tube_diameter = quant(1, 'meter')
+
+    # define gas mixture and relevant pint quantities
+    mechanism = 'gri30.cti'
+    gas = ct.Solution(mechanism)
+    gas.TP = 300, 101325
+    initial_temperature = quant(gas.T, 'K')
+    initial_pressure = quant(gas.P, 'Pa')
+    gas.set_equivalence_ratio(1, 'CH4', {'O2': 1, 'N2': 3.76})
+    species_dict = gas.mole_fraction_dict()
+
+    def test_calculate_spiral_diameter(self):
+        # define a blockage ratio
+        test_blockage_ratio = 0.44
+
+        # define expected result and actual result
+        expected_spiral_diameter = (
+                self.diameter / 2 * (1 - sqrt(1 - test_blockage_ratio))
+        )
+        result = tube.DDT.calculate_spiral_diameter(
+            self.diameter,
+            test_blockage_ratio
+        )
+
+        # ensure good output
+        assert expected_spiral_diameter == result.to(ureg.inch)
+
+    def test_calculate_spiral_diameter_non_numeric_br(self):
+        # ensure proper handling with non-numeric blockage ratio
+        with pytest.raises(
+                ValueError,
+                match='Non-numeric blockage ratio.'
+        ):
+            tube.DDT.calculate_spiral_diameter(
+                self.diameter,
+                'doompity doo'
+            )
+
+    def test_calculate_spiral_diameter_bad_br(self):
+        # ensure proper handling with blockage ratio outside allowable limits
+        bad_blockage_ratios = [-35.124, 0, 1, 120.34]
+        for ratio in bad_blockage_ratios:
+            with pytest.raises(
+                    ValueError,
+                    match='Blockage ratio outside of 0<BR<1'
+            ):
+                tube.DDT.calculate_spiral_diameter(
+                    self.diameter,
+                    ratio
+                )
+
+    @staticmethod
+    def test_calculate_blockage_ratio():
+        hand_calc_blockage_ratio = 0.444242326717679
+
+        # check for expected result with good input
+        test_result = tube.DDT.calculate_blockage_ratio(
+            quant(3.438, ureg.inch),
+            quant(7. / 16., ureg.inch)
+        )
+        assert (test_result - hand_calc_blockage_ratio) < 1e-8
+
+    @staticmethod
+    def test_calculate_blockage_ratio_0_tube_diameter():
+        with pytest.raises(
+            ValueError,
+            match='tube ID cannot be 0'
+        ):
+            tube.DDT.calculate_blockage_ratio(
+                quant(0, ureg.inch),
+                quant(7. / 16., ureg.inch)
+            )
+
+    def test_calculate_blockage_ratio_blockage_gt_tube(self):
+        # check for correct handling when blockage diameter >= tube diameter
+        with pytest.raises(
+                ValueError,
+                match='blockage diameter >= tube diameter'
+        ):
+            tube.DDT.calculate_blockage_ratio(
+                quant(1, ureg.inch),
+                quant(3, ureg.inch)
+            )
+
+    def test_calculate_ddt_run_up_bad_blockage_ratio(self):
+        bad_blockages = [-4., 0, 1]
+        for blockage_ratio in bad_blockages:
+            with pytest.raises(
+                    ValueError,
+                    match='Blockage ratio outside of correlation range'
+            ):
+                tube.DDT.calculate_run_up(
+                    blockage_ratio,
+                    self.tube_diameter,
+                    self.initial_temperature,
+                    self.initial_pressure,
+                    self.species_dict,
+                    self.mechanism,
+                    ureg
+                )
+
+    def test_calculate_ddt_run_up(self):
+        # define good blockage ratios and expected result from each
+        good_blockages = [0.1, 0.2, 0.3, 0.75]
+        good_results = [
+            48.51385390428211,
+            29.24433249370277,
+            18.136020151133494,
+            4.76070528967254
+        ]
+
+        # test with good inputs
+        for blockage_ratio, result in zip(good_blockages, good_results):
+            test_runup = tube.DDT.calculate_run_up(
+                blockage_ratio,
+                self.tube_diameter,
+                self.initial_temperature,
+                self.initial_pressure,
+                self.species_dict,
+                self.mechanism,
+                ureg,
+                phase_specification='gri30_mix'
+            )
+
+            assert 0.5 * result <= test_runup.magnitude <= 1.5 * result
+
+
+class TestWindow:
+    width = quant(50, ureg.mm).to(ureg.inch)
+    length = quant(20, ureg.mm).to(ureg.mile)
+    pressure = quant(1, ureg.atm).to(ureg.torr)
+    thickness = quant(1.2, ureg.mm).to(ureg.furlong)
+    rupture_modulus = quant(5300, ureg.psi).to(ureg.mmHg)
+
+    def test_safety_factor(self):
+        desired_safety_factor = 4
+
+        test_sf = tube.Window.safety_factor(
+            self.length,
+            self.width,
+            self.thickness,
+            self.pressure,
+            self.rupture_modulus
+        )
+
+        assert abs(test_sf - desired_safety_factor) / test_sf < 0.01
+
+    def test_minimum_thickness_sf_less_than_1(self):
+        # safety factor < 1
+        safety_factor = [0.25, -7]
+        for factor in safety_factor:
+            with pytest.raises(
+                    ValueError,
+                    match='Window safety factor < 1'
+            ):
+                tube.Window.minimum_thickness(
+                    self.length,
+                    self.width,
+                    factor,
+                    self.pressure,
+                    self.rupture_modulus,
+                    ureg
+                )
+
+    def test_minimum_thickness_sf_non_numeric(self):
+        safety_factor = 'BruceCampbell'
+        with pytest.raises(
+                TypeError,
+                match='Non-numeric window safety factor'
+        ):
+            tube.Window.minimum_thickness(
+                self.length,
+                self.width,
+                safety_factor,
+                self.pressure,
+                self.rupture_modulus,
+                ureg
+            )
+
+    def test_minimum_thickness(self):
+        safety_factor = 4
+        test_thickness = tube.Window.minimum_thickness(
+            self.length,
+            self.width,
+            safety_factor,
+            self.pressure,
+            self.rupture_modulus,
+            ureg
+        )
+        test_thickness = test_thickness.to(self.thickness.units).magnitude
+        desired_thickness = self.thickness.magnitude
+        assert abs(test_thickness - desired_thickness) / test_thickness < 0.01
+
+    @staticmethod
+    def test_solver_wrong_number_args():
+        args = [
+            {
+                'length': 5,
+                'width': 4,
+                'thickness': 2,
+                'pressure': 2
+            },
+            {
+                'length': 5,
+                'width': 4,
+                'thickness': 2,
+                'pressure': 2,
+                'rupture_modulus': 10,
+                'safety_factor': 4
+            }
+        ]
+        for argument_dict in args:
+            with pytest.raises(
+                    ValueError,
+                    match='Incorrect number of arguments sent to solver'
+            ):
+                tube.Window.solver(**argument_dict)
+
+    @staticmethod
+    def test_solver_bad_kwarg():
+        kwargs = {
+            'length': 5,
+            'width': 4,
+            'thickness': 2,
+            'pressure': 2,
+            'pulled_pork': 9
+        }
+        with pytest.raises(
+                ValueError,
+                match='Bad keyword argument:\npulled_pork'
+        ):
+            tube.Window.solver(**kwargs)
+
+    @staticmethod
+    def test_solver_imaginary_result():
+        kwargs = {
+            'length': 20,
+            'width': 50,
+            'safety_factor': 4,
+            'pressure': -139,
+            'rupture_modulus': 5300
+        }
+        with pytest.warns(
+                Warning,
+                match='Window inputs resulted in imaginary solution.'
+        ):
+            test_nan = tube.Window.solver(**kwargs)
+
+        assert test_nan is np.nan
+
+    @staticmethod
+    def test_solver():
+        args = [
+            {
+                'length': 20,
+                'width': 50,
+                'safety_factor': 4,
+                'pressure': 14.7,
+                'rupture_modulus': 5300
+            },
+            {
+                'length': 20,
+                'width': 50,
+                'thickness': 1.2,
+                'pressure': 14.7,
+                'rupture_modulus': 5300
+            }
+        ]
+        good_solutions = [1.2, 4.]
+        for index in range(len(args)):
+            test_output = tube.Window.solver(**args[index])
+            assert abs(test_output - good_solutions[index]) < 0.1
+
+    @staticmethod
+    def test_calculate_window_bolt_sf():
+        max_pressure = quant(1631.7, 'psi')
+        window_area = quant(5.75 * 2.5, 'in^2')
+        num_bolts = 20
+        thread_size = '1/4-28'
+        thread_class = '2'
+        bolt_max_tensile = quant(120, 'ksi')
+        plate_max_tensile = quant(30, 'ksi')
+        engagement_length = quant(0.5, 'in')
+
+        hand_calc = {
+            'bolt': 3.606968028,
+            'plate': 7.969517321,
+        }
+
+        test_values = tube.Window.calculate_bolt_sfs(
+            max_pressure,
+            window_area,
+            num_bolts,
+            thread_size,
+            thread_class,
+            bolt_max_tensile,
+            plate_max_tensile,
+            engagement_length,
+            ureg
+        )
+
+        compare(hand_calc, test_values)
+
+
+class TestTube:
+    pass
 
 
 def test_lookup_flange_class():
@@ -81,174 +577,6 @@ def test_lookup_flange_class():
         with pytest.raises(ValueError,
                            match='Desired material non-string input.'):
             tube.lookup_flange_class(temp_good, press_good, bad_material)
-
-
-def test_calculate_spiral_diameter():
-    """
-    Tests the calculate_spiral_diameter function, which takes the pipe inner
-    diameter as a pint quantity, and the desired blockage ratio as a float
-    and returns the diameter of the corresponding Shchelkin spiral.
-
-    Conditions tested: ADD ZERO DIAMETER CASE
-        - Good input
-        - Proper handling with blockage ratio outside of 0<BR<100
-        - Proper handling with tube of diameter 0
-    """
-    # incorporate units with pint
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    # define a pipe inner diameter and blockage ratio
-    test_diameter = quant(5.76, ureg.inch)
-    test_blockage_ratio = 0.44
-
-    # define expected result and actual result
-    expected_spiral_diameter = test_diameter / 2 * \
-        (1 - sqrt(1 - test_blockage_ratio))
-    result = tube.calculate_spiral_diameter(test_diameter,
-                                             test_blockage_ratio)
-
-    # ensure good output
-    assert expected_spiral_diameter == result.to(ureg.inch)
-
-    # ensure proper handling with non-numeric blockage ratio
-    with pytest.raises(ValueError, match='Non-numeric blockage ratio.'):
-        tube.calculate_spiral_diameter(test_diameter, 'doompity doo')
-
-    # ensure proper handling with blockage ratio outside allowable limits
-    bad_blockage_ratios = [-35.124, 0, 1, 120.34]
-    for ratio in bad_blockage_ratios:
-        with pytest.raises(ValueError,
-                           match='Blockage ratio outside of 0<BR<1'):
-            tube.calculate_spiral_diameter(test_diameter, ratio)
-
-
-def test_calculate_blockage_ratio():
-    """
-    Tests the get_blockage_ratio function, which takes arguments of det tube
-    inner diameter and spiral blockage diameter.
-
-    Conditions tested:
-        - good input (both zero and nonzero)
-        - units are mismatched
-        - non-pint blockage diameter
-        - non-numeric pint blockage diameter
-        - blockage diameter with bad units
-        - non-pint tube diameter
-        - non-numeric pint tube diameter
-        - tube diameter with bad units
-        - blockage diameter < 0
-        - blockage diameter >= tube diameter
-        - tube diameter < 0
-    """
-    # incorporate units with pint
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    # known good results from hand-calcs
-    test_tube_diameter = quant(3.438, ureg.inch)
-    test_blockage_diameter = quant(7./16., ureg.inch)
-    hand_calc_blockage_ratio = 0.444242326717679
-
-    # check for expected result with good input
-    test_result = tube.calculate_blockage_ratio(test_tube_diameter,
-                                                 test_blockage_diameter)
-    assert (test_result - hand_calc_blockage_ratio) < 1e-8
-    test_result = tube.calculate_blockage_ratio(test_tube_diameter,
-                                                 quant(0, ureg.inch))
-    assert (test_result - hand_calc_blockage_ratio) < 1e-8
-
-    # check for correct handling when blockage diameter >= tube diameter
-    with pytest.raises(ValueError,
-                       match='blockage diameter >= tube diameter'):
-        tube.calculate_blockage_ratio(test_blockage_diameter,
-                                       test_tube_diameter)
-
-
-def test_calculate_window_sf():
-    """
-    Tests the calculate_window_sf function, which calculates the factor of
-    safety for a viewing window.
-
-    Conditions tested:
-        - good input (all potential errors are handled by
-            accessories.check_pint_quantity)
-    """
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    width = quant(50, ureg.mm).to(ureg.inch)
-    length = quant(20, ureg.mm).to(ureg.mile)
-    pressure = quant(1, ureg.atm).to(ureg.torr)
-    thickness = quant(1.2, ureg.mm).to(ureg.furlong)
-    rupture_modulus = quant(5300, ureg.psi).to(ureg.mmHg)
-    desired_safety_factor = 4
-
-    test_sf = tube.calculate_window_sf(
-        length,
-        width,
-        thickness,
-        pressure,
-        rupture_modulus
-    )
-
-    assert abs(test_sf - desired_safety_factor) / test_sf < 0.01
-
-
-def test_calculate_window_thk():
-    """
-    Tests the calculate_window_thk function, which calculates the thickness of
-    a viewing window.
-
-    Conditions tested:
-        - safety factor < 1
-        - non-numeric safety factor
-        - good input
-    """
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    width = quant(50, ureg.mm).to(ureg.inch)
-    length = quant(20, ureg.mm).to(ureg.mile)
-    pressure = quant(1, ureg.atm).to(ureg.torr)
-    rupture_modulus = quant(5300, ureg.psi).to(ureg.mmHg)
-    desired_thickness = quant(1.2, ureg.mm)
-
-    # safety factor < 1
-    safety_factor = [0.25, -7]
-    for factor in safety_factor:
-        with pytest.raises(ValueError, match='Window safety factor < 1'):
-            tube.calculate_window_thk(
-                length,
-                width,
-                factor,
-                pressure,
-                rupture_modulus
-            )
-
-    # non-numeric safety factor
-    safety_factor = 'BruceCampbell'
-    with pytest.raises(TypeError, match='Non-numeric window safety factor'):
-        tube.calculate_window_thk(
-            length,
-            width,
-            safety_factor,
-            pressure,
-            rupture_modulus
-        )
-
-    # good input
-    safety_factor = 4
-    test_thickness = tube.calculate_window_thk(
-        length,
-        width,
-        safety_factor,
-        pressure,
-        rupture_modulus
-    )
-    test_thickness = test_thickness.to(desired_thickness.units).magnitude
-    desired_thickness = desired_thickness.magnitude
-    assert abs(test_thickness - desired_thickness) / test_thickness < 0.01
 
 
 def test_get_pipe_dlf():
@@ -320,171 +648,6 @@ def test_get_pipe_dlf():
         )
 
 
-def test_calculate_ddt_run_up():
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    # use a unit diameter to match diameter-specific values from plot
-    tube_diameter = quant(1, 'meter')
-
-    # define gas mixture and relevant pint quantities
-    mechanism = 'gri30.cti'
-    gas = ct.Solution(mechanism)
-    gas.TP = 300, 101325
-    initial_temperature = quant(gas.T, 'K')
-    initial_pressure = quant(gas.P, 'Pa')
-    gas.set_equivalence_ratio(1, 'CH4', {'O2': 1, 'N2': 3.76})
-    species_dict = gas.mole_fraction_dict()
-
-    # test with bad blockage ratio
-    bad_blockages = [-4., 0, 1]
-    for blockage_ratio in bad_blockages:
-        with pytest.raises(
-                ValueError,
-                match='Blockage ratio outside of correlation range'
-        ):
-            tube.calculate_ddt_run_up(
-                blockage_ratio,
-                tube_diameter,
-                initial_temperature,
-                initial_pressure,
-                species_dict,
-                mechanism
-            )
-
-    # define good blockage ratios and expected result from each
-    good_blockages = [0.1, 0.2, 0.3, 0.75]
-    good_results = [
-        48.51385390428211,
-        29.24433249370277,
-        18.136020151133494,
-        4.76070528967254
-    ]
-
-    # test with good inputs
-    for blockage_ratio, result in zip(good_blockages, good_results):
-        test_runup = tube.calculate_ddt_run_up(
-            blockage_ratio,
-            tube_diameter,
-            initial_temperature,
-            initial_pressure,
-            species_dict,
-            mechanism,
-            phase_specification='gri30_mix'
-        )
-
-        assert (
-                test_runup.units.format_babel() ==
-                tube_diameter.units.format_babel()
-        )
-
-        assert 0.5 * result <= test_runup.magnitude <= 1.5 * result
-
-
-def test_calculate_bolt_stress_areas():
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    def compare(manual, tested):
-        for key, value in manual.items():
-            test_value = tested[key].to(
-                value.units.format_babel()).magnitude
-            value = value.magnitude
-            assert abs(test_value - value) / value < 1e-4
-
-    # test bolt > 100ksi
-    thread_size = '1/4-28'
-    thread_class = '2'
-    bolt_max_tensile = quant(120, 'ksi')
-    plate_max_tensile = quant(30, 'ksi')
-    engagement_length = quant(0.5, 'in')
-    hand_calc = {
-        'screw area': quant(0.034934049, 'in^2'),
-        'plate area': quant(0.308744082, 'in^2'),
-        'minimum engagement': quant(0.452595544, 'in')
-    }
-    test_areas = tube.calculate_bolt_stress_areas(
-        thread_size,
-        thread_class,
-        bolt_max_tensile,
-        plate_max_tensile,
-        engagement_length
-    )
-    compare(hand_calc, test_areas)
-
-    # test bolt < 100ksi
-    bolt_max_tensile = quant(80, 'ksi')
-    hand_calc['screw area'] = quant(
-        0.036374073,
-        'in^2'
-    )
-    hand_calc['minimum engagement'] = quant(
-        0.314168053,
-        'in'
-    )
-    test_areas = tube.calculate_bolt_stress_areas(
-        thread_size,
-        thread_class,
-        bolt_max_tensile,
-        plate_max_tensile,
-        engagement_length
-    )
-    compare(hand_calc, test_areas)
-
-    # ensure warning when engagement length < minimum
-    engagement_length = quant(0.05, 'in')
-    with pytest.warns(
-        Warning,
-        match='Screws fail in shear, not tension.' +
-              ' Plate may be damaged.' +
-              ' Consider increasing bolt engagement length'
-    ):
-        tube.calculate_bolt_stress_areas(
-            thread_size,
-            thread_class,
-            bolt_max_tensile,
-            plate_max_tensile,
-            engagement_length
-        )
-
-
-def test_calculate_window_bolt_sf():
-    ureg = pint.UnitRegistry()
-    quant = ureg.Quantity
-
-    def compare(manual, tested):
-        for key, value in manual.items():
-            test_value = tested[key].to('').magnitude
-            assert abs(test_value - value) / value < 1e-4
-
-    max_pressure = quant(1631.7, 'psi')
-    window_area = quant(5.75*2.5, 'in^2')
-    num_bolts = 20
-    thread_size = '1/4-28'
-    thread_class = '2'
-    bolt_max_tensile = quant(120, 'ksi')
-    plate_max_tensile = quant(30, 'ksi')
-    engagement_length = quant(0.5, 'in')
-
-    hand_calc = {
-        'bolt': 3.606968028,
-        'plate': 7.969517321,
-    }
-
-    test_values = tube.calculate_window_bolt_sf(
-        max_pressure,
-        window_area,
-        num_bolts,
-        thread_size,
-        thread_class,
-        bolt_max_tensile,
-        plate_max_tensile,
-        engagement_length
-    )
-
-    compare(hand_calc, test_values)
-
-
 def test_calculate_max_initial_pressure():
         ureg = pint.UnitRegistry()
         quant = ureg.Quantity
@@ -539,23 +702,3 @@ def test_calculate_max_initial_pressure():
             error = abs(max_solution - calc_max) / max_solution
 
             assert error <= 0.0005
-
-
-def test_init():
-    pass
-
-
-def test_get_dimensions():
-    pass
-
-
-def test_calculate_max_stress():
-    pass
-
-
-def test_calculate_max_pressure():
-    pass
-
-
-def test_calculate_initial_pressure():
-    pass
