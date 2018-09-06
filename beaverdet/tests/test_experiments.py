@@ -278,7 +278,7 @@ class TestTestMatrix:
         diluted.generate_test_matrices()
         assert not diluted.replicates[0].equals(diluted.replicates[1])
 
-    def test_save(self):
+    def test_save_with_dilution(self):
         # make sure test matrix save works as planned
         diluted = experiments.TestMatrix(
             self.good_initial_pressure,
@@ -292,6 +292,73 @@ class TestTestMatrix:
             self.good_diluent
         )
         diluted.generate_test_matrices()
+        test_save_directory = os.path.join(
+            os.path.abspath(os.path.curdir),
+            'beaverdet',
+            'tests',
+            'test_data'
+        )
+        # collect list of files in directory
+        start_files = os.listdir(test_save_directory)
+
+        diluted.save(test_save_directory)
+        end_files = os.listdir(test_save_directory)
+        delete_files = [file for file in end_files if file not in start_files]
+        print(start_files)
+        print(end_files)
+
+        assert len(delete_files) == self.good_num_replicates
+
+        [os.remove(os.path.join(test_save_directory, file)) for file in
+         delete_files]
+
+    def test_save_without_dilution(self):
+        # make sure test matrix save works as planned
+        diluted = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            [0.75, 1],
+            [0],
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            None
+        )
+        diluted.generate_test_matrices()
+        test_save_directory = os.path.join(
+            os.path.abspath(os.path.curdir),
+            'beaverdet',
+            'tests',
+            'test_data'
+        )
+        # collect list of files in directory
+        start_files = os.listdir(test_save_directory)
+
+        diluted.save(test_save_directory)
+        end_files = os.listdir(test_save_directory)
+        delete_files = [file for file in end_files if file not in start_files]
+        print(start_files)
+        print(end_files)
+
+        assert len(delete_files) == self.good_num_replicates
+
+        [os.remove(os.path.join(test_save_directory, file)) for file in
+         delete_files]
+
+    def test_save_without_generation(self):
+        # make sure test matrix save works as planned
+        diluted = experiments.TestMatrix(
+            self.good_initial_pressure,
+            self.good_initial_temperature,
+            [0.75, 1],
+            [0.1, 0.2],
+            self.good_num_replicates,
+            self.good_tube_volume,
+            self.good_fuel,
+            self.good_oxidizer,
+            self.good_diluent
+        )
         test_save_directory = os.path.join(
             os.path.abspath(os.path.curdir),
             'beaverdet',
