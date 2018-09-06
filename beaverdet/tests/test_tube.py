@@ -983,7 +983,7 @@ class TestTube:
 
         # create test dataframe and write it to a .csv file
         bad_dataframe = pd.DataFrame(data=[[0, 1],  # temperatures
-                                            [2, -3]],  # pressures
+                                           [2, -3]],  # pressures
                                      columns=['Temperature', 'Class'])
 
         bad_dataframe.to_csv(file_location, index=False)
@@ -1209,8 +1209,8 @@ class TestTube:
 
         def make_non_monotonic(*_):
             return {
-                'temperature':('degF', [0, 1, -1]),
-                'stress':('ksi', [0, 0, 0])
+                'temperature': ('degF', [0, 1, -1]),
+                'stress': ('ksi', [0, 0, 0])
             }
 
         with patch(
@@ -1224,9 +1224,71 @@ class TestTube:
             ):
                 test_tube.calculate_max_stress(temp)
 
-    def test_calculate_max_pressure(self):
-        # TODO: write this test
-        assert False
+    @staticmethod
+    def test_calculate_max_pressure():
+        safety_factor = 4
+        test_tube = tube.Tube(
+            '304',
+            '80',
+            '6',
+            False,
+            safety_factor
+        )
+
+        max_stress = test_tube._units.quant(18.8, 'ksi')
+        wall_thickness = test_tube._units.quant(0.432, 'in')
+        outer_diameter = test_tube._units.quant(6.625, 'in')
+        inner_diameter = outer_diameter - 2 * wall_thickness
+        mean_diameter = (inner_diameter + outer_diameter) / 2
+        asme_fs = 4
+
+        good_max_pressure = (
+                max_stress * (2 * wall_thickness) * asme_fs /
+                (mean_diameter * safety_factor)
+                             )
+
+        test_tube.max_stress = max_stress
+
+        test_max_pressure = test_tube.calculate_max_pressure()
+
+        assert np.allclose(test_max_pressure, good_max_pressure)
+
+    @staticmethod
+    def test_calculate_max_pressure_with_given():
+        safety_factor = 4
+        test_tube = tube.Tube(
+            '304',
+            '80',
+            '6',
+            False,
+            safety_factor
+        )
+
+        max_stress = test_tube._units.quant(18.8, 'ksi')
+        good_max_pressure = test_tube._units.quant(100, 'psi')
+
+        test_tube.max_stress = max_stress
+
+        test_max_pressure = test_tube.calculate_max_pressure(
+            good_max_pressure
+        )
+
+        assert np.allclose(test_max_pressure, good_max_pressure)
+
+    def test_calculate_max_pressure_no_max_stress(self):
+        test_tube = tube.Tube(
+            self.material,
+            self.schedule,
+            self.nominal_size,
+            self.welded,
+            self.safety_factor
+        )
+
+        with pytest.raises(
+            ValueError,
+            match='cannot calculate max pressure without max stress'
+        ):
+            test_tube.calculate_max_pressure()
 
     def test_calculate_initial_pressure(self):
         test_tube = tube.Tube(

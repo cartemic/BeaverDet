@@ -12,79 +12,96 @@ CREATED BY:
 
 import pytest
 import pint
+import pandas as pd
 from .. import tools
 
 
-def test_check_pint_quantity():
-    """
-    Tests the check_pint_quantity() function, which makes sure a variable is
-    a numeric pint quantity of the correct dimensionality. It can also ensure
-    that the magnitude of the quantity is > 0.
+def test_add_dataframe_row():
+    column_names = ['a', 's', 'd', 'f']
+    added_row = [0, 'f', 3, 'asd']
 
-   Conditions tested:
-        - bad dimension type
-        - non-pint quantity
-        - non-numeric pint quantity
-        - negative magnitude
-        - incorrect dimensionality
-        - good input
-    """
+    good_dataframe = pd.DataFrame(
+        columns=column_names,
+        data=[added_row],
+        dtype=object
+    )
 
-    # initialize unit registry and quantity for unit handling
+    test_dataframe = pd.DataFrame(
+        columns=column_names,
+        dtype=object
+    )
+    tools.add_dataframe_row(test_dataframe, added_row)
+
+    assert test_dataframe.equals(good_dataframe)
+
+
+class TestCheckPintQuantity:
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
 
-    # Bad dimension type
-    bad_dimension_type = 'walrus'
-    error_str = bad_dimension_type + ' not a supported dimension type'
-    with pytest.raises(ValueError, match=error_str):
-        tools.check_pint_quantity(
-            quant(3, ureg.degC),
-            bad_dimension_type
-        )
+    def test_good_input(self):
+        lengths = [6.3, -8]
+        for length in lengths:
+            assert tools.check_pint_quantity(
+                self.quant(length, 'inch'),
+                'length'
+            )
 
-    # Non-pint quantity
-    with pytest.raises(ValueError, match='Non-pint quantity'):
-        tools.check_pint_quantity(
-            7,
-            'length'
-        )
+    def test_bad_dimension_type(self):
+        bad_dimension_type = 'walrus'
+        error_str = bad_dimension_type + ' not a supported dimension type'
+        with pytest.raises(
+                ValueError,
+                match=error_str
+        ):
+            tools.check_pint_quantity(
+                self.quant(3, 'degC'),
+                bad_dimension_type
+            )
 
-    # Non-numeric pint quantity
-    with pytest.raises(ValueError, match='Non-numeric pint quantity'):
-        tools.check_pint_quantity(
-            quant('asdf', ureg.inch),
-            'length'
-        )
+    @staticmethod
+    def test_non_pint_quantity():
+        with pytest.raises(
+                ValueError,
+                match='Non-pint quantity'
+        ):
+            tools.check_pint_quantity(
+                7,
+                'length'
+            )
 
-    # Negative magnitude
-    with pytest.raises(ValueError, match='Input value < 0'):
-        tools.check_pint_quantity(
-            quant(-4, ureg.inch),
-            'length',
-            ensure_positive=True
-        )
+    def test_non_numeric_quantity(self):
+        with pytest.raises(
+                ValueError,
+                match='Non-numeric pint quantity'
+        ):
+            tools.check_pint_quantity(
+                self.quant('asdf', 'inch'),
+                'length'
+            )
 
-    # Incorrect dimensionality
-    error_str = (
-            ureg.degC.dimensionality.__str__() +
-            ' is not ' +
-            ureg.meter.dimensionality.__str__()
-    )
-    try:
-        tools.check_pint_quantity(
-            quant(19.2, ureg.degC),
-            'length'
-        )
-    except ValueError as err:
-        assert str(err) == error_str
+    def test_ensure_positive_with_negative_magnitude(self):
+        with pytest.raises(
+                ValueError,
+                match='Input value < 0'
+        ):
+            tools.check_pint_quantity(
+                self.quant(-4, 'in'),
+                'length',
+                ensure_positive=True
+            )
 
-    # Good input
-    assert tools.check_pint_quantity(
-        quant(6.3, ureg.inch),
-        'length'
-    )
-    assert tools.check_pint_quantity(
-        quant(-8, ureg.inch),
-        'length'
-    )
+    def test_incorrect_dimensionality(self):
+        error_str = (
+                self.ureg.degC.dimensionality.__str__().strip('[]') +
+                ' is not ' +
+                self.ureg.meter.dimensionality.__str__().strip('[]')
+        )
+        with pytest.raises(
+            ValueError,
+            match=error_str
+        ):
+            tools.check_pint_quantity(
+                self.quant(19.2, 'degC'),
+                'length'
+            )

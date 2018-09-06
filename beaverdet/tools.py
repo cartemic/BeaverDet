@@ -14,19 +14,6 @@ CREATED BY:
 import pint
 
 
-# TODO: moved get_flange_limits_from_csv to tube.Tube()
-# TODO: moved check_materials to tube.Tube()
-# TODO: moved collect_tube_materials to tube.Tube()
-# TODO: moved get_material_groups to tube.Tube()
-# TODO: moved window_sympy_solver to tube.Window()
-# TODO: moved import_thread_specs to tube.Bolt()
-# TODO: moved get_thread_property to tube.Bolt()
-# TODO: removed get_thread_tpi entirely
-# TODO: moved get_pipe_stress_limits to tube.Tube()
-# TODO: moved calculate_laminar_flamespeed to thermochem
-# TODO: moved get_equil_sound_speed to thermochem
-
-
 def check_pint_quantity(
         quantity,
         dimension_type,
@@ -89,9 +76,9 @@ def check_pint_quantity(
 
     if units[dimension_type] != actual_dimension_type:
         raise ValueError(
-            actual_dimension_type +
+            actual_dimension_type.strip('[]') +
             ' is not '
-            + units[dimension_type]
+            + units[dimension_type].strip('[]')
         )
 
     return True
