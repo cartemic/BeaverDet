@@ -1641,7 +1641,7 @@ class Tube:
         """
         # ensure that initial temperature and max pressure have been
         # calculated
-        if not (self.initial_temperature and self.max_pressure):
+        if (not self.initial_temperature) and (not self.max_pressure):
             raise ValueError('cannot calculate initial pressure' +
                              ' without initial temperature' +
                              ' and max pressure')
@@ -1714,12 +1714,8 @@ class Tube:
         # read in available materials and their associated groups
         materials_dict = self._get_material_groups()
 
-        # ensure desired_material is in materials_dict
-        if self.material not in materials_dict.keys():
-            raise ValueError('Desired material not in database.')
-        else:
-            # material is good, get ASME B16.5 material group
-            group = materials_dict[self.material]
+        # material is good, get ASME B16.5 material group
+        group = materials_dict[self.material]
 
         # import flange limits from csv
         flange_limits = self._get_flange_limits_from_csv(group)

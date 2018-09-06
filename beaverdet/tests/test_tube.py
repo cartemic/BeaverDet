@@ -740,6 +740,20 @@ class TestTube:
                     with pytest.raises(ValueError, message=error_string):
                                 test_tube._check_materials_list()
 
+    def test_check_current_material(self):
+        test_tube = tube.Tube(
+            self.material,
+            self.schedule,
+            self.nominal_size,
+            self.welded,
+            self.safety_factor
+        )
+        with pytest.raises(
+            ValueError,
+            match='Pipe material not found in materials_list.csv'
+        ):
+            test_tube._check_current_material('magic')
+
     def test_get_material_groups(self):
         # ensure correctness by comparing to a pandas dataframe reading the
         # same file
@@ -1037,6 +1051,8 @@ class TestTube:
 
         # ensure non-numeric pressures and temperatures are zeroed out
         test_dataframe = test_tube._get_flange_limits_from_csv(my_input)
+
+        os.remove(file_location)
 
         assert test_dataframe.equals(good_dataframe)
 
@@ -1342,7 +1358,78 @@ class TestTube:
 
             assert error <= 0.0005
 
+    def test_calculate_initial_pressure_no_temperature_or_pressure(self):
+        test_tube = tube.Tube(
+            self.material,
+            self.schedule,
+            self.nominal_size,
+            self.welded,
+            self.safety_factor
+        )
+        test_tube.initial_temperature = None
+        test_tube.max_pressure = None
+        with pytest.raises(
+            ValueError,
+            match='cannot calculate initial pressure without initial '
+                  'temperature and max pressure'
+        ):
+            test_tube.calculate_initial_pressure(
+                {'H2': 1, 'O2': 0.5},
+                'gri30.cti'
+            )
+
+    def test_calculate_initial_pressure_no_temperature(self):
+        test_tube = tube.Tube(
+            self.material,
+            self.schedule,
+            self.nominal_size,
+            self.welded,
+            self.safety_factor
+        )
+        test_tube.initial_temperature = None
+        test_tube.max_pressure = quant(100, 'psi')
+        with pytest.raises(
+            ValueError,
+            match='cannot calculate initial pressure without initial '
+                  'temperature'
+        ):
+            test_tube.calculate_initial_pressure(
+                {'H2': 1, 'O2': 0.5},
+                'gri30.cti'
+            )
+
+    def test_calculate_initial_pressure_no_pressure(self):
+        test_tube = tube.Tube(
+            self.material,
+            self.schedule,
+            self.nominal_size,
+            self.welded,
+            self.safety_factor
+        )
+        test_tube.initial_temperature = quant(75, 'degF')
+        test_tube.max_pressure = None
+        with pytest.raises(
+            ValueError,
+            match='cannot calculate initial pressure without max pressure'
+        ):
+            test_tube.calculate_initial_pressure(
+                {'H2': 1, 'O2': 0.5},
+                'gri30.cti'
+            )
+
     def test_lookup_flange_class(self):
+        test_tube = tube.Tube(
+            self.material,
+            self.schedule,
+            self.nominal_size,
+            self.welded,
+            self.safety_factor
+        )
+        test_tube.max_pressure = test_tube._units.quant(125, 'bar')
+        test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
+        assert test_tube.lookup_flange_class() == '1500'
+
+    def test_lookup_flange_class_bad_material(self):
         test_tube = tube.Tube(
             self.material,
             self.schedule,

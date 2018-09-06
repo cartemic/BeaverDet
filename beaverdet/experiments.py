@@ -140,7 +140,7 @@ class TestMatrix:
                         gas: mol_fraction * fill_pressure for gas, mol_fraction
                         in self.mixture.diluted.mole_fraction_dict().items()
                     }
-                    masses = self.mixture.get_mass(
+                    masses = self.mixture.get_masses(
                         self.tube_volume,
                         diluted=True
                     )
@@ -176,7 +176,7 @@ class TestMatrix:
                         gas: mol_fraction * fill_pressure for gas, mol_fraction
                         in self.mixture.undiluted.mole_fraction_dict().items()
                     }
-                    masses = self.mixture.get_mass(
+                    masses = self.mixture.get_masses(
                         self.tube_volume,
                         diluted=False
                     )

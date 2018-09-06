@@ -349,11 +349,8 @@ class Mixture:
         self.undiluted.set_equivalence_ratio(equivalence_ratio,
                                              self.fuel,
                                              self.oxidizer)
-        if self.diluent:
-            try:
-                self.add_diluent(self.diluent, self.diluent_mol_fraction)
-            except AttributeError:
-                pass
+        if self.diluent and self.diluent_mol_fraction:
+            self.add_diluent(self.diluent, self.diluent_mol_fraction)
 
         self.equivalence = equivalence_ratio
 
@@ -367,7 +364,7 @@ class Mixture:
             raise ValueError('Bad diluent: {}'.format(diluent))
         elif diluent in [self.fuel, self.oxidizer]:
             raise ValueError('You can\'t dilute with fuel or oxidizer!')
-        elif mole_fraction > 1.:
+        elif mole_fraction > 1. or mole_fraction < 0:
             raise ValueError('Bro, do you even mole fraction?')
 
         self.diluent = diluent
@@ -396,7 +393,7 @@ class Mixture:
             species
         )
 
-    def get_mass(
+    def get_masses(
             self,
             tube_volume,
             diluted=False
@@ -419,7 +416,9 @@ class Mixture:
             tube_volume.units.format_babel()
         )
 
-        if diluted:
+        if diluted and self.diluted is None:
+            raise ValueError('Mixture has not been diluted')
+        elif diluted:
             cantera_solution = self.diluted
         else:
             cantera_solution = self.undiluted
@@ -444,7 +443,9 @@ class Mixture:
         Cantera is used to get the mole fractions of each species, which are
         then multiplied by the initial pressure to get each partial pressure.
         """
-        if diluted:
+        if diluted and self.diluted is None:
+            raise ValueError('Mixture has not been diluted')
+        elif diluted:
             cantera_solution = self.diluted
         else:
             cantera_solution = self.undiluted

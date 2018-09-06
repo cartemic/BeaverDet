@@ -269,14 +269,20 @@ class TestTestMatrix:
             self.good_initial_temperature,
             [0.75, 1],
             [0.1, 0.2],
-            self.good_num_replicates,
+            10,
             self.good_tube_volume,
             self.good_fuel,
             self.good_oxidizer,
             self.good_diluent
         )
         diluted.generate_test_matrices()
-        assert not diluted.replicates[0].equals(diluted.replicates[1])
+
+        replicates_different = []
+        for replicate in diluted.replicates[1:]:
+            replicates_different.append(
+                not diluted.replicates[0].equals(replicate)
+            )
+        assert any(replicates_different)
 
     def test_save_with_dilution(self):
         # make sure test matrix save works as planned
