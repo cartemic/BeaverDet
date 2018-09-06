@@ -35,6 +35,7 @@ install_requires = [
 tests_require = [
     'pytest',
     'pytest-cov',
+    'mock'
 ]
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)

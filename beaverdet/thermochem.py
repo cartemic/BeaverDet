@@ -11,6 +11,7 @@ CREATED BY:
 """
 
 import pint
+import sd2
 import numpy as np
 import cantera as ct
 from . import tools
@@ -166,6 +167,94 @@ def get_eq_sound_speed(
     sound_speed = np.sqrt(np.diff(pressures)/np.diff(densities))[0]
 
     return quant(sound_speed, 'm/s')
+
+
+def calculate_reflected_shock_state(
+        initial_temperature,
+        initial_pressure,
+        species_dict,
+        mechanism,
+        ureg
+):
+    """
+    Calculates the thermodynamic and chemical state of a reflected shock
+    using sd2.
+
+    Parameters
+    ----------
+    initial_temperature : pint quantity
+        Pint quantity of mixture initial temperature
+    initial_pressure : pint quantity
+        Pint quantity of mixture initial pressure
+    species_dict : dict
+        Dictionary of initial reactant mixture
+    mechanism : str
+        Mechanism to use for chemical calculations, e.g. 'gri30.cti'
+    ureg : pint.UnitRegistry
+        Pint unit registry
+
+    Returns
+    -------
+    dict
+        Dictionary containing keys 'reflected' and 'cj'. Each of these
+        contains 'speed', indicating the related wave speed, and 'state',
+        which is a Cantera gas object at the specified state.
+    """
+    quant = ureg.Quantity
+
+    # define gas objects
+    initial_gas = ct.Solution(mechanism)
+    reflected_gas = ct.Solution(mechanism)
+
+    # define gas states
+    initial_temperature = initial_temperature.to('K').magnitude
+    initial_pressure = initial_pressure.to('Pa').magnitude
+    initial_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_dict
+    ]
+    reflected_gas.TPX = [
+        initial_temperature,
+        initial_pressure,
+        species_dict
+    ]
+
+    # get CJ state
+    [cj_speed,
+     cj_gas] = sd2.detonations.calculate_cj_speed(
+        initial_pressure,
+        initial_temperature,
+        species_dict,
+        mechanism,
+        return_state=True
+    )
+
+    # get reflected state
+    [_,
+     reflected_speed,
+     reflected_gas] = sd2.shocks.get_reflected_equil_state_0(
+        initial_gas,
+        cj_gas,
+        reflected_gas,
+        cj_speed
+    )
+
+    return {
+        'reflected': {
+            'speed': quant(
+                reflected_speed,
+                'm/s'
+            ),
+            'state': reflected_gas
+        },
+        'cj': {
+            'speed': quant(
+                cj_speed,
+                'm/s'),
+            'state': cj_gas
+        }
+    }
 
 
 class Mixture:

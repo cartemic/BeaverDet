@@ -42,12 +42,12 @@
 
 ## `thermochem.py`
 
-* [ ] `calculate_laminar_flamespeed()`
+* [x] `calculate_laminar_flamespeed()`
 
-  * [ ] move tests from `test_tools.py`
+  * [x] move tests from `test_tools.py`
 
-* [ ] `calculate_laminar_flamespeed()`
-  * [ ] move tests from `test_tools.py`
+* [x] `calculate_get_eq_sound_speed()`
+  * [x] move tests from `test_tools.py`
 
 * [ ] `Mixture`
 

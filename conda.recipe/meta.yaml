@@ -30,6 +30,7 @@ test:
     - pandas
     - sympy
     - cantera
+    - mock
 
   requires:
     - pytest
