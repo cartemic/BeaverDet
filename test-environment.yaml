@@ -13,3 +13,4 @@ dependencies:
   - sympy
   - cantera
   - sd2
+  - mock
