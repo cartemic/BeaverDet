@@ -234,4 +234,7 @@ modules.xml
 .idea/misc.xml
 *.ipr
 
+### snakeviz ###
+*.prof
+
 # End of https://www.gitignore.io/api/windows,python,microsoftoffice,matlab

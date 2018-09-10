@@ -29,7 +29,8 @@ install_requires = [
     'numpy',
     'sympy',
     'pint',
-    'cantera'
+    'cantera',
+    'sd2'
 ]
 
 tests_require = [

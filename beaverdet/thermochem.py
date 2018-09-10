@@ -221,8 +221,7 @@ def calculate_reflected_shock_state(
     ]
 
     # get CJ state
-    [cj_speed,
-     cj_gas] = sd2.detonations.calculate_cj_speed(
+    cj_calcs = sd2.detonations.calculate_cj_speed(
         initial_pressure,
         initial_temperature,
         species_dict,
@@ -235,9 +234,9 @@ def calculate_reflected_shock_state(
      reflected_speed,
      reflected_gas] = sd2.shocks.get_reflected_equil_state_0(
         initial_gas,
-        cj_gas,
+        cj_calcs['cj state'],
         reflected_gas,
-        cj_speed
+        cj_calcs['cj speed']
     )
 
     return {
@@ -250,9 +249,9 @@ def calculate_reflected_shock_state(
         },
         'cj': {
             'speed': quant(
-                cj_speed,
+                cj_calcs['cj speed'],
                 'm/s'),
-            'state': cj_gas
+            'state': cj_calcs['cj state']
         }
     }
 
