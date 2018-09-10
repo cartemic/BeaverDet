@@ -221,7 +221,7 @@ class Bolt:
 
         Returns
         -------
-        thread_specs : list
+        thread_specs : dict
             [internal thread specs, external thread specs]. Both sets of thread
             specifications are multi-indexed with (thread size, thread class).
         """
