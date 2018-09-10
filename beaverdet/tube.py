@@ -23,19 +23,6 @@ from . import tools
 from . import thermochem
 
 
-# TODO: moved lookup_flange_class to Tube() first.
-# TODO: moved calculate_spiral_diameter to DDT()
-# TODO: moved calculate_blockage_ratio to DDT()
-# TODO: moved calculate_window_sf to Window()
-# TODO: moved calculate_window_thk to Window()
-# TODO: moved get_pipe_dlf to Tube()
-# TODO: moved calculate_ddt_runup to DDT()
-# TODO: moved calculate_bolt_stress_areas to Bolt()
-# TODO: moved calculate_window_bolt_sf to Window()
-# TODO: moved calculate_reflected_shock_state to Tube()
-# TODO: moved calculate_max_initial_pressure to Tube()
-
-
 class Bolt:
     @classmethod
     def calculate_stress_areas(
@@ -1657,7 +1644,6 @@ class Tube:
         error = 1000
         counter = 0
         while error > error_tol and counter < max_iterations:
-            # TODO: remove all units in here to speed up the loop
             counter += 1
             # get reflected shock pressure
             states = thermochem.calculate_reflected_shock_state(
