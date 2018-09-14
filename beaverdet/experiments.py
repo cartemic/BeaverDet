@@ -360,6 +360,21 @@ def _load_diode_data(
         diode_data_file,
         apply_lowpass
 ):
+    """
+    Loads in diode data from a tdms file given the location
+
+    Parameters
+    ----------
+    diode_data_file : str
+        Location of diode data file
+    apply_lowpass : bool
+        Determines whether or not a lowpass filter is applied
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        Dataframe of diode data, with time stamps removed if they are present
+    """
     # import data
     data = TdmsFile(diode_data_file).as_dataframe()
     for key in data.keys():
@@ -373,7 +388,28 @@ def _load_diode_data(
     return data
 
 
-def _diode_filter(data, n=3, wn=0.01):
+def _diode_filter(
+        data,
+        n=3,
+        wn=0.01
+):
+    """
+    A butterworth lowpass filter for diode data
+
+    Parameters
+    ----------
+    data : numpy.ndarray or pandas.core.frame.DataFrame
+        Data to be filtered
+    n : int
+        Order of butterworth filter
+    wn : float
+        Relative cutoff frequency (cutoff/Nyquist)
+
+    Returns
+    -------
+    numpy.ndarray or pandas.core.frame.DataFrame
+        Filtered signal
+    """
     butter = signal.butter(n, wn, btype='lowpass', output='ba')
     return signal.filtfilt(butter[0], butter[1], data)
 
