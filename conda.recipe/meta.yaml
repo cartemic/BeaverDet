@@ -21,7 +21,7 @@ requirements:
     - pandas
     - sympy
     - cantera
-    - sd2 >= 0.1.1b
+    - sd2 >=0.1.1b
     - nptdms
     - scipy
 
@@ -36,6 +36,7 @@ test:
     - mock
 
   requires:
+    - mock
     - pytest
     - pytest-cov
 

@@ -232,7 +232,7 @@ def calculate_reflected_shock_state(
     # get reflected state
     [_,
      reflected_speed,
-     reflected_gas] = sd2.shocks.get_reflected_equil_state_0(
+     reflected_gas] = sd2.shocks.get_reflected_eq_state_0(
         initial_gas,
         cj_calcs['cj state'],
         reflected_gas,

@@ -19,6 +19,16 @@ from .. import experiments
 
 ureg = pint.UnitRegistry()
 quant = ureg.Quantity
+current_dir = os.path.join(
+    *os.path.split(
+        os.path.dirname(__file__)
+    )[:-1]
+)
+test_data_dir = os.path.join(
+    current_dir,
+    'tests',
+    'test_data'
+)
 
 
 class TestTestMatrix:
@@ -199,10 +209,7 @@ class TestTestMatrix:
             )
             ]
         undiluted_correct_path = os.path.join(
-            os.path.abspath(os.path.curdir),
-            'beaverdet',
-            'tests',
-            'test_data',
+            test_data_dir,
             'undiluted_test.csv'
         )
         undiluted_correct = pd.read_csv(
@@ -230,10 +237,7 @@ class TestTestMatrix:
             self.good_diluent
         )
         diluted_correct_path = os.path.join(
-            os.path.abspath(os.path.curdir),
-            'beaverdet',
-            'tests',
-            'test_data',
+            test_data_dir,
             'diluted_test.csv'
         )
         diluted_correct = pd.read_csv(
@@ -298,24 +302,18 @@ class TestTestMatrix:
             self.good_diluent
         )
         diluted.generate_test_matrices()
-        test_save_directory = os.path.join(
-            os.path.abspath(os.path.curdir),
-            'beaverdet',
-            'tests',
-            'test_data'
-        )
         # collect list of files in directory
-        start_files = os.listdir(test_save_directory)
+        start_files = os.listdir(test_data_dir)
 
-        diluted.save(test_save_directory)
-        end_files = os.listdir(test_save_directory)
+        diluted.save(test_data_dir)
+        end_files = os.listdir(test_data_dir)
         delete_files = [file for file in end_files if file not in start_files]
         print(start_files)
         print(end_files)
 
         assert len(delete_files) == self.good_num_replicates
 
-        [os.remove(os.path.join(test_save_directory, file)) for file in
+        [os.remove(os.path.join(test_data_dir, file)) for file in
          delete_files]
 
     def test_save_without_dilution(self):
@@ -332,24 +330,19 @@ class TestTestMatrix:
             None
         )
         diluted.generate_test_matrices()
-        test_save_directory = os.path.join(
-            os.path.abspath(os.path.curdir),
-            'beaverdet',
-            'tests',
-            'test_data'
-        )
-        # collect list of files in directory
-        start_files = os.listdir(test_save_directory)
 
-        diluted.save(test_save_directory)
-        end_files = os.listdir(test_save_directory)
+        # collect list of files in directory
+        start_files = os.listdir(test_data_dir)
+
+        diluted.save(test_data_dir)
+        end_files = os.listdir(test_data_dir)
         delete_files = [file for file in end_files if file not in start_files]
         print(start_files)
         print(end_files)
 
         assert len(delete_files) == self.good_num_replicates
 
-        [os.remove(os.path.join(test_save_directory, file)) for file in
+        [os.remove(os.path.join(test_data_dir, file)) for file in
          delete_files]
 
     def test_save_without_generation(self):
@@ -365,22 +358,17 @@ class TestTestMatrix:
             self.good_oxidizer,
             self.good_diluent
         )
-        test_save_directory = os.path.join(
-            os.path.abspath(os.path.curdir),
-            'beaverdet',
-            'tests',
-            'test_data'
-        )
-        # collect list of files in directory
-        start_files = os.listdir(test_save_directory)
 
-        diluted.save(test_save_directory)
-        end_files = os.listdir(test_save_directory)
+        # collect list of files in directory
+        start_files = os.listdir(test_data_dir)
+
+        diluted.save(test_data_dir)
+        end_files = os.listdir(test_data_dir)
         delete_files = [file for file in end_files if file not in start_files]
         print(start_files)
         print(end_files)
 
         assert len(delete_files) == self.good_num_replicates
 
-        [os.remove(os.path.join(test_save_directory, file)) for file in
+        [os.remove(os.path.join(test_data_dir, file)) for file in
          delete_files]
