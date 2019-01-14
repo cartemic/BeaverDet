@@ -11,10 +11,9 @@ CREATED BY:
 """
 
 import pint
-import sd2
 import numpy as np
 import cantera as ct
-from . import tools
+from . import tools, sd
 
 
 def calculate_laminar_flamespeed(
@@ -221,7 +220,7 @@ def calculate_reflected_shock_state(
     ]
 
     # get CJ state
-    cj_calcs = sd2.detonations.calculate_cj_speed(
+    cj_calcs = sd.Detonation.cj_speed(
         initial_pressure,
         initial_temperature,
         species_dict,
@@ -232,7 +231,7 @@ def calculate_reflected_shock_state(
     # get reflected state
     [_,
      reflected_speed,
-     reflected_gas] = sd2.shocks.get_reflected_eq_state_0(
+     reflected_gas] = sd.Reflection.reflect(
         initial_gas,
         cj_calcs['cj state'],
         reflected_gas,

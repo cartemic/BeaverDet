@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 PURPOSE:
-    Unit tests for experiments.py
+    Unit tests for thermochem.py
 
 CREATED BY:
     Mick Carter
