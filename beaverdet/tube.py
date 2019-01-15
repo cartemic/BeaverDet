@@ -986,59 +986,85 @@ class Window:
 
 
 class Tube:
+    # TODO: fix property docstrings
+    # TODO: query for available materials
+    # TODO: query for available NPS
+    _all_quantities = {
+        'material',
+        'schedule',
+        'nominal_size',
+        'welded',
+        'initial_pressure',
+        'initial_temperature',
+        'max_pressure',
+        'max_stress',
+        'dynamic_load_factor',
+        'dimensions'
+        'reactant_mixture',
+        'mechanism',
+        'safety_factor',
+        'flange_class',
+        'cj_speed',
+        'verbose'
+    }
+
     def __init__(
             self,
-            material,
-            schedule,
-            nominal_size,
-            welded,
-            safety_factor
+            *,
+            material=None,
+            schedule=None,
+            nominal_size=None,
+            welded=False,
+            initial_pressure=None,
+            initial_temperature=None,
+            max_pressure=None,
+            reactant_mixture=None,
+            mechanism='gri30.cti',
+            safety_factor=4,
+            verbose=True
     ):
         """
         Parameters
         ----------
-        material : str
-            Material that pipe is made of, e.g. '316L'
-        schedule : str
-            Pipe schedule, e.g. '80', 'XXS'
-        nominal_size : str
-            Nominal pipe size in inches, e.g. '6' for NPS-6 or '1/4' for
-            NPS-1/4
-        welded : bool
-            True for welded pipe, False for seamless
-        safety_factor : float
-            Desired tube factor of safety
+        TODO: update parameters for init method
         """
 
         # build local unit registry
         self._units = self._UnitSystem()
 
-        # allocate blank instance attributes as None
-        self.max_stress = None
-        self.initial_temperature = None
-        self.initial_pressure = None
-        self.max_pressure = None
-        self.cj_speed = None
-        self.flange_class = None
+        # assign all inputs
+        self._quantities = dict()
+        for item in self._all_quantities:
+            inputs = locals()
+            if item in inputs:
+                self._quantities[item] = inputs[item]
+            else:
+                self._quantities[item] = None
 
-        # make sure material is acceptable
-        self.material = None
-        self.change_material(material)
-
-        # assign tube information to self
-        self.safety_factor = safety_factor
-        self.schedule = schedule
-        self.nominal_size = nominal_size
-        self.welded = welded
-
-        # get dimensions
-        self.dimensions = self._Dimensions()
-        self._get_dimensions()
+        # # allocate blank instance attributes as None
+        # self.max_stress = None
+        # self.initial_temperature = None
+        # self.initial_pressure = None
+        # self.max_pressure = None
+        # self.cj_speed = None
+        # self.flange_class = None
+        #
+        # # make sure material is acceptable
+        # self.material = None
+        # self.change_material(material)
+        #
+        # # assign tube information to self
+        # self.safety_factor = safety_factor
+        # self.schedule = schedule
+        # self.nominal_size = nominal_size
+        # self.welded = welded
+        #
+        # # get dimensions
+        # self.dimensions = self._Dimensions()
+        # self._get_dimensions()
 
     class _Dimensions:
-        def __init__(
-                self
-        ):
+        def __init__(self):
             self.inner_diameter = None
             self.outer_diameter = None
             self.wall_thickness = None
@@ -1181,7 +1207,7 @@ class Tube:
 
         return True
 
-    def _check_current_material(
+    def _check_material(
             self,
             material
     ):
@@ -1445,21 +1471,83 @@ class Tube:
 
         return dynamic_load_factor
 
-    def change_nominal_size(
+    def _get_property(
+            self,
+            current_property
+    ):
+        if self._quantities[current_property] is not None:
+            return self._quantities[current_property]
+        else:
+            warnings.warn(current_property + ' has not been defined.')
+            return None
+
+    def _set_property(
+            self,
+            current_property,
+            value
+    ):
+        if current_property in Tube._all_quantities:
+            if (
+                    (self._quantities[current_property] is None)
+                    or
+                    (isinstance(
+                        value,
+                        type(self._quantities[current_property])
+                    ))
+            ):
+                # if the quantity is currently None or the type is the same as
+                # the previously set quantity, go ahead and set the new one
+                self._quantities[current_property] = value
+
+            elif current_property == 'mechanism' and (
+                isinstance(value, str) or isinstance(value, dict)
+            ):
+                # an exception to the type matching rule is mechanism, which can
+                # be either a str or dict
+                self._quantities[current_property] = value
+
+            else:
+                # the quantity is the wrong type, don't set it
+                raise TypeError('Wrong quantity type')
+
+        else:
+            # the quantity being set is not on the approved list
+            raise ValueError(
+                'Bad quantity designator. Approved quantities are:\n' +
+                '\n'.join(self._all_quantities)
+            )
+
+    @property
+    def nominal_size(self):
+        """
+        The nominal pipe size (NPS) of the pipe used to construct the detonation
+        tube. NPS should be set using a string, e.g.
+
+        `mytube.nominal_size = '1/4'`
+
+        for NPS-1/4 or
+
+        `mytube.nominal_size = '6'`
+
+        for NPS-6.
+        """
+        return self._get_property('nominal_size')
+
+    @nominal_size.setter
+    def nominal_size(
             self,
             nominal_size
     ):
-        """
-        Parameters
-        ----------
-        nominal_size : str
-            Nominal pipe size in inches, e.g. '6' for NPS-6 or '1/4' for
-            NPS-1/4
-        """
-        self.nominal_size = nominal_size
+        # TODO: add checks for bad input
+        self._quantities['nominal_size'] = nominal_size
         self._get_dimensions()
 
-    def change_schedule(
+    @property
+    def schedule(self):
+        return self._get_property('schedule')
+
+    @schedule.setter
+    def schedule(
             self,
             schedule
     ):
@@ -1469,10 +1557,16 @@ class Tube:
         schedule : str
             Pipe schedule, e.g. '80', 'XXS'
         """
-        self.schedule = schedule
+        # TODO: add checks for bad input
+        self._quantities['schedule'] = schedule
         self._get_dimensions()
 
-    def change_material(
+    @property
+    def material(self):
+        return self._get_property('material')
+
+    @material.setter
+    def material(
             self,
             material
     ):
@@ -1484,28 +1578,119 @@ class Tube:
         """
         # make sure material is okay and store value
         self._check_materials_list()
-        self._check_current_material(material)
-        self.material = material
+        self._check_material(material)
+        self._quantities['material'] = material
 
         # recalculate max stress if initial temperature exists
-        if self.initial_temperature:
-            self.calculate_max_stress(self.initial_temperature)
+        if self._quantities['initial_temperature'] is not None:
+            self.calculate_max_stress()
 
-    def calculate_max_stress(
+    @property
+    def welded(self):
+        return self._get_property('welded')
+
+    @welded.setter
+    def welded(
+            self,
+            welded
+    ):
+        if welded:
+            self._set_property('welded', True)
+        else:
+            self._set_property('welded', False)
+
+    @property
+    def safety_factor(self):
+        return self._get_property('safety_factor')
+
+    @safety_factor.setter
+    def safety_factor(
+            self,
+            safety_factor
+    ):
+        self._set_property('safety_factor', float(safety_factor))
+
+    @property
+    def max_stress(self):
+        return self._get_property('max_stress')
+
+    @max_stress.setter
+    def max_stress(
+            self,
+            max_stress
+    ):
+        # make sure input stress is a pint quantity with pressure units
+        # and use it
+        tools.check_pint_quantity(
+            max_stress,
+            'pressure',
+            ensure_positive=True
+        )
+
+        max_stress = self._units.quant(
+            max_stress.magnitude,
+            max_stress.units.format_babel()
+        )
+        self._set_property('max_stress', max_stress)
+
+    @property
+    def max_pressure(self):
+        return self._get_property('max_pressure')
+
+    @max_pressure.setter
+    def max_pressure(
+            self,
+            max_pressure
+    ):
+        # make sure input pressure is a pint quantity with pressure units
+        # and use it
+        tools.check_pint_quantity(
+            max_pressure,
+            'pressure',
+            ensure_positive=True
+        )
+
+        max_pressure = self._units.quant(
+            max_pressure.magnitude,
+            max_pressure.units.format_babel()
+        )
+        self._set_property('max_pressure', max_pressure)
+
+    @property
+    def reactant_mixture(self):
+        return self._get_property('reactant_mixture')
+
+    @reactant_mixture.setter
+    def reactant_mixture(
+            self,
+            reactant_mixture
+    ):
+        # TODO: add checks for bad input
+        self._set_property('reactant_mixture', reactant_mixture)
+
+    @property
+    def initial_pressure(self):
+        return self._get_property('initial_pressure')
+
+    @initial_pressure.setter
+    def initial_pressure(
+            self,
+            _
+    ):
+        raise PermissionError(
+            'Initial pressure must be calculated, not set. Try'
+            ' `mytube.calculate_initial_pressure()` instead.'
+        )
+
+    @property
+    def initial_temperature(self):
+        return self._get_property('initial_temperature')
+
+    @initial_temperature.setter
+    def initial_temperature(
             self,
             initial_temperature
     ):
-        """
-        Parameters
-        ----------
-        initial_temperature : pint quantity
-            Pint quantity of initial mixture temperature
-
-        Returns
-        -------
-        max_stress : pint quantity
-            Pint quantity of maximum allowable tube stress
-        """
         # ensure temperature is a pint quantity, and convert it to the local
         # unit registry to avoid problems
         tools.check_pint_quantity(
@@ -1517,11 +1702,101 @@ class Tube:
             initial_temperature.magnitude,
             initial_temperature.units.format_babel()
         )
-        self.initial_temperature = initial_temperature
+        self._set_property('initial_temperature', initial_temperature)
+
+    @property
+    def mechanism(self):
+        return self._get_property('mechanism')
+
+    @mechanism.setter
+    def mechanism(
+            self,
+            mechanism
+    ):
+        available_mechanisms = tools.find_mechanisms()
+        if mechanism in available_mechanisms:
+            self._set_property('mechanism', mechanism)
+        else:
+            raise ValueError('Mechanism not found. Available mechanisms:\n' +
+                             '\n'.join(available_mechanisms))
+
+    @property
+    def dynamic_load_factor(self):
+        return self._get_property('dynamic_load_factor')
+
+    @dynamic_load_factor.setter
+    def dynamic_load_factor(
+            self,
+            _
+    ):
+        raise PermissionError(
+            'Dynamic load factor must be calculated, not set. DLF calculation'
+            ' occurs during initial pressure calculations. Try'
+            ' `mytube.calculate_initial_pressure()` instead.'
+        )
+
+    @property
+    def dimensions(self):
+        return self._get_property('dimensions')
+
+    @dimensions.setter
+    def dimensions(
+            self,
+            _
+    ):
+        raise PermissionError(
+            'Tube dimensions are looked up based on nominal pipe size and '
+            'schedule, not set. Try `mytube.schedule()` or '
+            '`mytube.nominal_size()` instead.'
+        )
+
+    @property
+    def cj_speed(self):
+        return self._get_property('cj_speed')
+
+    @cj_speed.setter
+    def cj_speed(
+            self,
+            _
+    ):
+        raise PermissionError(
+            'CJ speed must be calculated, not set. CJ speed calculation'
+            ' occurs during initial pressure calculations. Try'
+            ' `mytube.calculate_initial_pressure()` instead.'
+        )
+
+    @property
+    def flange_class(self):
+        return self._get_property('flange_class')
+
+    @flange_class.setter
+    def flange_class(
+            self,
+            _
+    ):
+        raise PermissionError(
+            'Flange class must be calculated looked up based on max pressure, '
+            'not set. Try `mytube.lookup_flange_class()` instead.'
+        )
+
+    def calculate_max_stress(
+            self
+    ):
+        """
+        TODO: docstring fix plz
+
+        Returns
+        -------
+        max_stress : pint quantity
+            Pint quantity of maximum allowable tube stress
+        """
+        # TODO: requires initial_temperature, welded
+        initial_temperature = self._quantities['initial_temperature']
+        welded = self._quantities['welded']
 
         # look up stress-temperature limits and units
         stress_limits = self._get_pipe_stress_limits(
-            self.welded
+            welded
         )
         stress_units = stress_limits['stress'][0]
         stresses = stress_limits['stress'][1]
@@ -1536,7 +1811,7 @@ class Tube:
                              'monotonically increasing')
 
         # interpolate max stress
-        self.max_stress = self._units.quant(
+        max_stress = self._units.quant(
             np.interp(
                 initial_temperature.to(temp_units).magnitude,
                 temperatures,
@@ -1545,75 +1820,49 @@ class Tube:
             stress_units
         )
 
-        return self.max_stress
+        self._set_property('max_stress', max_stress)
+        return max_stress
 
     def calculate_max_pressure(
-            self,
-            max_pressure=False
+            self
     ):
         """
-        Parameters
-        ----------
-        max_pressure : bool False or pint quantity
-            Max pressure input may be either a pint quantity, in which case
-            it represents the maximum allowable pressure from hydrostatic
-            testing, or a boolean False (default), in which case the maximum
-            allowable pressure will be calculated from the limits found in
-            ASME B31.1.
+        Calculates the maximum allowable pressure from the limits found in ASME
+        B31.1, with the option to modify the safety factor via
 
-        Returns
-        -------
-        max_pressure : pint quantity
-            Maximum allowable tube pressure
+        `mytube.safety_factor()`
+
+        and returns it as a pint quantity.
         """
-        if not max_pressure:
-            # user didn't give max pressure
-            # ensure that max stress has been calculated
-            if not self.max_stress:
-                raise ValueError('cannot calculate max pressure' +
-                                 ' without max stress')
+        # TODO: requires max stress, dimensions, safety factor
 
-            # calculate max pressure using basic longitudinal joint formula
-            # on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
-            mean_diameter = (self.dimensions.outer_diameter +
-                             self.dimensions.inner_diameter) / 2.
-            asme_fs = 4
-            self.max_pressure = (
-                    self.max_stress *
-                    (2 * self.dimensions.wall_thickness) *
-                    asme_fs /
-                    (mean_diameter * self.safety_factor)
-            )
-        else:
-            # make sure input pressure is a pint quantity with pressure units
-            # and use it
-            tools.check_pint_quantity(
-                max_pressure,
-                'pressure',
-                ensure_positive=True
-            )
+        # get required quantities
+        dimensions = self._quantities['dimensions']
+        max_stress = self._quantities['max_stress']
+        safety_factor = self._quantities['safety_factor']
 
-            self.max_pressure = self._units.quant(
-                max_pressure.magnitude,
-                max_pressure.units.format_babel()
-            )
+        # calculate max pressure using basic longitudinal joint formula
+        # on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
+        mean_diameter = (dimensions.outer_diameter +
+                         dimensions.inner_diameter) / 2.
+        asme_fs = 4
+        max_pressure = (
+                max_stress * (2 * dimensions.wall_thickness) *
+                asme_fs / (mean_diameter * safety_factor)
+        )
+
+        self._set_property('max_pressure',  max_pressure)
 
         return self.max_pressure
 
     def calculate_initial_pressure(
             self,
-            species_dict,
-            mechanism,
             error_tol=1e-4,
             max_iterations=500
     ):
         """
         Parameters
         ----------
-        species_dict: dict
-            Dictionary of reactant mixture components
-        mechanism : str
-            Mechanism to use for calculations, e.g. 'gri30.cti'
         error_tol : float
             Relative error tolerance below which initial pressure calculations
             are considered 'good enough'
@@ -1626,30 +1875,30 @@ class Tube:
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
         """
-        # ensure that initial temperature and max pressure have been
-        # calculated
-        if (not self.initial_temperature) and (not self.max_pressure):
-            raise ValueError('cannot calculate initial pressure' +
-                             ' without initial temperature' +
-                             ' and max pressure')
-        elif not self.initial_temperature:
-            raise ValueError('cannot calculate initial pressure' +
-                             ' without initial temperature')
-        elif not self.max_pressure:
-            raise ValueError('cannot calculate initial pressure' +
-                             ' without max pressure')
+        # TODO: requires reactant_mixture, mechanism, max_pressure,
+        #  initial_temperature
+
+        # get required quantities
+        reactant_mixture = self._quantities['reactant_mixture']
+        mechanism = self._quantities['mechanism']
+        max_pressure = self._quantities['max_pressure']
+        initial_temperature = self._quantities['initial_temperature']
 
         # define error and pressure initial guesses and start solution loop
+        # TODO: implement rough guess to try to avoid weird crashing conditions
+        # TODO: error handling on Cantera crash
         initial_pressure = self._units.quant(101325, 'Pa')
         error = 1000
         counter = 0
+        dlf = np.NaN
+        cj_speed = np.NaN
         while error > error_tol and counter < max_iterations:
             counter += 1
             # get reflected shock pressure
             states = thermochem.calculate_reflected_shock_state(
-                self.initial_temperature,
+                initial_temperature,
                 initial_pressure,
-                species_dict,
+                reactant_mixture,
                 mechanism,
                 self._units.ureg
             )
@@ -1660,9 +1909,6 @@ class Tube:
                 'Pa'
             )
             cj_speed = states['cj']['speed']
-            self.cj_speed = self._units.quant(
-                cj_speed.to('m/s').magnitude,
-                'm/s')
 
             # get dynamic load factor
             dlf = self._get_pipe_dlf()
@@ -1670,18 +1916,24 @@ class Tube:
             # calculate error, accounting for dynamic load factor
             error = abs(
                 reflected_pressure.to_base_units().magnitude -
-                self.max_pressure.to_base_units().magnitude / dlf) / \
-                (self.max_pressure.to_base_units().magnitude / dlf)
+                max_pressure.to_base_units().magnitude / dlf) / \
+                (max_pressure.to_base_units().magnitude / dlf)
 
             # find new initial pressure
             initial_pressure = (
                     initial_pressure *
-                    self.max_pressure.to_base_units().magnitude /
+                    max_pressure.to_base_units().magnitude /
                     dlf /
                     reflected_pressure.to_base_units().magnitude
             )
 
-        self.initial_pressure = initial_pressure
+        self._set_property('initial_pressure', initial_pressure)
+        self._set_property('cj_speed',
+                           self._units.quant(
+                               cj_speed.to('m/s').magnitude,
+                               'm/s'
+                           ))
+        self._set_property('dynamic_load_factor', dlf)
         return initial_pressure
 
     def lookup_flange_class(
@@ -1696,12 +1948,16 @@ class Tube:
         flange_class: str
             String representing the minimum allowable flange class
         """
+        # TODO: requires max_pressure, initial_temperature, material
+        max_pressure = self._quantities['max_pressure']
+        initial_temperature = self._quantities['initial_temperature']
+        material = self._quantities['material']
 
         # read in available materials and their associated groups
         materials_dict = self._get_material_groups()
 
         # material is good, get ASME B16.5 material group
-        group = materials_dict[self.material]
+        group = materials_dict[material]
 
         # import flange limits from csv
         flange_limits = self._get_flange_limits_from_csv(group)
@@ -1712,11 +1968,11 @@ class Tube:
         for key in class_keys:
             if int(key) > int(max_key):
                 max_key = key
-        max_pressure = flange_limits[max_key].max().to('bar')
+        max_ok_pressure = flange_limits[max_key].max().to('bar')
 
         # ensure pressure is within bounds
-        if ((self.max_pressure.magnitude < 0) or
-                (self.max_pressure.magnitude > max_pressure.magnitude)):
+        if ((max_pressure.magnitude < 0) or
+                (max_pressure.magnitude > max_ok_pressure.magnitude)):
             # pressure is outside of range, return an error
             raise ValueError('Pressure out of range.')
 
@@ -1725,8 +1981,8 @@ class Tube:
         min_temp = flange_limits['Temperature'].min().to('degC')
 
         # ensure temperature is within bounds
-        if ((self.initial_temperature.magnitude < min_temp.magnitude) or (
-                self.initial_temperature.magnitude > max_temp.magnitude)):
+        if ((initial_temperature.magnitude < min_temp.magnitude) or (
+                initial_temperature.magnitude > max_temp.magnitude)):
             # temperature is outside of range, return an error
             raise ValueError('Temperature out of range.')
 
@@ -1738,9 +1994,9 @@ class Tube:
         correct_class = None
         for key in class_keys:
             max_class_pressure = flange_limits[key].max().to('bar').magnitude
-            if self.max_pressure.magnitude < max_class_pressure:
+            if max_pressure.magnitude < max_class_pressure:
                 correct_class = key
                 break
 
-        self.flange_class = correct_class
+        self._set_property('flange_class', correct_class)
         return correct_class
