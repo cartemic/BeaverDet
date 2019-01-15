@@ -12,6 +12,8 @@ CREATED BY:
 """
 
 import pint
+import cantera as ct
+import os
 
 
 def check_pint_quantity(
@@ -104,3 +106,15 @@ def add_dataframe_row(
 
     """
     dataframe.loc[len(dataframe.index)] = row
+
+
+def find_mechanisms():
+    mechanism_path = os.path.join(
+        os.path.split(os.path.abspath(ct.__file__))[0],
+        'data'
+    )
+
+    available = {item for item in os.listdir(mechanism_path) if
+                 ('.cti' in item) or ('.xml' in item)}
+
+    return available
