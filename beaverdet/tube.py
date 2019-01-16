@@ -13,6 +13,7 @@ CREATED BY:
 
 import warnings
 import os
+import re
 from math import sqrt
 import pint
 import pandas as pd
@@ -999,23 +1000,25 @@ class Tube:
         'max_pressure',
         'max_stress',
         'dynamic_load_factor',
-        'dimensions'
+        'dimensions',
         'reactant_mixture',
         'mechanism',
         'safety_factor',
         'flange_class',
         'cj_speed',
+        'dimensions',
         'verbose'
     }
 
+    # TODO: update parameters for init method
     def __init__(
             self,
             *,
-            material=None,
-            schedule=None,
-            nominal_size=None,
+            material='316L',
+            schedule='80',
+            nominal_size='6',
             welded=False,
-            initial_pressure=None,
+            max_stress=None,
             initial_temperature=None,
             max_pressure=None,
             reactant_mixture=None,
@@ -1026,20 +1029,63 @@ class Tube:
         """
         Parameters
         ----------
-        TODO: update parameters for init method
         """
 
         # build local unit registry
         self._units = self._UnitSystem()
 
-        # assign all inputs
-        self._quantities = dict()
+        # check materials list to make sure it's good
+        # define and collect tube materials and groups
+        self._collect_tube_materials()
+        self._get_material_groups()
+        self._check_materials_list()
+
+        # initiate hidden dict of properties
+        self._properties = dict()
+
+        # define all non-input quantities as None
+        inputs = locals()
         for item in self._all_quantities:
-            inputs = locals()
-            if item in inputs:
-                self._quantities[item] = inputs[item]
-            else:
-                self._quantities[item] = None
+            self._properties[item] = None
+
+        # determine whether or not to report issues to the user
+        self.verbose = not not verbose
+
+        # initialize dimensions object and set nominal size and schedule
+        self._properties['dimensions'] = self._Dimensions()
+        self._initializing = True
+        self.nominal_size = nominal_size
+        self.schedule = schedule
+
+        # determine whether or not the tube is welded and set material
+        self._properties['welded'] = not not welded
+        self.material = material
+
+        # set initial temperature to 20 C if not defined
+        if initial_temperature is None:
+            self._properties['initial_temperature'] = self._units.quant(20,
+                                                                        'degC')
+        else:
+            self.initial_temperature = initial_temperature
+
+        # set max stress
+        if max_stress is not None:
+            self._properties['max_stress'] = max_stress
+
+        # set safety factor
+        if safety_factor is not None:
+            self.safety_factor = safety_factor
+
+        # set max pressure
+        if max_pressure is not None:
+            self.max_pressure = max_pressure
+
+        # set mechanism and reactant mixture
+        if mechanism is not None:
+            self.mechanism = mechanism
+
+        if reactant_mixture is not None:
+            self.reactant_mixture = reactant_mixture
 
         # # allocate blank instance attributes as None
         # self.max_stress = None
@@ -1062,6 +1108,7 @@ class Tube:
         # # get dimensions
         # self.dimensions = self._Dimensions()
         # self._get_dimensions()
+        self._initializing = False
 
     class _Dimensions:
         def __init__(self):
@@ -1076,55 +1123,76 @@ class Tube:
             self.ureg = pint.UnitRegistry()
             self.quant = self.ureg.Quantity
 
-    def _get_dimensions(
+    def _dimensions_lookup(
             self
     ):
-        # collect pipe schedules
-        file_directory = os.path.join(
-            os.path.dirname(
-                os.path.relpath(__file__)
-            ),
-            'lookup_data'
-        )
-        file_name = 'pipe_schedules.csv'
-        file_location = os.path.relpath(
-            os.path.join(
-                file_directory,
-                file_name
+        # this function depends on nominal_size and schedule. make sure that
+        # they are defined
+        dependency_check = {
+            'size': self.nominal_size is None,
+            'schedule': self.schedule is None
+        }
+        errors = {
+            'size': "nominal size not set (e.g. `mytube.nominal_size = '6'`)",
+            'schedule': "schedule not set (e.g. `mytube.schedule = '80'`)"
+        }
+        if any(dependency_check.values()) and self.verbose:
+            warning_string = '\n'.join([
+                errors[reason] for reason in dependency_check
+                if dependency_check[reason] is False
+            ])
+            warnings.warn(warning_string)
+
+        else:
+            # all dependencies are met :)
+            # collect pipe schedules
+            file_directory = os.path.join(
+                os.path.dirname(
+                    os.path.relpath(__file__)
+                ),
+                'lookup_data'
             )
-        )
-        schedule_info = pd.read_csv(file_location, index_col=0)
-
-        # find which pipe sizes are available
-        try:
-            available_sizes = list(
-                schedule_info[self.schedule].dropna().to_dict().keys()
+            file_name = 'pipe_schedules.csv'
+            file_location = os.path.relpath(
+                os.path.join(
+                    file_directory,
+                    file_name
+                )
             )
-        except KeyError:
-            raise ValueError('Pipe schedule not found')
+            schedule_info = pd.read_csv(file_location, index_col=0)
 
-        # ensure size exists
-        if self.nominal_size not in available_sizes:
-            raise ValueError('Nominal size not found for given pipe schedule')
+            # find which pipe sizes are available
+            try:
+                available_sizes = list(
+                    schedule_info[self.schedule].dropna().to_dict().keys()
+                )
+            except KeyError:
+                raise ValueError('Pipe schedule not found')
 
-        # look up/calculate dimensions
-        outer_diameter = schedule_info['OD'][self.nominal_size]
-        wall_thickness = schedule_info[self.schedule][self.nominal_size]
-        inner_diameter = outer_diameter - 2 * wall_thickness
+            # ensure size exists
+            if self.nominal_size not in available_sizes:
+                raise ValueError(
+                    'Nominal size not found for given pipe schedule'
+                )
 
-        # assign values to self with units
-        self.dimensions.outer_diameter = self._units.quant(
-            outer_diameter,
-            'in'
-        )
-        self.dimensions.inner_diameter = self._units.quant(
-            inner_diameter,
-            'in'
-        )
-        self.dimensions.wall_thickness = self._units.quant(
-            wall_thickness,
-            'in'
-        )
+            # look up/calculate dimensions
+            outer_diameter = schedule_info['OD'][self.nominal_size]
+            wall_thickness = schedule_info[self.schedule][self.nominal_size]
+            inner_diameter = outer_diameter - 2 * wall_thickness
+
+            # assign values to self with units
+            self.dimensions.outer_diameter = self._units.quant(
+                outer_diameter,
+                'in'
+            )
+            self.dimensions.inner_diameter = self._units.quant(
+                inner_diameter,
+                'in'
+            )
+            self.dimensions.wall_thickness = self._units.quant(
+                wall_thickness,
+                'in'
+            )
 
     def _check_materials_list(
             self
@@ -1143,7 +1211,6 @@ class Tube:
         my_files = os.listdir(file_directory)
         flange_ratings = [file for file in my_files if "flange" in file.lower()]
         stress_limits = [file for file in my_files if "stress" in file.lower()]
-        materials_list = self._get_material_groups()
 
         # make sure things were actually loaded
         if not bool(flange_ratings + stress_limits):
@@ -1161,7 +1228,7 @@ class Tube:
         # other types are permitted, but will raise a warning
         for file in stress_limits:
             if ('welded' not in file.lower()) and (
-                    'seamless' not in file.lower()):
+                    'seamless' not in file.lower()) and self.verbose:
                 # warn that something is weird
                 warnings.warn(
                     file + 'does not indicate whether it is welded or seamless'
@@ -1180,18 +1247,18 @@ class Tube:
 
                 # check to make sure that each material in the list of available
                 # materials has a stress limit curve for the current limit type
-                for item in materials_list:
+                for item in self._materials['Grade'].values.astype(str):
                     if item not in materials:
                         # a material is missing from the limits spreadsheet.
                         # indicate that an error has occurred, and add it to the
                         # error string.
                         error_string += 'Material ' + item + ' not found in '\
-                                        + file + '\n'
+                                        + re.escape(file_location) + '\n'
                         has_errors = True
 
         # find out which material groups need to be inspected
         groups = set()
-        for _, group in materials_list.items():
+        for group in self._materials['Group'].values.astype(str):
             groups.add(group.replace('.', '_'))
 
         # check folder to make sure the correct files exist
@@ -1211,8 +1278,7 @@ class Tube:
             self,
             material
     ):
-        good_materials = self._collect_tube_materials()
-        if material not in good_materials['Grade'].values:
+        if material not in self._materials['Grade'].values:
             raise ValueError('Pipe material not found in materials_list.csv')
 
     def _get_material_groups(
@@ -1226,14 +1292,13 @@ class Tube:
         -------
         groups_dict
         """
-        materials_dataframe = self._collect_tube_materials()
-        grades = materials_dataframe.Grade.values.astype(str)
-        groups = materials_dataframe.Group.values.astype(str)
+        grades = self._materials.Grade.values.astype(str)
+        groups = self._materials.Group.values.astype(str)
         groups_dict = {}
         for [grade, group] in zip(grades, groups):
             groups_dict[grade] = group
 
-        return groups_dict
+        self._material_groups = groups_dict
 
     def _collect_tube_materials(
             self,
@@ -1285,7 +1350,7 @@ class Tube:
             materials_dataframe.Density.values
         ]  # type: pd.DataFrame
 
-        return materials_dataframe
+        self._materials = materials_dataframe
 
     def _get_flange_limits_from_csv(
             self,
@@ -1365,6 +1430,7 @@ class Tube:
         self._check_materials_list()
 
         # collect files
+        # todo: put this in init so it only runs once
         file_directory = os.path.join(
             os.path.dirname(
                 os.path.relpath(__file__)
@@ -1396,6 +1462,7 @@ class Tube:
 
     def _get_pipe_dlf(
             self,
+            cj_vel,
             plus_or_minus=0.1
     ):
         """
@@ -1429,8 +1496,7 @@ class Tube:
             )
 
         # get material properties
-        properties_dataframe = self._collect_tube_materials().\
-            set_index('Grade')
+        properties_dataframe = self._materials.set_index('Grade')
         elastic_modulus = (
             properties_dataframe['ElasticModulus'][self.material].to
             ('Pa')
@@ -1462,9 +1528,9 @@ class Tube:
             crit_velocity * (1. - plus_or_minus)
         ]
 
-        if self.cj_speed < bounds[1]:
+        if cj_vel < bounds[1]:
             dynamic_load_factor = 1
-        elif self.cj_speed > bounds[0]:
+        elif cj_vel > bounds[0]:
             dynamic_load_factor = 2
         else:
             dynamic_load_factor = 4
@@ -1475,10 +1541,10 @@ class Tube:
             self,
             current_property
     ):
-        if self._quantities[current_property] is not None:
-            return self._quantities[current_property]
+        if self._properties[current_property] is not None:
+            return self._properties[current_property]
         else:
-            warnings.warn(current_property + ' has not been defined.')
+            warnings.warn('{0} has not been defined.'.format(current_property))
             return None
 
     def _set_property(
@@ -1488,23 +1554,23 @@ class Tube:
     ):
         if current_property in Tube._all_quantities:
             if (
-                    (self._quantities[current_property] is None)
+                    (self._properties[current_property] is None)
                     or
                     (isinstance(
                         value,
-                        type(self._quantities[current_property])
+                        type(self._properties[current_property])
                     ))
             ):
                 # if the quantity is currently None or the type is the same as
                 # the previously set quantity, go ahead and set the new one
-                self._quantities[current_property] = value
+                self._properties[current_property] = value
 
             elif current_property == 'mechanism' and (
                 isinstance(value, str) or isinstance(value, dict)
             ):
                 # an exception to the type matching rule is mechanism, which can
                 # be either a str or dict
-                self._quantities[current_property] = value
+                self._properties[current_property] = value
 
             else:
                 # the quantity is the wrong type, don't set it
@@ -1539,8 +1605,9 @@ class Tube:
             nominal_size
     ):
         # TODO: add checks for bad input
-        self._quantities['nominal_size'] = nominal_size
-        self._get_dimensions()
+        self._set_property('nominal_size', nominal_size)
+        if not self._initializing:
+            self._dimensions_lookup()
 
     @property
     def schedule(self):
@@ -1558,8 +1625,8 @@ class Tube:
             Pipe schedule, e.g. '80', 'XXS'
         """
         # TODO: add checks for bad input
-        self._quantities['schedule'] = schedule
-        self._get_dimensions()
+        self._set_property('schedule', schedule)
+        self._dimensions_lookup()
 
     @property
     def material(self):
@@ -1577,13 +1644,12 @@ class Tube:
             Material that pipe is made of, e.g. '316L'
         """
         # make sure material is okay and store value
-        self._check_materials_list()
         self._check_material(material)
-        self._quantities['material'] = material
+        self._properties['material'] = material
 
         # recalculate max stress if initial temperature exists
-        if self._quantities['initial_temperature'] is not None:
-            self.calculate_max_stress()
+        # if self._properties['initial_temperature'] is not None:
+        #     self.calculate_max_stress()
 
     @property
     def welded(self):
@@ -1667,6 +1733,22 @@ class Tube:
     ):
         # TODO: add checks for bad input
         self._set_property('reactant_mixture', reactant_mixture)
+
+    @property
+    def verbose(self):
+        return self._get_property('verbose')
+
+    @verbose.setter
+    def verbose(
+            self,
+            verbose
+    ):
+        if verbose:
+            verbose = True
+        else:
+            verbose = False
+
+        self._set_property('verbose', verbose)
 
     @property
     def initial_pressure(self):
@@ -1790,9 +1872,9 @@ class Tube:
         max_stress : pint quantity
             Pint quantity of maximum allowable tube stress
         """
-        # TODO: requires initial_temperature, welded
-        initial_temperature = self._quantities['initial_temperature']
-        welded = self._quantities['welded']
+        # TODO: requires initial_temperature, welded, material (_g_p_s_l)
+        initial_temperature = self._properties['initial_temperature']
+        welded = self._properties['welded']
 
         # look up stress-temperature limits and units
         stress_limits = self._get_pipe_stress_limits(
@@ -1837,9 +1919,9 @@ class Tube:
         # TODO: requires max stress, dimensions, safety factor
 
         # get required quantities
-        dimensions = self._quantities['dimensions']
-        max_stress = self._quantities['max_stress']
-        safety_factor = self._quantities['safety_factor']
+        dimensions = self._properties['dimensions']
+        max_stress = self._properties['max_stress']
+        safety_factor = self._properties['safety_factor']
 
         # calculate max pressure using basic longitudinal joint formula
         # on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
@@ -1879,10 +1961,10 @@ class Tube:
         #  initial_temperature
 
         # get required quantities
-        reactant_mixture = self._quantities['reactant_mixture']
-        mechanism = self._quantities['mechanism']
-        max_pressure = self._quantities['max_pressure']
-        initial_temperature = self._quantities['initial_temperature']
+        reactant_mixture = self._properties['reactant_mixture']
+        mechanism = self._properties['mechanism']
+        max_pressure = self._properties['max_pressure']
+        initial_temperature = self._properties['initial_temperature']
 
         # define error and pressure initial guesses and start solution loop
         # TODO: implement rough guess to try to avoid weird crashing conditions
@@ -1911,7 +1993,7 @@ class Tube:
             cj_speed = states['cj']['speed']
 
             # get dynamic load factor
-            dlf = self._get_pipe_dlf()
+            dlf = self._get_pipe_dlf(cj_speed)
 
             # calculate error, accounting for dynamic load factor
             error = abs(
@@ -1949,15 +2031,12 @@ class Tube:
             String representing the minimum allowable flange class
         """
         # TODO: requires max_pressure, initial_temperature, material
-        max_pressure = self._quantities['max_pressure']
-        initial_temperature = self._quantities['initial_temperature']
-        material = self._quantities['material']
+        max_pressure = self._properties['max_pressure']
+        initial_temperature = self._properties['initial_temperature']
+        material = self._properties['material']
 
-        # read in available materials and their associated groups
-        materials_dict = self._get_material_groups()
-
-        # material is good, get ASME B16.5 material group
-        group = materials_dict[material]
+        # get ASME B16.5 material group
+        group = self._material_groups[material]
 
         # import flange limits from csv
         flange_limits = self._get_flange_limits_from_csv(group)

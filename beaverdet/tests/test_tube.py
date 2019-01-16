@@ -514,12 +514,15 @@ class TestWindow:
         compare(hand_calc, test_values)
 
 
+@pytest.mark.tube
 class TestTube:
     material = '316L'
     schedule = '80'
     nominal_size = '6'
     welded = False
     safety_factor = 4
+    fake_material_groups = {'thing0': 'group0', 'thing1': 'group1'}
+    fake_materials = pd.DataFrame(columns=['Group', 'Grade'])
 
     class FakeOpen:
         """
@@ -553,20 +556,13 @@ class TestTube:
                 """
                 return 'ASDF,thing0,thing1\n'
 
-    @staticmethod
-    def fake_get_material_groups(*_):
-        """
-        fake get_material_groups()
-        """
-        return {'thing0': 'group0', 'thing1': 'group1'}
-
     def test_get_dimensions(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # Note: _get_dimensions is called during __init__
@@ -588,11 +584,11 @@ class TestTube:
                 match='Pipe schedule not found'
         ):
             tube.Tube(
-                self.material,
-                'Kropotkin',
-                self.nominal_size,
-                self.welded,
-                self.safety_factor
+                material=self.material,
+                schedule='Kropotkin',
+                nominal_size=self.nominal_size,
+                welded=self.welded,
+                safety_factor=self.safety_factor
             )
 
     def test_get_dimensions_bad_pipe_size(self):
@@ -601,30 +597,30 @@ class TestTube:
                 match='Nominal size not found for given pipe schedule'
         ):
             tube.Tube(
-                self.material,
-                self.schedule,
-                'really big',
-                self.welded,
-                self.safety_factor
+                material=self.material,
+                schedule=self.schedule,
+                nominal_size='really big',
+                welded=self.welded,
+                safety_factor=self.safety_factor
             )
 
     def test_check_materials_list(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         assert test_tube._check_materials_list()
 
     def test_check_materials_list_no_files_found(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         def fake_listdir(*_):
@@ -640,11 +636,11 @@ class TestTube:
 
     def test_check_materials_list_group_lookup_fails(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         def fake_listdir(*_):
@@ -662,11 +658,12 @@ class TestTube:
 
     def test_check_materials_list_no_welded_or_seamless(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor,
+            verbose=True
         )
 
         def fake_listdir(*_):
@@ -675,32 +672,28 @@ class TestTube:
                     'asdfflangegroup1asd',
                     'asdfstresswdasdg']
 
+        test_tube._material_groups = self.fake_material_groups
+        test_tube._materials = self.fake_materials
+
         with patch('builtins.open', new=self.FakeOpen):
-            with patch(
-                    'beaverdet.tube.Tube._get_material_groups',
-                    self.fake_get_material_groups
-            ):
-                with patch('os.listdir', new=fake_listdir):
-                    error_string = 'asdfstresswdasdg' + \
-                                   'does not indicate whether it is welded' + \
-                                   ' or seamless'
-                    with pytest.warns(Warning, match=error_string):
-                        test_tube._check_materials_list()
+            with patch('os.listdir', new=fake_listdir):
+                error_string = 'asdfstresswdasdg' + \
+                               'does not indicate whether it is welded' + \
+                               ' or seamless'
+                with pytest.warns(UserWarning, match=error_string):
+                    test_tube._check_materials_list()
 
     def test_check_materials_list_missing_material(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         file_directory = os.path.join(
-            os.path.dirname(
-                os.path.relpath(__file__)
-            ),
-            '..',
+            'beaverdet',
             'lookup_data'
         )
 
@@ -712,57 +705,65 @@ class TestTube:
                     'asdfflangegroup1asd',
                     'asdfstressweldedasdg']
 
+        test_tube._material_groups = self.fake_material_groups
+        test_tube._materials = pd.DataFrame(
+            columns=['Grade', 'Group'],
+            data=list(map(list, zip(
+                self.fake_material_groups.keys(),
+                self.fake_material_groups.values()
+            )))
+        )
+
         with patch('builtins.open', new=self.FakeOpen):
-            with patch(
-                    'beaverdet.tube.Tube._get_material_groups',
-                    self.fake_get_material_groups
-            ):
-                with patch('os.listdir', new=fake_listdir):
-                    class NewFakeFile:
-                        """
-                        FakeFile class that should fail material lookup
-                        """
+            with patch('os.listdir', new=fake_listdir):
+                class NewFakeFile:
+                    """
+                    FakeFile class that should fail material lookup
+                    """
 
-                        @staticmethod
-                        def readline(*_):
-                            """
-                            readline function that should fail material
-                            lookup for thing1
-                            """
-                            return 'ASDF,thing0\n'
+                    @staticmethod
+                    def readline(*_):
+                        """
+                        readline function that should fail material
+                        lookup for thing1
+                        """
+                        return 'ASDF,thing0\n'
 
-                    setattr(self.FakeOpen, 'FakeFile', NewFakeFile)
-                    error_string = '\nMaterial thing1 not found in ' + \
-                                   os.path.join(
-                                       file_directory,
-                                       'asdfstressweldedasdg'
-                                   )
-                    with pytest.raises(ValueError, message=error_string):
-                                test_tube._check_materials_list()
+                setattr(self.FakeOpen, 'FakeFile', NewFakeFile)
+                import re
+                error_string = '\nMaterial thing1 not found in ' + \
+                               re.escape(os.path.join(
+                                   file_directory,
+                                   'asdfstressweldedasdg'
+                               )) + '\n'
+                try:
+                    test_tube._check_materials_list()
+                except ValueError as err:
+                    assert str(err) == error_string
 
     def test_check_current_material(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         with pytest.raises(
             ValueError,
             match='Pipe material not found in materials_list.csv'
         ):
-            test_tube._check_current_material('magic')
+            test_tube._check_material('magic')
 
     def test_get_material_groups(self):
         # ensure correctness by comparing to a pandas dataframe reading the
         # same file
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # file information
@@ -780,7 +781,7 @@ class TestTube:
         test_dataframe = pd.read_csv(file_location)
 
         # load data into a dictionary using get_material_groups()
-        test_output = test_tube._get_material_groups()
+        test_output = test_tube._material_groups
 
         # collect keys and values from dataframe that should correspond to
         # those of the dictionary
@@ -793,58 +794,13 @@ class TestTube:
             dataframe_value = values_from_dataframe[index]
             assert dict_value == dataframe_value
 
-    def test_get_material_groups_nonexistent_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
-        def fake_exists(*_):
-            return False
-
-        with patch(
-            'os.path.exists',
-            new=fake_exists
-        ):
-            with pytest.raises(
-                    ValueError,
-                    match='materials_list.csv does not exist'
-            ):
-                test_tube._get_material_groups()
-
-    def test_get_material_groups_blank_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
-        def fake_csv_import(*_):
-            raise pd.errors.EmptyDataError
-
-        with patch(
-            'pandas.read_csv',
-            new=fake_csv_import
-        ):
-            # check for proper error handling when file is blank
-            with pytest.raises(
-                    ValueError,
-                    match='materials_list.csv is empty'
-            ):
-                test_tube._get_material_groups()
-
     def test_collect_materials(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         columns = ['Grade', 'Group', 'ElasticModulus', 'Density', 'Poisson']
         data = [
@@ -870,19 +826,9 @@ class TestTube:
             good_dataframe['Density']
         ]
 
-        test_dataframe = test_tube._collect_tube_materials()
-
-        assert test_dataframe.equals(good_dataframe)
+        assert test_tube._materials.equals(good_dataframe)
 
     def test_collect_materials_nonexistent_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
         def fake_exists(*_):
             return False
 
@@ -894,17 +840,16 @@ class TestTube:
                     ValueError,
                     match='materials_list.csv does not exist'
             ):
+                test_tube = tube.Tube(
+                    material=self.material,
+                    schedule=self.schedule,
+                    nominal_size=self.nominal_size,
+                    welded=self.welded,
+                    safety_factor=self.safety_factor
+                )
                 test_tube._get_material_groups()
 
     def test_collect_materials_empty_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
         def fake_csv_import(*_):
             raise pd.errors.EmptyDataError
 
@@ -917,15 +862,22 @@ class TestTube:
                     ValueError,
                     match='materials_list.csv is empty'
             ):
+                test_tube = tube.Tube(
+                    material=self.material,
+                    schedule=self.schedule,
+                    nominal_size=self.nominal_size,
+                    welded=self.welded,
+                    safety_factor=self.safety_factor
+                )
                 test_tube._get_material_groups()
 
     def test_get_flange_limits_from_csv(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # file information
@@ -961,11 +913,11 @@ class TestTube:
 
     def test_get_flange_limits_from_csv_bad_group(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         my_input = 'batman'
@@ -980,11 +932,11 @@ class TestTube:
 
     def test_get_flange_limits_from_csv_bad_pressure(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # file information
@@ -1012,11 +964,11 @@ class TestTube:
 
     def test_get_flange_limits_from_csv_zeroed_non_numeric(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # file information
@@ -1058,11 +1010,11 @@ class TestTube:
 
     def test_get_pipe_stress_limits_welded(self):
         test_tube = tube.Tube(
-            '304',
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material='304',
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # known values for 304
@@ -1078,11 +1030,11 @@ class TestTube:
 
     def test_get_pipe_stress_limits_seamless(self):
         test_tube = tube.Tube(
-            '304',
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material='304',
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # known values for 304
@@ -1110,11 +1062,11 @@ class TestTube:
             - pipe material not in materials list
         """
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # from hand calcs, critical velocity is 1457.44 m/s, giving upper and
@@ -1126,14 +1078,13 @@ class TestTube:
             test_tube._units.quant(1400, 'm/s'),  # DLF 4
             test_tube._units.quant(1603, 'm/s'),  # DLF 4
             test_tube._units.quant(1604, 'm/s'),  # DLF 2
-            test_tube._units.quant(2000, 'm/s')  # DLF 2
+            test_tube._units.quant(2000, 'm/s')   # DLF 2
         ]
         expected_dlf = [1, 1, 4, 4, 4, 2, 2]
         test_dlf = []
         for cj_speed in cj_speeds:
-            test_tube.cj_speed = cj_speed
             test_dlf.append(
-                test_tube._get_pipe_dlf(plus_or_minus=0.1)
+                test_tube._get_pipe_dlf(plus_or_minus=0.1, cj_vel=cj_speed)
             )
 
         assert all(
@@ -1142,14 +1093,12 @@ class TestTube:
 
     def test_get_pipe_dlf_bad_plus_minus_value(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
-
-        test_tube.cj_speed = test_tube._units.quant(1200, 'm/s')
 
         # plus_or_minus outside of (0, 1)
         bad_plus_minus = [-1, 0, 1, 2]
@@ -1158,15 +1107,18 @@ class TestTube:
                 ValueError,
                 match='plus_or_minus factor not between 0 and 1'
             ):
-                test_tube._get_pipe_dlf(plus_minus)
+                test_tube._get_pipe_dlf(
+                    plus_or_minus=plus_minus,
+                    cj_vel=test_tube._units.quant(2, 'm/s')
+                )
 
     def test_calculate_max_stress_seamless(self):
         test_tube = tube.Tube(
-            '316L',
-            self.schedule,
-            self.nominal_size,
-            False,
-            self.safety_factor
+            material='316L',
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=False,
+            safety_factor=self.safety_factor
         )
 
         initial_temperatures = [
@@ -1181,18 +1133,19 @@ class TestTube:
             test_tube._units.quant(14.5, 'ksi')
         ]
         for temperature, stress in zip(initial_temperatures, good_stresses):
+            test_tube.initial_temperature = temperature
             assert np.allclose(
-                test_tube.calculate_max_stress(temperature),
+                test_tube.calculate_max_stress(),
                 stress
             )
 
     def test_calculate_max_stress_welded(self):
         test_tube = tube.Tube(
-            '304',
-            self.schedule,
-            self.nominal_size,
-            True,
-            self.safety_factor
+            material='304',
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=True,
+            safety_factor=self.safety_factor
         )
 
         initial_temperatures = [
@@ -1207,18 +1160,19 @@ class TestTube:
             test_tube._units.quant(9.45, 'ksi')
         ]
         for temperature, stress in zip(initial_temperatures, good_stresses):
+            test_tube.initial_temperature = temperature
             assert np.allclose(
-                test_tube.calculate_max_stress(temperature),
+                test_tube.calculate_max_stress(),
                 stress
             )
 
     def test_calculate_max_stress_non_monotonic(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         temp = test_tube._units.quant(100, 'degF')
@@ -1238,17 +1192,18 @@ class TestTube:
                 match='Stress limits require temperatures to be ' +
                       'monotonically increasing'
             ):
-                test_tube.calculate_max_stress(temp)
+                test_tube.initial_temperature = temp
+                test_tube.calculate_max_stress()
 
     @staticmethod
     def test_calculate_max_pressure():
         safety_factor = 4
         test_tube = tube.Tube(
-            '304',
-            '80',
-            '6',
-            False,
-            safety_factor
+            material='304',
+            schedule='80',
+            nominal_size='6',
+            welded=False,
+            safety_factor=safety_factor
         )
 
         max_stress = test_tube._units.quant(18.8, 'ksi')
@@ -1269,50 +1224,13 @@ class TestTube:
 
         assert np.allclose(test_max_pressure, good_max_pressure)
 
-    @staticmethod
-    def test_calculate_max_pressure_with_given():
-        safety_factor = 4
-        test_tube = tube.Tube(
-            '304',
-            '80',
-            '6',
-            False,
-            safety_factor
-        )
-
-        max_stress = test_tube._units.quant(18.8, 'ksi')
-        good_max_pressure = test_tube._units.quant(100, 'psi')
-
-        test_tube.max_stress = max_stress
-
-        test_max_pressure = test_tube.calculate_max_pressure(
-            good_max_pressure
-        )
-
-        assert np.allclose(test_max_pressure, good_max_pressure)
-
-    def test_calculate_max_pressure_no_max_stress(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate max pressure without max stress'
-        ):
-            test_tube.calculate_max_pressure()
-
     def test_calculate_initial_pressure(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         initial_temperature = test_tube._units.quant(300, 'K')
@@ -1360,11 +1278,11 @@ class TestTube:
 
     def test_calculate_initial_pressure_no_temperature_or_pressure(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.initial_temperature = None
         test_tube.max_pressure = None
@@ -1380,11 +1298,11 @@ class TestTube:
 
     def test_calculate_initial_pressure_no_temperature(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.initial_temperature = None
         test_tube.max_pressure = quant(100, 'psi')
@@ -1400,11 +1318,11 @@ class TestTube:
 
     def test_calculate_initial_pressure_no_pressure(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.initial_temperature = quant(75, 'degF')
         test_tube.max_pressure = None
@@ -1419,11 +1337,11 @@ class TestTube:
 
     def test_lookup_flange_class(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.max_pressure = test_tube._units.quant(125, 'bar')
         test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
@@ -1431,11 +1349,11 @@ class TestTube:
 
     def test_lookup_flange_class_bad_material(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.max_pressure = test_tube._units.quant(125, 'bar')
         test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
@@ -1443,11 +1361,11 @@ class TestTube:
 
     def test_lookup_flange_class_bad_temperature(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         test_temperatures = [
@@ -1467,11 +1385,11 @@ class TestTube:
 
     def test_lookup_flange_class_bad_pressure(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
@@ -1482,7 +1400,7 @@ class TestTube:
         ]
 
         for pressure in test_pressures:
-            test_tube.max_pressure = pressure
+            test_tube._properties['max_pressure'] = pressure
             with pytest.raises(
                     ValueError,
                     match='Pressure out of range.'
