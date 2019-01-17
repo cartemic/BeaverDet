@@ -1038,6 +1038,8 @@ class Tube:
         Parameters
         ----------
         """
+        self._initializing = True
+
         # decide whether to allow automatic calculations
         self._calculate_stress = max_stress is not None
         self._calculate_pressure = max_pressure is not None
@@ -1072,7 +1074,6 @@ class Tube:
 
         # initialize dimensions object and set nominal size and schedule
         self._properties['dimensions'] = self._Dimensions()
-        self._initializing = True
         self.nominal_size = nominal_size
         self.schedule = schedule
 
@@ -1439,26 +1440,24 @@ class Tube:
             file_location = os.path.relpath(
                 os.path.join(file_directory, file_name)
             )
+            if not os.path.exists(file_location):
+                raise FileNotFoundError(
+                    '\n' + file_location + 'not found'
+                )
 
             # import the correct .csv file as a pandas dataframe
             flange_limits = pd.read_csv(file_location)
 
-            # ensure all temperatures and pressures are floats, and check to
-            # make sure pressures are greater than zero
-            values = flange_limits.values
-            for row_number, row in enumerate(values):
-                for column_number, item in enumerate(row):
-                    # ensure each item is a float and assign non-numeric values
-                    # a value of zero
-                    try:
-                        values[row_number][column_number] = float(item)
-                    except ValueError:
-                        values[row_number][column_number] = 0.
-
-                    if column_number > 0:
-                        # these are pressures, which must be positive
-                        if values[row_number][column_number] < 0:
-                            raise ValueError('\nPressure less than zero.')
+            # ensure all temperatures and pressures are floats
+            df = flange_limits.copy()
+            newdata = pd.np.array([
+                pd.to_numeric(flange_limits[column].values, errors='coerce')
+                for column in flange_limits.columns
+            ]).transpose()
+            flange_limits = pd.DataFrame(
+                columns=flange_limits.columns,
+                data=newdata
+            ).fillna(0)
 
             # add units to temperature column
             flange_limits['Temperature'] = [
@@ -1469,16 +1468,9 @@ class Tube:
             # add units to pressure columns
             for key in flange_limits.keys():
                 if key != 'Temperature':
-                    # flange_limits[key] = [
-                    #     self._units.quant(float(pressure), 'bar')
-                    #     if not isinstance(pressure, type(np.NaN))
-                    #     else self._units.quant(float(0), 'bar')
-                    #     for pressure in flange_limits[key]
-                    #
-                    # ]
                     pressures = []
                     for pressure in flange_limits[key]:
-                        if np.isnan(pressure):
+                        if pressure < 0:
                             pressures.append(np.NaN)
                         else:
                             pressures.append(self._units.quant(
@@ -2409,7 +2401,7 @@ class Tube:
         for key in class_keys:
             max_class_pressure = flange_limits[key].dropna().max()
             if max_pressure < max_class_pressure:
-                correct_class = float(key)
+                correct_class = int(key)
                 break
 
         self._set_property('flange_class', correct_class)
