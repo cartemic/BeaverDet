@@ -1424,18 +1424,6 @@ class Tube:
         Reads in flange pressure limits as a function of temperature for
         different pressure classes per ASME B16.5. Temperature is in Centigrade
         and pressure is in bar.
-
-        Parameters
-        ----------
-        group : float or str
-            ASME B16.5 material group (defaults to 2.3). Only groups 2.1, 2.2,
-            and 2.3 are included in the current release.
-
-        Returns
-        -------
-        flange_limits: pd.DataFrame
-            First column of is temperature. All other columns' keys are flange
-            classes, and the values are the appropriate pressure limits in bar.
         """
         groups = ['2.1', '2.2', '2.3']
         self._flange_limits = {group: None for group in groups}
@@ -1481,17 +1469,22 @@ class Tube:
             # add units to pressure columns
             for key in flange_limits.keys():
                 if key != 'Temperature':
-                    flange_limits[key] = [
-                        self._units.quant(float(pressure), 'bar') for pressure in
-                        flange_limits[key]
-                    ]
+                    # flange_limits[key] = [
+                    #     self._units.quant(float(pressure), 'bar')
+                    #     if not isinstance(pressure, type(np.NaN))
+                    #     else self._units.quant(float(0), 'bar')
+                    #     for pressure in flange_limits[key]
+                    #
+                    # ]
+                    pressures = []
                     for pressure in flange_limits[key]:
-                        print(group, key, pressure, type(pressure))
-                        tools.check_pint_quantity(
-                            pressure,
-                            'pressure',
-                            ensure_positive=True
-                        )
+                        if np.isnan(pressure):
+                            pressures.append(np.NaN)
+                        else:
+                            pressures.append(self._units.quant(
+                                float(pressure), 'bar')
+                            )
+                    flange_limits[key] = pressures
 
             self._flange_limits[group] = flange_limits
 
@@ -1617,7 +1610,9 @@ class Tube:
         if self._properties[current_property] is not None:
             return self._properties[current_property]
         else:
-            warnings.warn('{0} has not been defined.'.format(current_property))
+            if self.verbose:
+                warnings.warn('{0} has not been defined.'
+                              .format(current_property))
             return None
 
     def _set_property(
@@ -1770,7 +1765,7 @@ class Tube:
             self._set_property('welded', False)
 
         # recalculate max stress
-        if self._calculate_stress:
+        if self._calculate_stress and not self._initializing:
             self.calculate_max_stress()
 
     @property
@@ -1794,6 +1789,19 @@ class Tube:
             initial_temperature.units.format_babel()
         )
         self._set_property('initial_temperature', initial_temperature)
+        if not self._calculate_stress:
+            self.lookup_flange_class()
+            # self.calculate_initial_pressure()
+        else:
+            self.calculate_max_stress()
+            if not self._calculate_pressure:
+                self.lookup_flange_class()
+                # self.calculate_initial_pressure()
+            else:
+                # flange lookup and initial pressure calc will spring from max
+                # pressure calculation
+                # self.calculate_initial_pressure()
+                pass
 
     @property
     def safety_factor(self):
@@ -1875,15 +1883,33 @@ class Tube:
             self,
             mechanism
     ):
-        if mechanism in self._mechanisms:
-            self._set_property('mechanism', mechanism)
-        else:
+        if mechanism not in self._mechanisms:
             raise ValueError('\nMechanism not found. Available mechanisms:\n' +
                              '\n'.join(self._mechanisms))
+        else:
+            self._set_property('mechanism', mechanism)
+
+            if not self._initializing:
+                species = {'fuel': self.fuel,
+                           'oxidizer': self.oxidizer,
+                           'diluent': self.diluent}
+                for component, item in species.items():
+                    try:
+                        self._check_species(item, component)
+                    except ValueError:
+                        if self.verbose:
+                            warnings.warn(item +
+                                          ' not found in mechanism ' +
+                                          self.mechanism +
+                                          ', please define a new ' +
+                                          component)
+                        self._properties[component] = None
+                        self._reactant_mixture = None
 
     def _check_species(
             self,
-            species
+            species,
+            role=None
     ):
         """
         Checks to make sure a species (fuel, oxidizer, diluent) is in the
@@ -1911,6 +1937,13 @@ class Tube:
             end_loc = err.rfind('\n*******************************************'
                                 '****************************\n')
             raise ValueError('\n' + err[start_loc:end_loc])
+
+        except AttributeError:
+            # this happens when a component is None, which occurs when the
+            # mechanism is changed and the component is not in that mechanism.
+            # Passing because the _get_property method already generates a
+            # warning for this.
+            pass
 
     @property
     def fuel(self):
@@ -2019,43 +2052,55 @@ class Tube:
         self._build_gas_mixture()
 
     def _build_gas_mixture(self):
-        # initialize gas object
-        gas = ct.Solution(self.mechanism)
+        # if any of the components are None, the mixture can't be built. The
+        # case of diluent=None is handled during the dilution step, meaning
+        # that a mixture with no diluent won't crash the whole system.
+        if not any([
+            self.fuel is None,
+            self.oxidizer is None
+        ]):
+            # initialize gas object
+            gas = ct.Solution(self.mechanism)
 
-        # set equivalence ratio
-        gas.set_equivalence_ratio(
-            self.equivalence_ratio,
-            self.fuel,
-            self.oxidizer
-        )
+            # set equivalence ratio
+            gas.set_equivalence_ratio(
+                self.equivalence_ratio,
+                self.fuel,
+                self.oxidizer
+            )
 
-        def dilute():
-            return '{0}: {1} {2}: {3} {4}: {5}'.format(
-                    self.diluent,
-                    self.dilution_fraction,
-                    self.fuel,
-                    new_fuel_fraction,
-                    self.oxidizer,
-                    new_oxidizer_fraction)
+            def dilute():
+                return '{0}: {1} {2}: {3} {4}: {5}'.format(
+                        self.diluent,
+                        self.dilution_fraction,
+                        self.fuel,
+                        new_fuel_fraction,
+                        self.oxidizer,
+                        new_oxidizer_fraction)
 
-        # apply dilution
-        if self.dilution_fraction > 0:
-            if self.dilution_mode == 'mole':
-                mole_fractions = gas.mole_fraction_dict()
-                new_fuel_fraction = (1 - self.dilution_fraction) * \
-                    mole_fractions[self.fuel]
-                new_oxidizer_fraction = (1 - self.dilution_fraction) * \
-                    mole_fractions[self.oxidizer]
-                gas.X = dilute()
-                self._reactant_mixture = gas.mole_fraction_dict()
-            else:
-                mass_fractions = gas.mass_fraction_dict()
-                new_fuel_fraction = (1 - self.dilution_fraction) * \
-                    mass_fractions[self.fuel]
-                new_oxidizer_fraction = (1 - self.dilution_fraction) * \
-                    mass_fractions[self.oxidizer]
-                gas.Y = dilute()
-                self._reactant_mixture = gas.mass_fraction_dict()
+            # apply dilution
+            if self.dilution_fraction > 0:
+                if self.diluent is None:
+                    raise ValueError(
+                        '\nCannot dilute mixture, please define a diluent'
+                    )
+                else:
+                    if self.dilution_mode == 'mole':
+                        mole_fractions = gas.mole_fraction_dict()
+                        new_fuel_fraction = (1 - self.dilution_fraction) * \
+                            mole_fractions[self.fuel]
+                        new_oxidizer_fraction = (1 - self.dilution_fraction) * \
+                            mole_fractions[self.oxidizer]
+                        gas.X = dilute()
+                        self._reactant_mixture = gas.mole_fraction_dict()
+                    else:
+                        mass_fractions = gas.mass_fraction_dict()
+                        new_fuel_fraction = (1 - self.dilution_fraction) * \
+                            mass_fractions[self.fuel]
+                        new_oxidizer_fraction = (1 - self.dilution_fraction) * \
+                            mass_fractions[self.oxidizer]
+                        gas.Y = dilute()
+                        self._reactant_mixture = gas.mass_fraction_dict()
 
     @property
     def reactant_mixture(self):
@@ -2322,9 +2367,9 @@ class Tube:
             String representing the minimum allowable flange class
         """
         # TODO: requires max_pressure, initial_temperature, material
-        max_pressure = self._properties['max_pressure']
-        initial_temperature = self._properties['initial_temperature']
-        material = self._properties['material']
+        max_pressure = self.max_pressure
+        initial_temperature = self.initial_temperature
+        material = self.material
 
         # get ASME B16.5 material group
         group = self._material_groups[material]
@@ -2338,7 +2383,7 @@ class Tube:
         for key in class_keys:
             if int(key) > int(max_key):
                 max_key = key
-        max_ok_pressure = flange_limits[max_key].max()
+        max_ok_pressure = flange_limits[max_key].dropna().max()
 
         # ensure pressure is within bounds
         if max_pressure > max_ok_pressure:
@@ -2362,12 +2407,9 @@ class Tube:
         # find proper flange class
         correct_class = None
         for key in class_keys:
-            max_class_pressure = flange_limits[key].max().to('bar')
-            print(type(max_pressure), max_pressure.magnitude)
-            print()
-            print(type(max_class_pressure), max_class_pressure)
-            if max_pressure.magnitude < max_class_pressure:
-                correct_class = key
+            max_class_pressure = flange_limits[key].dropna().max()
+            if max_pressure < max_class_pressure:
+                correct_class = float(key)
                 break
 
         self._set_property('flange_class', correct_class)
