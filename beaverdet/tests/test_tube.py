@@ -558,13 +558,66 @@ class TestTube:
                 """
                 return 'ASDF,thing0,thing1\n'
 
+    def test__dimensions_lookup(self):
+        # todo: this
+        pass
+
+    def test_prop_available_pipe_sizes_set(self):
+        test_tube = tube.Tube()
+
+        with pytest.raises(
+            PermissionError,
+            match='\nPipe sizes can not be set manually.'
+        ):
+            test_tube.available_pipe_sizes = 7
+
+    def test_prop_available_pipe_schedules_set(self):
+        test_tube = tube.Tube()
+
+        with pytest.raises(
+            PermissionError,
+            match='\nPipe schedules can not be set manually.'
+        ):
+            test_tube.available_pipe_schedules = 'big as hell'
+
+    def test_prop_available_tube_materials_set(self):
+        test_tube = tube.Tube()
+
+        with pytest.raises(
+            PermissionError,
+            match='\nAvailable tube materials can not be set manually.'
+        ):
+            test_tube.available_tube_materials = 'Aluminum Foil'
+
+    def test_prop_nominal_size_bad_size(self):
+        bad_size = 'really big'
+        match_string = '\n{0} is not a valid pipe size. '.format(bad_size) + \
+                       'For a list of available sizes, try \n' + \
+                       '`mytube.available_pipe_sizes`'
+        with pytest.raises(
+                ValueError,
+                match=match_string
+        ):
+            test_tube = tube.Tube()
+            test_tube.nominal_size = bad_size
+
+    def test_prop_schedule_set_bad_schedule(self):
+        bad_schedule = 'Kropotkin'
+        match_string = '\n{0} is not a valid pipe schedule for this nominal' \
+                       ' size. '.format(bad_schedule) + \
+                       'For a list of available schedules, try \n' + \
+                       '`mytube.available_pipe_schedules`'
+        with pytest.raises(
+                ValueError,
+                match=match_string
+        ):
+            test_tube = tube.Tube()
+            test_tube.schedule = bad_schedule
+
     def test_prop_dimensions(self):
         test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
             nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
+            schedule=self.schedule
         )
 
         # Note: _get_dimensions is called during __init__
@@ -580,30 +633,28 @@ class TestTube:
         assert inner_diameter.magnitude - 5.761 < 1e-7
         assert wall_thickness.magnitude - 0.432 < 1e-7
 
-    def test_prop_schedule_set_bad_schedule(self):
-        bad_schedule = 'Kropotkin'
-        match_string = '\n{0} is not a valid pipe schedule for this nominal' \
-                       ' size. '.format(bad_schedule) + \
-                       'For a list of available schedules, try \n' + \
-                       '`mytube.available_pipe_schedules`'
+    def test_prop_material_bad_material(self):
+        test_tube = tube.Tube()
+        match_string = '\nPipe material not found. For a list of ' + \
+                       'available materials try:\n' + \
+                       '`mytube.available_tube_materials`'
         with pytest.raises(
-                ValueError,
-                match=match_string
+            ValueError,
+            match=match_string
         ):
-            test_tube = tube.Tube()
-            test_tube.schedule = bad_schedule
+            test_tube.material = 'unobtainium'
 
-    def test_prop_nominal_size_bad_size(self):
-        bad_size = 'really big'
-        match_string = '\n{0} is not a valid pipe size. '.format(bad_size) + \
-                       'For a list of available sizes, try \n' + \
-                       '`mytube.available_pipe_sizes`'
-        with pytest.raises(
-                ValueError,
-                match=match_string
-        ):
-            test_tube = tube.Tube()
-            test_tube.nominal_size = bad_size
+    def test_prop_welded(self):
+        welded_args = [0, 1, True, False]
+        welded_results = [False, True, True, False]
+        test_tube = tube.Tube()
+
+        tests = []
+        for welded_in, good_result in zip(welded_args, welded_results):
+            test_tube.welded = welded_in
+            tests.append(test_tube.welded == good_result)
+
+        assert all(tests)
 
     def test_check_materials_list(self):
         test_tube = tube.Tube(
@@ -636,36 +687,25 @@ class TestTube:
                 test_tube._check_materials_list()
 
     def test_check_materials_list_group_lookup_fails(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
-        )
+        test_tube = tube.Tube()
 
-        def fake_listdir(*_):
-            # fails group1 lookup
-            return ['asdfflangegroup0sfh',
-                    'asdfstressweldedasdg']
-
-        with patch('builtins.open', new=self.FakeOpen):
-            with patch('os.listdir', new=fake_listdir):
-                with pytest.raises(
-                        ValueError,
-                        message='\nmaterial group group1 not found'
-                ):
-                    test_tube._check_materials_list()
+        # there is no group0 in any of the flange rating groups, and trying to
+        # look it up should generate a material group not found portion of the
+        # error string. This test sets the materials dataframe to an empty one
+        # with only Group and Grade columns, then adds a material group
+        # 'group0' to generate the desired error. Grade is set to 316L to
+        # avoid a grade-related error.
+        try:
+            test_tube._materials = self.fake_materials.copy()
+            test_tube._materials['Group'] = ['group0']
+            test_tube._materials['Grade'] = ['316L']
+            test_tube._check_materials_list()
+        except ValueError as err:
+            message = '\nmaterial group group0 not found\n'
+            assert message == str(err)
 
     def test_check_materials_list_no_welded_or_seamless(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor,
-            verbose=True
-        )
+        test_tube = tube.Tube()
 
         def fake_listdir(*_):
             # causes welded/seamless warning
@@ -685,13 +725,7 @@ class TestTube:
                     test_tube._check_materials_list()
 
     def test_check_materials_list_missing_material(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
-        )
+        test_tube = tube.Tube()
 
         file_directory = os.path.join(
             'beaverdet',
@@ -731,27 +765,15 @@ class TestTube:
                         return 'ASDF,thing0\n'
 
                 setattr(self.FakeOpen, 'FakeFile', NewFakeFile)
-                import re
                 error_string = '\nMaterial thing1 not found in ' + \
-                               re.escape(os.path.join(
+                               os.path.join(
                                    file_directory,
                                    'asdfstressweldedasdg'
-                               )) + '\n'
+                               ) + '\n'
                 try:
                     test_tube._check_materials_list()
                 except ValueError as err:
                     assert str(err) == error_string
-
-    def test_prop_material_bad_material(self):
-        test_tube = tube.Tube()
-        match_string = '\nPipe material not found. For a list of ' + \
-                       'available materials try:\n' + \
-                       '`mytube.available_tube_materials`'
-        with pytest.raises(
-            ValueError,
-            match=match_string
-        ):
-            test_tube.material = 'unobtainium'
 
     def test_get_material_groups(self):
         # ensure correctness by comparing to a pandas dataframe reading the
@@ -1110,13 +1132,7 @@ class TestTube:
             )
 
     def test_calculate_max_stress_non_monotonic(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
-        )
+        test_tube = tube.Tube()
 
         temp = test_tube._units.quant(100, 'degF')
 

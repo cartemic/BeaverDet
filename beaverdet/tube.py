@@ -1079,8 +1079,9 @@ class Tube:
 
         # set initial temperature to 20 C if not defined
         if initial_temperature is None:
-            self._properties['initial_temperature'] = self._units.quant(20,
-                                                                        'degC')
+            self._properties[
+                'initial_temperature'
+            ] = self._units.quant(20, 'degC')
         else:
             self.initial_temperature = initial_temperature
 
@@ -1124,18 +1125,18 @@ class Tube:
 
         self._initializing = False
 
-    class _Dimensions:
-        def __init__(self):
-            self.inner_diameter = None
-            self.outer_diameter = None
-            self.wall_thickness = None
-
     class _UnitSystem:
         def __init__(
                 self
         ):
             self.ureg = pint.UnitRegistry()
             self.quant = self.ureg.Quantity
+
+    class _Dimensions:
+        def __init__(self):
+            self.inner_diameter = None
+            self.outer_diameter = None
+            self.wall_thickness = None
 
     def _pipe_schedules_import(self):
             # collect pipe schedules
@@ -1230,7 +1231,9 @@ class Tube:
         _
     ):
         # the user doesn't need to update this, ignore their input
-        pass
+        raise PermissionError(
+            '\nPipe sizes can not be set manually.'
+        )
 
     @property
     def available_pipe_schedules(self):
@@ -1247,7 +1250,9 @@ class Tube:
         _
     ):
         # the user doesn't need to update this, ignore their input
-        pass
+        raise PermissionError(
+            '\nPipe schedules can not be set manually.'
+        )
 
     def _check_materials_list(
             self
@@ -1313,7 +1318,7 @@ class Tube:
                         # indicate that an error has occurred, and add it to the
                         # error string.
                         error_string += 'Material ' + item + ' not found in '\
-                                        + re.escape(file_location) + '\n'
+                                        + file_location + '\n'
                         has_errors = True
 
         # find out which material groups need to be inspected
@@ -1418,7 +1423,9 @@ class Tube:
             _
     ):
         # the user doesn't need to update this, ignore their input
-        pass
+        raise PermissionError(
+            '\nAvailable tube materials can not be set manually.'
+        )
 
     def _get_flange_limits_from_csv(self):
         """
@@ -1449,14 +1456,13 @@ class Tube:
             flange_limits = pd.read_csv(file_location)
 
             # ensure all temperatures and pressures are floats
-            df = flange_limits.copy()
-            newdata = pd.np.array([
+            new_data = pd.np.array([
                 pd.to_numeric(flange_limits[column].values, errors='coerce')
                 for column in flange_limits.columns
             ]).transpose()
             flange_limits = pd.DataFrame(
                 columns=flange_limits.columns,
-                data=newdata
+                data=new_data
             ).fillna(0)
 
             # add units to temperature column
@@ -1628,8 +1634,8 @@ class Tube:
             elif current_property == 'mechanism' and (
                 isinstance(value, str) or isinstance(value, dict)
             ):
-                # an exception to the type matching rule is mechanism, which can
-                # be either a str or dict
+                # an exception to the type matching rule is mechanism, which
+                # can be either a str or dict
                 self._properties[current_property] = value
 
             else:
@@ -1887,10 +1893,10 @@ class Tube:
                            'diluent': self.diluent}
                 for component, item in species.items():
                     try:
-                        self._check_species(item, component)
+                        self._check_species(item)
                     except ValueError:
                         if self.verbose:
-                            warnings.warn(item +
+                            warnings.warn(str(item) +
                                           ' not found in mechanism ' +
                                           self.mechanism +
                                           ', please define a new ' +
@@ -1900,8 +1906,7 @@ class Tube:
 
     def _check_species(
             self,
-            species,
-            role=None
+            species
     ):
         """
         Checks to make sure a species (fuel, oxidizer, diluent) is in the
