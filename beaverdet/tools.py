@@ -118,3 +118,44 @@ def find_mechanisms():
                  ('.cti' in item) or ('.xml' in item)}
 
     return available
+
+
+def diff(f_values, x_values):
+    """
+    estimates the derivative of some function f(x) using backward difference
+
+    Parameters
+    ----------
+    f_values : list or tuple or np.array
+        two concurrent function values with the last being the most recent,
+         e.g. [f(x_n-1) and f(x_n)]
+    x_values : list or tuple or np.array
+        x values corresponding to the f_values array, e.g. [x_n-1, x_n]
+
+    Returns
+    -------
+    float
+        f'(x_n): derivative of the function at the most recent point
+    """
+    return (f_values[1] - f_values[0]) / (x_values[1] - x_values[0])
+
+
+def new_guess(x_n, f_n, f_p_n):
+    """
+    calculates an updated guess using Newton's method
+
+    Parameters
+    ----------
+    x_n
+        x_n: independent variable at the current point
+    f_n
+        f(x_n): function evaluated at the current point
+    f_p_n
+        f'(x_n): derivative evaluated at the current point
+
+    Returns
+    -------
+    float
+        x_n+1: updated guess for the independent variable
+    """
+    return x_n + (f_n / f_p_n)

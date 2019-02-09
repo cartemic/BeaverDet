@@ -208,6 +208,7 @@ def calculate_reflected_shock_state(
     # define gas states
     initial_temperature = initial_temperature.to('K').magnitude
     initial_pressure = initial_pressure.to('Pa').magnitude
+
     initial_gas.TPX = [
         initial_temperature,
         initial_pressure,

@@ -10,7 +10,69 @@ import warnings
 import numpy as np
 import cantera as ct
 import multiprocessing as mp
-from scipy.optimize import curve_fit
+
+
+def cj_curve_fit(x, y):
+    """
+    Determines least squares fit of parabolic data.
+    Original function: LSQ_CJspeed from sdtoolbox, but vectorized
+
+    Parameters
+    ----------
+    x
+        iterable with independent data points for curve fitting
+    y
+        iterable with dependent data points for curve fitting
+
+    Returns
+    -------
+    tuple
+        a, b, c, r_squared where:
+        a, b, c = coefficients of quadratic function (ax^2 + bx + c = 0)
+    """
+    # enforce numpy and float dtype
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+    n = float(x.size)
+
+    # Calculate Sums
+    sum_x = np.sum(x)
+    sum_x2 = np.sum(np.power(x, 2))
+    sum_x3 = np.sum(np.power(x, 3))
+    sum_x4 = np.sum(np.power(x, 4))
+    sum_y = np.sum(y)
+    sum_xy = np.sum(y * x)
+    sum_x2y = np.sum(y * np.power(x, 2))
+
+    # intermediate steps
+    m = sum_y / n
+    den = (sum_x3 * n - sum_x2 * sum_x)
+    temp = (
+            den * (sum_x * sum_x2 - sum_x3 * n) +
+            sum_x2 * sum_x2 * (sum_x * sum_x - n * sum_x2) -
+            sum_x4 * n * (sum_x * sum_x - sum_x2 * n)
+    )
+    temp2 = (
+            den * (sum_y * sum_x2 - sum_x2y * n) +
+            (sum_xy * n - sum_y * sum_x) * (sum_x4 * n - sum_x2 * sum_x2)
+    )
+
+    # calculate curve fit coefficients
+    b = temp2 / temp
+    a = 1. / den * (
+            n * sum_xy -
+            sum_y * sum_x -
+            b * (sum_x2 * n - sum_x * sum_x)
+    )
+    c = 1. / n * (sum_y - a * sum_x2 - b * sum_x)
+
+    # calculate sums of squares as well as R^2
+    f = a * np.power(x, 2) + b * x + c
+    sse = np.sum(np.power(y - f, 2))
+    sst = np.sum(np.power(y - m, 2))
+    r_squared = 1 - sse / sst
+
+    return a, b, c, r_squared
 
 
 class Detonation:
@@ -147,7 +209,7 @@ class Detonation:
                                             error_pressure) / delta_velocity
 
             # invert matrix
-            jacobian = derivative_enthalpy_temperature *\
+            j = derivative_enthalpy_temperature *\
                 derivative_pressure_velocity - \
                 derivative_pressure_temperature * \
                 derivative_enthalpy_velocity
@@ -157,8 +219,9 @@ class Detonation:
                  derivative_enthalpy_temperature]
             a = [-error_enthalpy,
                  -error_pressure]
-            delta_temperature = (b[0] * a[0] + b[1] * a[1]) / jacobian
-            delta_velocity = (b[2] * a[0] + b[3] * a[1]) / jacobian
+
+            delta_temperature = (b[0] * a[0] + b[1] * a[1]) / j
+            delta_velocity = (b[2] * a[0] + b[3] * a[1]) / j
 
             # limit temperature changes
             max_temperature_delta = 0.2 * guess_temperature
@@ -253,6 +316,9 @@ class Detonation:
         num_steps = 20
         max_density_ratio = 2.0
         min_density_ratio = 1.5
+        a = 0
+        b = 0
+        c = 0
 
         if use_multiprocessing:
             pool = mp.Pool()
@@ -265,13 +331,6 @@ class Detonation:
         r_squared = 0.0
         delta_r_squared = 0.0
         adjusted_density_ratio = 0.0
-
-        def curve_fit_function(x, a, b, c):
-            """
-            Quadratic function for least-squares curve fit of cj speed vs.
-            density ratio
-            """
-            return a * x**2 + b * x + c
 
         while (counter <= 4) and (
                 (r_squared < 0.99999) or (delta_r_squared < 1e-7)
@@ -322,42 +381,18 @@ class Detonation:
             )
 
             # Get curve fit
-            [curve_fit_coefficients, _] = curve_fit(
-                curve_fit_function,
+            a, b, c, r_squared = cj_curve_fit(
                 density_ratio_array,
                 cj_velocity_calculations
-                )
+            )
+            adjusted_density_ratio = -b / (2. * a)
 
-            # Calculate R^2 value
-            residuals = cj_velocity_calculations - curve_fit_function(
-                density_ratio_array,
-                *curve_fit_coefficients
-                )
-            old_r_squared = r_squared
-            r_squared = 1 - (
-                np.sum(residuals**2) /
-                np.sum(
-                    (
-                        cj_velocity_calculations -
-                        np.mean(cj_velocity_calculations)
-                        )**2
-                    )
-                )
-            delta_r_squared = abs(old_r_squared - r_squared)
-
-            adjusted_density_ratio = (
-                -curve_fit_coefficients[1] /
-                (2. * curve_fit_coefficients[0])
-                )
             min_density_ratio = adjusted_density_ratio * (1 - 0.001)
             max_density_ratio = adjusted_density_ratio * (1 + 0.001)
             counter += 1
 
-        # noinspection PyUnboundLocalVariable
-        cj_speed = curve_fit_function(
-            adjusted_density_ratio,
-            *curve_fit_coefficients
-            )
+        cj_speed = a * adjusted_density_ratio**2 + \
+            b * adjusted_density_ratio + c
 
         if return_state:
             initial_state_gas = ct.Solution(mechanism)
@@ -891,7 +926,7 @@ class Reflection:
                                      err_pressure) / delta['volume']
 
             # solve matrix for temperature and volume deltas
-            jacobian = (
+            j = (
                     deriv_enthalpy_temperature *
                     deriv_pressure_volume -
                     deriv_pressure_temperature *
@@ -904,10 +939,11 @@ class Reflection:
                 deriv_enthalpy_temperature
             ]
             aa = [-err_enthalpy, -err_pressure]
+
             delta['temperature'] = (bb[0] * aa[0] +
-                                    bb[1] * aa[1]) / jacobian
+                                    bb[1] * aa[1]) / j
             delta['volume'] = (bb[2] * aa[0] +
-                               bb[3] * aa[1]) / jacobian
+                               bb[3] * aa[1]) / j
 
             # check and limit temperature delta
             delta['temp_max'] = 0.2 * guess['temperature']

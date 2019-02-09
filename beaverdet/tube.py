@@ -10,10 +10,8 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
-
 import warnings
 import os
-import re
 from math import sqrt
 import pint
 import pandas as pd
@@ -146,15 +144,15 @@ class Bolt:
             # calculate screw tensile area using eq. 9 (p. 1482) in Fasteners
             # section of Machinery's Handbook 26 (also eq. 2a on p. 1490)
             screw_area_tensile = np.pi / 4 * (
-                basic_diameter - 0.9742785 / tpi
-            )**2
+                    basic_diameter - 0.9742785 / tpi
+            ) ** 2
         else:
             # calculate screw tensile area using eq. 2b (p. 1490) in Fasteners
             # section of Machinery's Handbook 26
             screw_area_tensile = np.pi * (
-                e_s_min / 2 -
-                0.16238 / tpi
-            )**2
+                    e_s_min / 2 -
+                    0.16238 / tpi
+            ) ** 2
 
         # calculate screw shear area using eq. 5 (p. 1491) in Fasteners section
         # of Machinery's Handbook 26
@@ -185,20 +183,21 @@ class Bolt:
         # calculate minimum engagement scale factor using eq. 3 (p. 1490) in
         # Fasteners section of Machinery's Handbook 26
         j_factor = (
-            (screw_area_shear * bolt_max_tensile) /
-            (thread['plate area'] * plate_max_tensile)
+                (screw_area_shear * bolt_max_tensile) /
+                (thread['plate area'] * plate_max_tensile)
         )
 
         # calculate minimum thread engagement (corrected for material
         # differences) using eqs. 1 and 4 (pp. 1490-1491) in Fasteners section
         # of Machinery's Handbook 26
         thread['minimum engagement'] = (
-            2 * screw_area_tensile /
-            (k_n_max * np.pi * (
-                1. / 2 + 0.57735 * tpi * (e_s_min - k_n_max)
-            )
-             )
-        ) * j_factor
+                                               2 * screw_area_tensile /
+                                               (k_n_max * np.pi * (
+                                                       1. / 2 + 0.57735 * tpi * (
+                                                       e_s_min - k_n_max)
+                                               )
+                                                )
+                                       ) * j_factor
 
         return thread
 
@@ -1119,6 +1118,7 @@ class Tube:
         self.equivalence_ratio = equivalence_ratio
         self.dilution_mode = dilution_mode
         self.dilution_fraction = dilution_fraction
+        # self._build_gas_mixture()
 
         # todo: automate computation of as much stuff as possible given the
         #  user inputs
@@ -1139,21 +1139,21 @@ class Tube:
             self.wall_thickness = None
 
     def _pipe_schedules_import(self):
-            # collect pipe schedules
-            file_directory = os.path.join(
-                os.path.dirname(
-                    os.path.relpath(__file__)
-                ),
-                'lookup_data'
+        # collect pipe schedules
+        file_directory = os.path.join(
+            os.path.dirname(
+                os.path.relpath(__file__)
+            ),
+            'lookup_data'
+        )
+        file_name = 'pipe_schedules.csv'
+        file_location = os.path.relpath(
+            os.path.join(
+                file_directory,
+                file_name
             )
-            file_name = 'pipe_schedules.csv'
-            file_location = os.path.relpath(
-                os.path.join(
-                    file_directory,
-                    file_name
-                )
-            )
-            self._schedules = pd.read_csv(file_location, index_col=0)
+        )
+        self._schedules = pd.read_csv(file_location, index_col=0)
 
     def _dimensions_lookup(self):
         # this function depends on nominal_size and schedule. make sure that
@@ -1227,8 +1227,8 @@ class Tube:
 
     @available_pipe_sizes.setter
     def available_pipe_sizes(
-        self,
-        _
+            self,
+            _
     ):
         # the user doesn't need to update this, ignore their input
         raise PermissionError(
@@ -1246,8 +1246,8 @@ class Tube:
 
     @available_pipe_schedules.setter
     def available_pipe_schedules(
-        self,
-        _
+            self,
+            _
     ):
         # the user doesn't need to update this, ignore their input
         raise PermissionError(
@@ -1317,7 +1317,7 @@ class Tube:
                         # a material is missing from the limits spreadsheet.
                         # indicate that an error has occurred, and add it to the
                         # error string.
-                        error_string += 'Material ' + item + ' not found in '\
+                        error_string += 'Material ' + item + ' not found in ' \
                                         + file_location + '\n'
                         has_errors = True
 
@@ -1575,8 +1575,8 @@ class Tube:
         # first /2 for averaging
         # second /2 to to convert diameter to radius
         radius = (
-                self.dimensions.outer_diameter + self.dimensions.inner_diameter
-        ) / 2. / 2.
+                         self.dimensions.outer_diameter + self.dimensions.inner_diameter
+                 ) / 2. / 2.
 
         # calculate critical velocity
         crit_velocity = (
@@ -1632,7 +1632,7 @@ class Tube:
                 self._properties[current_property] = value
 
             elif current_property == 'mechanism' and (
-                isinstance(value, str) or isinstance(value, dict)
+                    isinstance(value, str) or isinstance(value, dict)
             ):
                 # an exception to the type matching rule is mechanism, which
                 # can be either a str or dict
@@ -2068,12 +2068,12 @@ class Tube:
 
             def dilute():
                 return '{0}: {1} {2}: {3} {4}: {5}'.format(
-                        self.diluent,
-                        self.dilution_fraction,
-                        self.fuel,
-                        new_fuel_fraction,
-                        self.oxidizer,
-                        new_oxidizer_fraction)
+                    self.diluent,
+                    self.dilution_fraction,
+                    self.fuel,
+                    new_fuel_fraction,
+                    self.oxidizer,
+                    new_oxidizer_fraction)
 
             # apply dilution
             if self.dilution_fraction > 0:
@@ -2085,19 +2085,22 @@ class Tube:
                     if self.dilution_mode == 'mole':
                         mole_fractions = gas.mole_fraction_dict()
                         new_fuel_fraction = (1 - self.dilution_fraction) * \
-                            mole_fractions[self.fuel]
+                                            mole_fractions[self.fuel]
                         new_oxidizer_fraction = (1 - self.dilution_fraction) * \
-                            mole_fractions[self.oxidizer]
+                                                mole_fractions[self.oxidizer]
                         gas.X = dilute()
                         self._reactant_mixture = gas.mole_fraction_dict()
                     else:
                         mass_fractions = gas.mass_fraction_dict()
                         new_fuel_fraction = (1 - self.dilution_fraction) * \
-                            mass_fractions[self.fuel]
+                                            mass_fractions[self.fuel]
                         new_oxidizer_fraction = (1 - self.dilution_fraction) * \
-                            mass_fractions[self.oxidizer]
+                                                mass_fractions[self.oxidizer]
                         gas.Y = dilute()
                         self._reactant_mixture = gas.mass_fraction_dict()
+            else:
+                # undiluted
+                self._reactant_mixture = gas.mole_fraction_dict()
 
     @property
     def reactant_mixture(self):
@@ -2293,59 +2296,54 @@ class Tube:
         # TODO: requires reactant_mixture, mechanism, max_pressure,
         #  initial_temperature
 
-        # get required quantities
-        reactant_mixture = self._properties['reactant_mixture']
-        mechanism = self._properties['mechanism']
-        max_pressure = self._properties['max_pressure']
-        initial_temperature = self._properties['initial_temperature']
-
         # define error and pressure initial guesses and start solution loop
         # TODO: implement rough guess to try to avoid weird crashing conditions
         # TODO: error handling on Cantera crash
-        initial_pressure = self._units.quant(101325, 'Pa')
-        error = 1000
+        # initial_pressure = self._units.quant(101325, 'Pa')
+        # get a rough estimate of the initial pressure
+        # CJ pressure is approximately 17.5 times initial
+        # reflected pressure is approximately 2.5 times CJ
+        # worst case dynamic load factor is 4
+        p_max = self.max_pressure.to('Pa')
+        initial_pressure = p_max / (17.5 * 2.5 * 4)
         counter = 0
-        dlf = np.NaN
-        cj_speed = np.NaN
-        while error > error_tol and counter < max_iterations:
+        error_tol = abs(error_tol)
+
+        state = thermochem.calculate_reflected_shock_state(
+            self.initial_temperature,
+            initial_pressure,
+            self.reactant_mixture,
+            self.mechanism,
+            self._units.ureg
+        )
+        dlf = self._get_pipe_dlf(state['cj']['speed'])
+
+        error = (initial_pressure.magnitude * dlf / p_max.magnitude) - 1.
+        while abs(error) > error_tol and counter < max_iterations:
             counter += 1
+
+            # update initial pressure guess
+            initial_pressure = initial_pressure * p_max.magnitude / \
+                (dlf * state['reflected']['state'].P)
+
             # get reflected shock pressure
-            states = thermochem.calculate_reflected_shock_state(
-                initial_temperature,
+            state = thermochem.calculate_reflected_shock_state(
+                self.initial_temperature,
                 initial_pressure,
-                reactant_mixture,
-                mechanism,
+                self.reactant_mixture,
+                self.mechanism,
                 self._units.ureg
             )
 
-            reflected_pressure = states['reflected']['state'].P
-            reflected_pressure = self._units.quant(
-                reflected_pressure,
-                'Pa'
-            )
-            cj_speed = states['cj']['speed']
-
-            # get dynamic load factor
-            dlf = self._get_pipe_dlf(cj_speed)
-
-            # calculate error, accounting for dynamic load factor
-            error = abs(
-                reflected_pressure.to_base_units().magnitude -
-                max_pressure.to_base_units().magnitude / dlf) / \
-                (max_pressure.to_base_units().magnitude / dlf)
-
-            # find new initial pressure
-            initial_pressure = (
-                    initial_pressure *
-                    max_pressure.to_base_units().magnitude /
-                    dlf /
-                    reflected_pressure.to_base_units().magnitude
-            )
+            # calculate new error, accounting for dynamic load factor
+            dlf = self._get_pipe_dlf(state['cj']['speed'])
+            error = (state['reflected']['state'].P * dlf - p_max.magnitude) \
+                / p_max.magnitude
 
         self._set_property('initial_pressure', initial_pressure)
         self._set_property('cj_speed',
                            self._units.quant(
-                               cj_speed.to('m/s').magnitude,
+                               state['cj']['speed'].to('m/s').magnitude,
                                'm/s'
                            ))
         self._set_property('dynamic_load_factor', dlf)
