@@ -78,9 +78,9 @@ def check_pint_quantity(
 
     if units[dimension_type] != actual_dimension_type:
         raise ValueError(
-            actual_dimension_type.strip('[]') +
+            actual_dimension_type.replace('[', '').replace(']', '') +
             ' is not '
-            + units[dimension_type].strip('[]')
+            + units[dimension_type].replace('[', '').replace(']', '')
         )
 
     return True
