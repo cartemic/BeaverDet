@@ -1209,17 +1209,15 @@ class TestTube:
             mechanism='gri30.cti',
             fuel='H2',
             oxidizer='O2',
-            equivalence_ratio=1
+            equivalence_ratio=1,
+            show_warnings=False,
+            initial_temperature=(300, 'K'),
+            autocalc_initial=True
         )
-
-        test_tube.initial_temperature = test_tube._units.quant(300, 'K')
-        test_tube.calculate_max_stress()
-
         # the initial pressure should cause the reflected detonation pressure
         # to be equal to the tube's max pressure, accounting for dynamic load
         # factor
-        correct_max = test_tube.calculate_max_pressure().to('Pa').magnitude
-        test_tube.calculate_initial_pressure()
+        correct_max = test_tube.max_pressure.to('Pa').magnitude
         test_state = thermochem.calculate_reflected_shock_state(
             test_tube.initial_temperature,
             test_tube.initial_pressure,
@@ -1234,65 +1232,6 @@ class TestTube:
         ) / correct_max
 
         assert error <= 0.0005
-
-    def test_calculate_initial_pressure_no_temperature_or_pressure(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
-        )
-        test_tube.initial_temperature = None
-        test_tube.max_pressure = None
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate initial pressure without initial '
-                  'temperature and max pressure'
-        ):
-            test_tube.calculate_initial_pressure(
-                {'H2': 1, 'O2': 0.5},
-                'gri30.cti'
-            )
-
-    def test_calculate_initial_pressure_no_temperature(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
-        )
-        test_tube.initial_temperature = None
-        test_tube.max_pressure = quant(100, 'psi')
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate initial pressure without initial '
-                  'temperature'
-        ):
-            test_tube.calculate_initial_pressure(
-                {'H2': 1, 'O2': 0.5},
-                'gri30.cti'
-            )
-
-    def test_calculate_initial_pressure_no_pressure(self):
-        test_tube = tube.Tube(
-            material=self.material,
-            schedule=self.schedule,
-            nominal_size=self.nominal_size,
-            welded=self.welded,
-            safety_factor=self.safety_factor
-        )
-        test_tube.initial_temperature = quant(75, 'degF')
-        test_tube.max_pressure = None
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate initial pressure without max pressure'
-        ):
-            test_tube.calculate_initial_pressure(
-                {'H2': 1, 'O2': 0.5},
-                'gri30.cti'
-            )
 
     def test_lookup_flange_class(self):
         test_tube = tube.Tube(
