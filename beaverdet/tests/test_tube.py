@@ -558,9 +558,25 @@ class TestTube:
                 """
                 return 'ASDF,thing0,thing1\n'
 
-    def test__dimensions_lookup(self):
-        # todo: this
-        pass
+    def test__dimensions_lookup_bad_schedule(self):
+        test_tube = tube.Tube()
+        test_tube._set_property('schedule', 'garbage')
+
+        with pytest.raises(
+            ValueError,
+            match='\nPipe schedule not found'
+        ):
+            test_tube._dimensions_lookup()
+
+    def test__dimensions_lookup_bad_size(self):
+        test_tube = tube.Tube()
+        test_tube._set_property('nominal_size', '2.222')
+
+        with pytest.raises(
+            ValueError,
+            match='\nNominal size not found for given pipe schedule'
+        ):
+            test_tube._dimensions_lookup()
 
     def test_prop_available_pipe_sizes_set(self):
         test_tube = tube.Tube()
@@ -1183,57 +1199,41 @@ class TestTube:
 
         assert np.allclose(test_max_pressure, good_max_pressure)
 
-    def test_calculate_initial_pressure(self):
+    def test_calculate_initial_pressure_good(self):
         test_tube = tube.Tube(
             material=self.material,
             schedule=self.schedule,
             nominal_size=self.nominal_size,
             welded=self.welded,
-            safety_factor=self.safety_factor
+            safety_factor=self.safety_factor,
+            mechanism='gri30.cti',
+            fuel='H2',
+            oxidizer='O2',
+            equivalence_ratio=1
         )
 
-        initial_temperature = test_tube._units.quant(300, 'K')
-        test_tube.calculate_max_stress(initial_temperature)
+        test_tube.initial_temperature = test_tube._units.quant(300, 'K')
+        test_tube.calculate_max_stress()
 
-        species_dict = {'H2': 1, 'O2': 0.5}
-        mechanism = 'gri30.cti'
-        max_pressures = [
-            test_tube.calculate_max_pressure(
-                test_tube._units.quant(1200, 'psi')
-            ),
-            test_tube.calculate_max_pressure()
-        ]
-        error_tol = 1e-4
+        # the initial pressure should cause the reflected detonation pressure
+        # to be equal to the tube's max pressure, accounting for dynamic load
+        # factor
+        correct_max = test_tube.calculate_max_pressure().to('Pa').magnitude
+        test_tube.calculate_initial_pressure()
+        test_state = thermochem.calculate_reflected_shock_state(
+            test_tube.initial_temperature,
+            test_tube.initial_pressure,
+            test_tube.reactant_mixture,
+            test_tube.mechanism,
+            test_tube._units.ureg
+        )
 
-        max_solutions = [max_pressures[0], quant(149.046409603932, 'atm')]
+        error = abs(
+            correct_max -
+            test_state['reflected']['state'].P * test_tube.dynamic_load_factor
+        ) / correct_max
 
-        # test function output
-        for max_pressure, max_solution in zip(max_pressures, max_solutions):
-            test_tube.max_pressure = max_pressure
-            test_result = test_tube.calculate_initial_pressure(
-                species_dict,
-                mechanism,
-                error_tol=error_tol
-            )
-
-            states = thermochem.calculate_reflected_shock_state(
-                test_tube.initial_temperature,
-                test_result,
-                species_dict,
-                mechanism,
-                test_tube._units.ureg
-            )
-
-            # get dynamic load factor
-            test_tube.cj_speed = states['cj']['speed']
-            dlf = test_tube._get_pipe_dlf()
-
-            calc_max = states['reflected']['state'].P
-            max_solution = max_solution.to('Pa').magnitude / dlf
-
-            error = abs(max_solution - calc_max) / max_solution
-
-            assert error <= 0.0005
+        assert error <= 0.0005
 
     def test_calculate_initial_pressure_no_temperature_or_pressure(self):
         test_tube = tube.Tube(
