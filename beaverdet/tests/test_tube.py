@@ -1199,7 +1199,7 @@ class TestTube:
 
         assert np.allclose(test_max_pressure, good_max_pressure)
 
-    def test_calculate_initial_pressure_good(self):
+    def test_calculate_initial_pressure_no_mp(self):
         test_tube = tube.Tube(
             material=self.material,
             schedule=self.schedule,
@@ -1212,7 +1212,43 @@ class TestTube:
             equivalence_ratio=1,
             show_warnings=False,
             initial_temperature=(300, 'K'),
-            autocalc_initial=True
+            autocalc_initial=True,
+            use_multiprocessing=False
+        )
+        # the initial pressure should cause the reflected detonation pressure
+        # to be equal to the tube's max pressure, accounting for dynamic load
+        # factor
+        correct_max = test_tube.max_pressure.to('Pa').magnitude
+        test_state = thermochem.calculate_reflected_shock_state(
+            test_tube.initial_temperature,
+            test_tube.initial_pressure,
+            test_tube.reactant_mixture,
+            test_tube.mechanism,
+            test_tube._units.ureg
+        )
+
+        error = abs(
+            correct_max -
+            test_state['reflected']['state'].P * test_tube.dynamic_load_factor
+        ) / correct_max
+
+        assert error <= 0.0005
+
+    def test_calculate_initial_pressure_with_mp(self):
+        test_tube = tube.Tube(
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor,
+            mechanism='gri30.cti',
+            fuel='H2',
+            oxidizer='O2',
+            equivalence_ratio=1,
+            show_warnings=False,
+            initial_temperature=(300, 'K'),
+            autocalc_initial=True,
+            use_multiprocessing=True
         )
         # the initial pressure should cause the reflected detonation pressure
         # to be equal to the tube's max pressure, accounting for dynamic load

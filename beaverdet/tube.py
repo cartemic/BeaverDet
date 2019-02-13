@@ -1031,7 +1031,8 @@ class Tube:
             safety_factor=4,
             verbose=False,
             show_warnings=True,
-            autocalc_initial=False
+            autocalc_initial=False,
+            use_multiprocessing=False
     ):
         """
         Parameters
@@ -1054,6 +1055,9 @@ class Tube:
         inputs = locals()
         for item in self._all_quantities:
             self._properties[item] = None
+
+        # decide on use of multiprocessing (requires __main__)
+        self._use_multiprocessing = not not use_multiprocessing
 
         # determine whether or not the tube is welded
         self._properties['welded'] = not not welded
@@ -2455,7 +2459,8 @@ class Tube:
         # reflected pressure is approximately 2.5 times CJ
         # worst case dynamic load factor is 4
         p_max = self.max_pressure.to('Pa')
-        initial_pressure = p_max / (17.5 * 2.5 * 4)
+        # initial_pressure = p_max / (17.5 * 2.5 * 4)
+        initial_pressure = self._units.quant(1, 'atm')
         counter = 0
         error_tol = abs(error_tol)
 
@@ -2466,7 +2471,8 @@ class Tube:
             initial_pressure,
             self.reactant_mixture,
             self.mechanism,
-            self._units.ureg
+            self._units.ureg,
+            use_multiprocessing=self._use_multiprocessing
         )
         dlf = self._get_pipe_dlf(state['cj']['speed'])
 
@@ -2489,7 +2495,8 @@ class Tube:
                 initial_pressure,
                 self.reactant_mixture,
                 self.mechanism,
-                self._units.ureg
+                self._units.ureg,
+                use_multiprocessing=self._use_multiprocessing
             )
 
             # calculate new error, accounting for dynamic load factor

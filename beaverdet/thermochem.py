@@ -173,7 +173,8 @@ def calculate_reflected_shock_state(
         initial_pressure,
         species_dict,
         mechanism,
-        ureg
+        ureg=pint.UnitRegistry(),
+        use_multiprocessing=False
 ):
     """
     Calculates the thermodynamic and chemical state of a reflected shock
@@ -226,7 +227,8 @@ def calculate_reflected_shock_state(
         initial_temperature,
         species_dict,
         mechanism,
-        return_state=True
+        return_state=True,
+        use_multiprocessing=use_multiprocessing
     )
 
     # get reflected state
@@ -455,3 +457,26 @@ class Mixture:
                                     self.initial_pressure *
                                     cantera_solution.X[i]))
         return dict(mixture_list)
+
+
+if __name__ == '__main__':
+    import sys
+    import re
+    possible_funcs = ('reflect', 'laminar_fs', 'sound_speed')
+
+    if sys.argv[1] not in possible_funcs:
+        print(0)
+    else:
+        temp = float(sys.argv[2])
+        press = float(sys.argv[3])
+        mech = sys.argv[4]
+        species_in = [
+            re.sub('[^A-Za-z0-9.]+', '', item) for item in sys.argv[5:]
+        ]
+        names = [
+            species_in[loc] for loc in range(0, len(species_in), 2)
+        ]
+        amounts = [
+            float(species_in[loc]) for loc in range(1, len(species_in), 2)
+        ]
+        species = {name: amount for name, amount in zip(names, amounts)}
