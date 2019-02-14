@@ -192,6 +192,9 @@ def calculate_reflected_shock_state(
         Mechanism to use for chemical calculations, e.g. 'gri30.cti'
     ureg : pint.UnitRegistry
         Pint unit registry
+    use_multiprocessing : bool
+        True to use multiprocessing for CJ state calculation, which is faster
+        but requires the function to be run from __main__
 
     Returns
     -------
@@ -457,26 +460,3 @@ class Mixture:
                                     self.initial_pressure *
                                     cantera_solution.X[i]))
         return dict(mixture_list)
-
-
-if __name__ == '__main__':
-    import sys
-    import re
-    possible_funcs = ('reflect', 'laminar_fs', 'sound_speed')
-
-    if sys.argv[1] not in possible_funcs:
-        print(0)
-    else:
-        temp = float(sys.argv[2])
-        press = float(sys.argv[3])
-        mech = sys.argv[4]
-        species_in = [
-            re.sub('[^A-Za-z0-9.]+', '', item) for item in sys.argv[5:]
-        ]
-        names = [
-            species_in[loc] for loc in range(0, len(species_in), 2)
-        ]
-        amounts = [
-            float(species_in[loc]) for loc in range(1, len(species_in), 2)
-        ]
-        species = {name: amount for name, amount in zip(names, amounts)}
