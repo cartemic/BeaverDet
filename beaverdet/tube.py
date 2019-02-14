@@ -1481,6 +1481,15 @@ class Tube:
                 data=new_data
             ).fillna(0)
 
+            # make sure pressures are positive
+            if not all(
+                flange_limits.loc[
+                    :,
+                    flange_limits.columns != 'Temperature'
+                ].fillna(0).values.flatten() >= 0
+            ):
+                raise ValueError('\nPressure less than zero.')
+
             # add units to temperature column
             flange_limits['Temperature'] = [
                 self._units.quant(temp, 'degC') for temp in

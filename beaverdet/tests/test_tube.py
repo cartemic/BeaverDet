@@ -516,6 +516,7 @@ class TestWindow:
         compare(hand_calc, test_values)
 
 
+# noinspection PyProtectedMember
 @pytest.mark.tube
 class TestTube:
     material = '316L'
@@ -952,11 +953,11 @@ class TestTube:
                 'pandas.read_csv',
                 new=fake_read_csv
         ):
-            try:
+            with pytest.raises(
+                ValueError,
+                match=match_string
+            ):
                 test_tube._get_flange_limits_from_csv()
-            except ValueError as err:
-                err = str(err)
-                assert match_string == err
 
     def test_get_flange_limits_from_csv_zeroed_non_numeric(self):
         test_tube = tube.Tube()
@@ -1168,7 +1169,6 @@ class TestTube:
                       'monotonically increasing'
             ):
                 test_tube.initial_temperature = temp
-                test_tube.calculate_max_stress()
 
     @staticmethod
     def test_calculate_max_pressure():
