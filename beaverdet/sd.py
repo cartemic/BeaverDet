@@ -619,8 +619,8 @@ class GetError:
         numpy array
             A numpy array of errors in [enthalpy, pressure]
         """
-        post_shock_pressure = post_shock_gas.P,
-        post_shock_enthalpy = post_shock_gas.enthalpy_mass,
+        post_shock_pressure = post_shock_gas.P
+        post_shock_enthalpy = post_shock_gas.enthalpy_mass
         post_shock_density = post_shock_gas.density
 
         working_pressure = working_gas.P
