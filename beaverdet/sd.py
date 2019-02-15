@@ -48,21 +48,21 @@ def cj_curve_fit(x, y):
     m = sum_y / n
     den = (sum_x3 * n - sum_x2 * sum_x)
     temp = (
-            den * (sum_x * sum_x2 - sum_x3 * n) +
-            sum_x2 * sum_x2 * (sum_x * sum_x - n * sum_x2) -
-            sum_x4 * n * (sum_x * sum_x - sum_x2 * n)
+        den * (sum_x * sum_x2 - sum_x3 * n) +
+        sum_x2 * sum_x2 * (sum_x * sum_x - n * sum_x2) -
+        sum_x4 * n * (sum_x * sum_x - sum_x2 * n)
     )
     temp2 = (
-            den * (sum_y * sum_x2 - sum_x2y * n) +
-            (sum_xy * n - sum_y * sum_x) * (sum_x4 * n - sum_x2 * sum_x2)
+        den * (sum_y * sum_x2 - sum_x2y * n) +
+        (sum_xy * n - sum_y * sum_x) * (sum_x4 * n - sum_x2 * sum_x2)
     )
 
     # calculate curve fit coefficients
     b = temp2 / temp
     a = 1. / den * (
-            n * sum_xy -
-            sum_y * sum_x -
-            b * (sum_x2 * n - sum_x * sum_x)
+        n * sum_xy -
+        sum_y * sum_x -
+        b * (sum_x2 * n - sum_x * sum_x)
     )
     c = 1. / n * (sum_y - a * sum_x2 - b * sum_x)
 
@@ -95,7 +95,7 @@ class Detonation:
         Parameters
         ----------
         working_gas : cantera.composite.Solution
-            A cantera gas object used for calculations (???).
+            A cantera gas object used for calculations.
         initial_state_gas : cantera.composite.Solution
             A cantera gas object for the working gas mixture in its initial,
             undetonated state.
@@ -138,11 +138,11 @@ class Detonation:
 
         loop_counter = 0
         while (
-                abs(delta_temperature) > (error_tol_temperature *
-                                          guess_temperature)
+                abs(delta_temperature) >
+                (error_tol_temperature * guess_temperature)
                 or
-                abs(delta_velocity) > (error_tol_velocity *
-                                       guess_velocity)
+                abs(delta_velocity) >
+                (error_tol_velocity * guess_velocity)
         ):
             loop_counter += 1
             # check for non-convergence
@@ -487,7 +487,7 @@ class GetError:
         Parameters
         ----------
         working_gas : cantera.composite.Solution
-            A cantera gas object used for calculations (???).
+            A cantera gas object used for calculations.
         initial_state_gas : cantera.composite.Solution
             A cantera gas object for the working gas mixture in its initial,
             undetonated state.
@@ -510,69 +510,6 @@ class GetError:
         working_density = working_gas.density
 
         working_velocity = initial_velocity * initial_density / working_density
-
-        sqr_vel_initial = initial_velocity**2
-        sqr_vel_working = working_velocity**2
-
-        enthalpy_error = (
-                (working_enthalpy + 0.5 * sqr_vel_working) -
-                (initial_enthalpy + 0.5 * sqr_vel_initial)
-        )
-
-        pressure_error = (
-            (
-                working_pressure + working_density * sqr_vel_working
-            ) - (
-                initial_pressure + initial_density * sqr_vel_initial
-            )
-        )
-
-        return [enthalpy_error, pressure_error]
-
-    @staticmethod
-    def frozen(
-            working_gas,
-            initial_state_gas,
-            initial_velocity_guess
-    ):
-        """
-        This function uses the momentum and energy conservation equations to
-        calculate error in current pressure and enthalpy guesses. In this case,
-        working state is frozen.
-
-        Original function: FHFP_CJ in PostShock.py
-
-        NOTE: this function is identical to equilibrium...
-
-        Do you want to build a snowman?
-
-        Parameters
-        ----------
-        working_gas : cantera.composite.Solution
-            A cantera gas object used for calculations.
-        initial_state_gas : cantera.composite.Solution
-            A cantera gas object for the working gas mixture in its initial,
-            undetonated state.
-        initial_velocity_guess : float
-            A guess for the initial velocity in m/s
-
-        Returns
-        -------
-        list
-            A list of errors in [enthalpy, pressure]
-        """
-
-        initial_pressure = initial_state_gas.P
-        initial_enthalpy = initial_state_gas.enthalpy_mass
-        initial_density = initial_state_gas.density
-        initial_velocity = initial_velocity_guess
-
-        working_pressure = working_gas.P
-        working_enthalpy = working_gas.enthalpy_mass
-        working_density = working_gas.density
-        working_velocity = initial_velocity * (
-                initial_density / working_density
-        )
 
         sqr_vel_initial = initial_velocity**2
         sqr_vel_working = working_velocity**2
@@ -789,14 +726,11 @@ class Reflection:
         loop_counter = 0
         while (
                 (
-                        abs(delta_temperature)
-                        >
-                        error_tol_temperature * guess_temperature)
-                or
-                (
-                        abs(delta_volume)
-                        >
-                        error_tol_specific_volume * guess_volume
+                    abs(delta_temperature) >
+                    error_tol_temperature * guess_temperature
+                ) or (
+                    abs(delta_volume) >
+                    error_tol_specific_volume * guess_volume
                 )
         ):
             loop_counter += 1
@@ -876,9 +810,9 @@ class Reflection:
             aa = [-err_enthalpy, -err_pressure]
 
             delta_temperature = (bb[0] * aa[0] +
-                                    bb[1] * aa[1]) / j
+                                 bb[1] * aa[1]) / j
             delta_volume = (bb[2] * aa[0] +
-                               bb[3] * aa[1]) / j
+                            bb[3] * aa[1]) / j
 
             # check and limit temperature delta
             delta_temp_max = 0.2 * guess_temperature
@@ -892,8 +826,7 @@ class Reflection:
             # check and limit specific volume delta
             perturbed_volume = guess_volume + delta_volume
             if perturbed_volume > post_shock_volume:
-                delta_volume_max = 0.5 * (
-                            post_shock_volume - guess_volume)
+                delta_volume_max = 0.5 * (post_shock_volume - guess_volume)
             else:
                 delta_volume_max = 0.2 * guess_volume
 
