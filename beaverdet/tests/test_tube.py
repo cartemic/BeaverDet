@@ -37,6 +37,7 @@ def compare(manual, tested):
         assert abs(test_value - value) / value < 1e-4
 
 
+# noinspection PyProtectedMember
 class TestBolt:
     thread_size = '1/4-28'
     thread_class = '2'
@@ -579,6 +580,28 @@ class TestTube:
         ):
             test_tube._dimensions_lookup()
 
+    def test_prop_autocalc_initial_set_get(self):
+        inputs = [True, False, 0, 1]
+        expected = [bool(item) for item in inputs]
+        test_tube = tube.Tube()
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.autocalc_initial = value
+            results.append(value == correct)
+
+        assert all(results)
+
+    def test_prop_show_warnings_set_get(self):
+        inputs = [True, False, 0, 1]
+        expected = [bool(item) for item in inputs]
+        test_tube = tube.Tube()
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.show_warnings = value
+            results.append(value == correct)
+
+        assert all(results)
+
     def test_prop_available_pipe_sizes_set(self):
         test_tube = tube.Tube()
 
@@ -587,6 +610,10 @@ class TestTube:
             match='\nPipe sizes can not be set manually.'
         ):
             test_tube.available_pipe_sizes = 7
+
+    def test_prop_available_pipe_sizes_get(self):
+        test_tube = tube.Tube()
+        assert isinstance(test_tube.available_pipe_sizes, list)
 
     def test_prop_available_pipe_schedules_set(self):
         test_tube = tube.Tube()
@@ -597,6 +624,10 @@ class TestTube:
         ):
             test_tube.available_pipe_schedules = 'big as hell'
 
+    def test_prop_available_pipe_schedules_get(self):
+        test_tube = tube.Tube()
+        assert isinstance(test_tube.available_pipe_schedules, list)
+
     def test_prop_available_tube_materials_set(self):
         test_tube = tube.Tube()
 
@@ -606,7 +637,23 @@ class TestTube:
         ):
             test_tube.available_tube_materials = 'Aluminum Foil'
 
-    def test_prop_nominal_size_bad_size(self):
+    def test_prop_available_tube_materials_get(self):
+        test_tube = tube.Tube()
+        assert isinstance(test_tube.available_tube_materials, list)
+
+    def test_prop_nominal_size_set_get(self):
+        test_tube = tube.Tube()
+        inputs = [(1), 6, '1 1/2']
+        expected = [str(item) for item in inputs]
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.nominal_size = value
+            result = test_tube.nominal_size
+            results.append(result == correct)
+
+        assert all(results)
+
+    def test_prop_nominal_size_set_bad_size(self):
         bad_size = 'really big'
         match_string = '\n{0} is not a valid pipe size. '.format(bad_size) + \
                        'For a list of available sizes, try \n' + \
@@ -617,6 +664,18 @@ class TestTube:
         ):
             test_tube = tube.Tube()
             test_tube.nominal_size = bad_size
+
+    def test_prop_schedule_set_get(self):
+        test_tube = tube.Tube()
+        inputs = [40, 'XXH']
+        expected = [str(item) for item in inputs]
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.schedule = value
+            result = test_tube.schedule
+            results.append(result == correct)
+
+        assert all(results)
 
     def test_prop_schedule_set_bad_schedule(self):
         bad_schedule = 'Kropotkin'
@@ -631,7 +690,18 @@ class TestTube:
             test_tube = tube.Tube()
             test_tube.schedule = bad_schedule
 
-    def test_prop_dimensions(self):
+    def test_prop_dimensions_set(self):
+        test_tube = tube.Tube()
+        match_string = '\nTube dimensions are looked up based on nominal' \
+                       ' pipe size and schedule, not set. Try ' \
+                       '`mytube.schedule()` or `mytube.nominal_size()` instead.'
+
+        with pytest.raises(PermissionError) as err:
+            test_tube.dimensions = [0, 2, 3]
+
+        assert str(err.value) == match_string
+
+    def test_prop_dimensions_get(self):
         test_tube = tube.Tube(
             nominal_size=self.nominal_size,
             schedule=self.schedule
@@ -650,7 +720,7 @@ class TestTube:
         assert inner_diameter.magnitude - 5.761 < 1e-7
         assert wall_thickness.magnitude - 0.432 < 1e-7
 
-    def test_prop_material_bad_material(self):
+    def test_prop_material_set_bad_material(self):
         test_tube = tube.Tube()
         match_string = '\nPipe material not found. For a list of ' + \
                        'available materials try:\n' + \
@@ -871,10 +941,10 @@ class TestTube:
                     ValueError,
                     match='materials_list.csv does not exist'
             ):
-                test_tube = tube.Tube()
-                test_tube._get_material_groups()
+                tube.Tube()
 
     def test_collect_tube_materials_empty_file(self):
+        # noinspection PyUnresolvedReferences
         def fake_csv_import(*_):
             raise pd.errors.EmptyDataError
 
@@ -887,8 +957,7 @@ class TestTube:
                     ValueError,
                     match='materials_list.csv is empty'
             ):
-                test_tube = tube.Tube()
-                test_tube._get_material_groups()
+                tube.Tube()
 
     def test_get_flange_limits_from_csv(self):
         test_tube = tube.Tube()
@@ -1109,15 +1178,16 @@ class TestTube:
             test_tube._units.quant(150, 'degF')
         ]
 
+        # in ksi
         good_stresses = [
-            test_tube._units.quant(15.7, 'ksi'),
-            test_tube._units.quant(13.3, 'ksi'),
-            test_tube._units.quant(14.5, 'ksi')
+            15.7,
+            13.3,
+            14.5
         ]
         for temperature, stress in zip(initial_temperatures, good_stresses):
             test_tube.initial_temperature = temperature
             assert np.allclose(
-                test_tube.calculate_max_stress(),
+                test_tube.calculate_max_stress().to('ksi').magnitude,
                 stress
             )
 
@@ -1136,15 +1206,16 @@ class TestTube:
             test_tube._units.quant(675, 'degF')
         ]
 
+        # in ksi
         good_stresses = [
-            test_tube._units.quant(9.5, 'ksi'),
-            test_tube._units.quant(9.4, 'ksi'),
-            test_tube._units.quant(9.45, 'ksi')
+            9.5,
+            9.4,
+            9.45
         ]
         for temperature, stress in zip(initial_temperatures, good_stresses):
             test_tube.initial_temperature = temperature
             assert np.allclose(
-                test_tube.calculate_max_stress(),
+                test_tube.calculate_max_stress().to('ksi').magnitude,
                 stress
             )
 
@@ -1191,11 +1262,12 @@ class TestTube:
         good_max_pressure = (
                 max_stress * (2 * wall_thickness) * asme_fs /
                 (mean_diameter * safety_factor)
-                             )
+                             ).to('Pa').magnitude
 
         test_tube.max_stress = max_stress
 
-        test_max_pressure = test_tube.calculate_max_pressure()
+        test_max_pressure = test_tube.calculate_max_pressure()\
+            .to('Pa').magnitude
 
         assert np.allclose(test_max_pressure, good_max_pressure)
 
@@ -1248,7 +1320,8 @@ class TestTube:
             show_warnings=False,
             initial_temperature=(300, 'K'),
             autocalc_initial=True,
-            use_multiprocessing=True
+            use_multiprocessing=True,
+            verbose=True
         )
         # the initial pressure should cause the reflected detonation pressure
         # to be equal to the tube's max pressure, accounting for dynamic load

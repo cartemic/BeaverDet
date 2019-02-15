@@ -1043,7 +1043,7 @@ class Tube:
         # decide whether to allow automatic calculations
         self._calculate_stress = max_stress is not None
         self._calculate_max_pressure = max_pressure is not None
-        self._autocalc_initial = not not autocalc_initial
+        self._autocalc_initial = bool(autocalc_initial)
 
         # build local unit registry
         self._units = self._UnitSystem()
@@ -1057,10 +1057,10 @@ class Tube:
             self._properties[item] = None
 
         # decide on use of multiprocessing (requires __main__)
-        self._use_multiprocessing = not not use_multiprocessing
+        self._use_multiprocessing = bool(use_multiprocessing)
 
         # determine whether or not the tube is welded
-        self._properties['welded'] = not not welded
+        self._properties['welded'] = bool(welded)
 
         # check materials list to make sure it's good
         # define and collect tube materials and groups
@@ -1074,8 +1074,8 @@ class Tube:
         self._mechanisms = tools.find_mechanisms()
 
         # determine whether or not to report progress or issues to the user
-        self.verbose = not not verbose
-        self._show_warnings = not not show_warnings
+        self.verbose = bool(verbose)
+        self._show_warnings = bool(show_warnings)
 
         # initialize dimensions object and set nominal size and schedule
         self._properties['dimensions'] = self._Dimensions()
@@ -1216,7 +1216,7 @@ class Tube:
             self,
             auto
     ):
-        self._autocalc_initial = not not auto
+        self._autocalc_initial = bool(auto)
 
     @property
     def show_warnings(self):
@@ -1230,7 +1230,7 @@ class Tube:
             self,
             show
     ):
-        self._show_warnings = not not show
+        self._show_warnings = bool(show)
 
     @property
     def available_pipe_sizes(self):
@@ -1753,8 +1753,8 @@ class Tube:
             _
     ):
         raise PermissionError(
-            '\nTube dimensions are looked up based on nominal pipe size and '
-            'schedule, not set. Try `mytube.schedule()` or '
+            '\nTube dimensions are looked up based on nominal pipe size and ' +
+            'schedule, not set. Try `mytube.schedule()` or ' +
             '`mytube.nominal_size()` instead.'
         )
 
@@ -1793,10 +1793,7 @@ class Tube:
             self,
             welded
     ):
-        if welded:
-            self._set_property('welded', True)
-        else:
-            self._set_property('welded', False)
+        self._set_property('welded', bool(welded))
 
         # recalculate max stress
         if self._calculate_stress and not self._initializing:
