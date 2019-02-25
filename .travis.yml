@@ -16,7 +16,6 @@ install:
     - conda update -q conda
     - conda update -q --all
     - conda config --append channels conda-forge
-    - conda config --append channels cartemic
     - conda env create -qf test-environment.yaml;
     - source activate test-environment;
 script:

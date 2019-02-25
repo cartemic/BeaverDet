@@ -122,6 +122,7 @@ def test_calculate_reflected_shock_state():
     )
 
 
+# noinspection PyProtectedMember
 class TestMixture:
     initial_pressure = quant(1, 'atm')
     initial_temperature = quant(20, 'degC')
@@ -251,15 +252,19 @@ class TestMixture:
             0.2
         )
         good_masses = {
-            self.good_fuel: test_mixture._quant(0.004578, 'kg'),
-            self.good_oxidizer: test_mixture._quant(0.03633, 'kg'),
-            self.good_diluent: test_mixture._quant(0.34017, 'kg')
+            self.good_fuel: 0.004578,
+            self.good_oxidizer: 0.03633,
+            self.good_diluent: 0.34017
         }
 
-        test_masses = test_mixture.get_masses(
-            self.good_volume,
-            diluted=True
-        )
+        test_masses = {
+            key: value.to('kg').magnitude
+            for key, value in
+            test_mixture.get_masses(
+                self.good_volume,
+                diluted=True
+            ).items()
+        }
 
         key_check = list(test_masses.keys()) == list(good_masses.keys())
         value_check = [
@@ -297,14 +302,18 @@ class TestMixture:
             self.good_oxidizer
         )
         good_masses = {
-            self.good_fuel: test_mixture._quant(0.00572, 'kg'),
-            self.good_oxidizer: test_mixture._quant(0.04541, 'kg')
+            self.good_fuel: 0.00572,
+            self.good_oxidizer: 0.04541
         }
 
-        test_masses = test_mixture.get_masses(
-            self.good_volume,
-            diluted=False
-        )
+        test_masses = {
+            key: value.to('kg').magnitude
+            for key, value in
+            test_mixture.get_masses(
+                self.good_volume,
+                diluted=False
+            ).items()
+        }
 
         key_check = list(test_masses.keys()) == list(good_masses.keys())
         value_check = [
@@ -330,12 +339,16 @@ class TestMixture:
             0.2
         )
         good_pressures = {
-            self.good_fuel: test_mixture._quant(54040, 'Pa'),
-            self.good_oxidizer: test_mixture._quant(27020, 'Pa'),
-            self.good_diluent: test_mixture._quant(20265, 'Pa')
+            self.good_fuel: 54040,
+            self.good_oxidizer: 27020,
+            self.good_diluent: 20265
         }
 
-        test_pressures = test_mixture.get_pressures(diluted=True)
+        test_pressures = {
+            key: value.to('Pa').magnitude
+            for key, value in
+            test_mixture.get_pressures(diluted=True).items()
+        }
 
         key_check = list(test_pressures.keys()) == list(good_pressures.keys())
         value_check = [
@@ -370,11 +383,15 @@ class TestMixture:
             self.good_oxidizer
         )
         good_pressures = {
-            self.good_fuel: test_mixture._quant(67550, 'Pa'),
-            self.good_oxidizer: test_mixture._quant(33775, 'Pa')
+            self.good_fuel: 67550,
+            self.good_oxidizer: 33775
         }
 
-        test_pressures = test_mixture.get_pressures(diluted=False)
+        test_pressures = {
+            key: value.to('Pa').magnitude
+            for key, value in
+            test_mixture.get_pressures(diluted=False).items()
+        }
 
         key_check = list(test_pressures.keys()) == list(good_pressures.keys())
         value_check = [

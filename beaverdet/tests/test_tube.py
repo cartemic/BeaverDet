@@ -37,6 +37,7 @@ def compare(manual, tested):
         assert abs(test_value - value) / value < 1e-4
 
 
+# noinspection PyProtectedMember
 class TestBolt:
     thread_size = '1/4-28'
     thread_class = '2'
@@ -243,6 +244,7 @@ class TestDDT:
                 ValueError,
                 match='Non-numeric blockage ratio.'
         ):
+            # noinspection PyTypeChecker
             tube.DDT.calculate_spiral_diameter(
                 self.diameter,
                 'doompity doo'
@@ -380,6 +382,7 @@ class TestWindow:
                 TypeError,
                 match='Non-numeric window safety factor'
         ):
+            # noinspection PyTypeChecker
             tube.Window.minimum_thickness(
                 self.length,
                 self.width,
@@ -514,12 +517,16 @@ class TestWindow:
         compare(hand_calc, test_values)
 
 
+# noinspection PyProtectedMember
+@pytest.mark.tube
 class TestTube:
     material = '316L'
     schedule = '80'
     nominal_size = '6'
     welded = False
     safety_factor = 4
+    fake_material_groups = {'thing0': 'group0', 'thing1': 'group1'}
+    fake_materials = pd.DataFrame(columns=['Group', 'Grade'])
 
     class FakeOpen:
         """
@@ -553,20 +560,151 @@ class TestTube:
                 """
                 return 'ASDF,thing0,thing1\n'
 
-    @staticmethod
-    def fake_get_material_groups(*_):
-        """
-        fake get_material_groups()
-        """
-        return {'thing0': 'group0', 'thing1': 'group1'}
+    def test__dimensions_lookup_bad_schedule(self):
+        test_tube = tube.Tube()
+        test_tube._set_property('schedule', 'garbage')
 
-    def test_get_dimensions(self):
+        with pytest.raises(
+            ValueError,
+            match='\nPipe schedule not found'
+        ):
+            test_tube._dimensions_lookup()
+
+    def test__dimensions_lookup_bad_size(self):
+        test_tube = tube.Tube()
+        test_tube._set_property('nominal_size', '2.222')
+
+        with pytest.raises(
+            ValueError,
+            match='\nNominal size not found for given pipe schedule'
+        ):
+            test_tube._dimensions_lookup()
+
+    def test_prop_autocalc_initial_set_get(self):
+        inputs = [True, False, 0, 1]
+        expected = [bool(item) for item in inputs]
+        test_tube = tube.Tube()
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.autocalc_initial = value
+            results.append(value == correct)
+
+        assert all(results)
+
+    def test_prop_show_warnings_set_get(self):
+        inputs = [True, False, 0, 1]
+        expected = [bool(item) for item in inputs]
+        test_tube = tube.Tube()
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.show_warnings = value
+            results.append(value == correct)
+
+        assert all(results)
+
+    def test_prop_available_pipe_sizes_set(self):
+        test_tube = tube.Tube()
+
+        with pytest.raises(
+            PermissionError,
+            match='\nPipe sizes can not be set manually.'
+        ):
+            test_tube.available_pipe_sizes = 7
+
+    def test_prop_available_pipe_sizes_get(self):
+        test_tube = tube.Tube()
+        assert isinstance(test_tube.available_pipe_sizes, list)
+
+    def test_prop_available_pipe_schedules_set(self):
+        test_tube = tube.Tube()
+
+        with pytest.raises(
+            PermissionError,
+            match='\nPipe schedules can not be set manually.'
+        ):
+            test_tube.available_pipe_schedules = 'big as hell'
+
+    def test_prop_available_pipe_schedules_get(self):
+        test_tube = tube.Tube()
+        assert isinstance(test_tube.available_pipe_schedules, list)
+
+    def test_prop_available_tube_materials_set(self):
+        test_tube = tube.Tube()
+
+        with pytest.raises(
+            PermissionError,
+            match='\nAvailable tube materials can not be set manually.'
+        ):
+            test_tube.available_tube_materials = 'Aluminum Foil'
+
+    def test_prop_available_tube_materials_get(self):
+        test_tube = tube.Tube()
+        assert isinstance(test_tube.available_tube_materials, list)
+
+    def test_prop_nominal_size_set_get(self):
+        test_tube = tube.Tube()
+        inputs = [(1), 6, '1 1/2']
+        expected = [str(item) for item in inputs]
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.nominal_size = value
+            result = test_tube.nominal_size
+            results.append(result == correct)
+
+        assert all(results)
+
+    def test_prop_nominal_size_set_bad_size(self):
+        bad_size = 'really big'
+        match_string = '\n{0} is not a valid pipe size. '.format(bad_size) + \
+                       'For a list of available sizes, try \n' + \
+                       '`mytube.available_pipe_sizes`'
+        with pytest.raises(
+                ValueError,
+                match=match_string
+        ):
+            test_tube = tube.Tube()
+            test_tube.nominal_size = bad_size
+
+    def test_prop_schedule_set_get(self):
+        test_tube = tube.Tube()
+        inputs = [40, 'XXH']
+        expected = [str(item) for item in inputs]
+        results = []
+        for value, correct in zip(inputs, expected):
+            test_tube.schedule = value
+            result = test_tube.schedule
+            results.append(result == correct)
+
+        assert all(results)
+
+    def test_prop_schedule_set_bad_schedule(self):
+        bad_schedule = 'Kropotkin'
+        match_string = '\n{0} is not a valid pipe schedule for this nominal' \
+                       ' size. '.format(bad_schedule) + \
+                       'For a list of available schedules, try \n' + \
+                       '`mytube.available_pipe_schedules`'
+        with pytest.raises(
+                ValueError,
+                match=match_string
+        ):
+            test_tube = tube.Tube()
+            test_tube.schedule = bad_schedule
+
+    def test_prop_dimensions_set(self):
+        test_tube = tube.Tube()
+        match_string = '\nTube dimensions are looked up based on nominal' \
+                       ' pipe size and schedule, not set. Try ' \
+                       '`mytube.schedule()` or `mytube.nominal_size()` instead.'
+
+        with pytest.raises(PermissionError) as err:
+            test_tube.dimensions = [0, 2, 3]
+
+        assert str(err.value) == match_string
+
+    def test_prop_dimensions_get(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            nominal_size=self.nominal_size,
+            schedule=self.schedule
         )
 
         # Note: _get_dimensions is called during __init__
@@ -582,49 +720,46 @@ class TestTube:
         assert inner_diameter.magnitude - 5.761 < 1e-7
         assert wall_thickness.magnitude - 0.432 < 1e-7
 
-    def test_get_dimensions_bad_pipe_schedule(self):
+    def test_prop_material_set_bad_material(self):
+        test_tube = tube.Tube()
+        match_string = '\nPipe material not found. For a list of ' + \
+                       'available materials try:\n' + \
+                       '`mytube.available_tube_materials`'
         with pytest.raises(
-                ValueError,
-                match='Pipe schedule not found'
+            ValueError,
+            match=match_string
         ):
-            tube.Tube(
-                self.material,
-                'Kropotkin',
-                self.nominal_size,
-                self.welded,
-                self.safety_factor
-            )
+            test_tube.material = 'unobtainium'
 
-    def test_get_dimensions_bad_pipe_size(self):
-        with pytest.raises(
-                ValueError,
-                match='Nominal size not found for given pipe schedule'
-        ):
-            tube.Tube(
-                self.material,
-                self.schedule,
-                'really big',
-                self.welded,
-                self.safety_factor
-            )
+    def test_prop_welded(self):
+        welded_args = [0, 1, True, False]
+        welded_results = [False, True, True, False]
+        test_tube = tube.Tube()
+
+        tests = []
+        for welded_in, good_result in zip(welded_args, welded_results):
+            test_tube.welded = welded_in
+            tests.append(test_tube.welded == good_result)
+
+        assert all(tests)
 
     def test_check_materials_list(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         assert test_tube._check_materials_list()
 
     def test_check_materials_list_no_files_found(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         def fake_listdir(*_):
@@ -639,35 +774,25 @@ class TestTube:
                 test_tube._check_materials_list()
 
     def test_check_materials_list_group_lookup_fails(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
 
-        def fake_listdir(*_):
-            # fails group1 lookup
-            return ['asdfflangegroup0sfh',
-                    'asdfstressweldedasdg']
-
-        with patch('builtins.open', new=self.FakeOpen):
-            with patch('os.listdir', new=fake_listdir):
-                with pytest.raises(
-                        ValueError,
-                        message='\nmaterial group group1 not found'
-                ):
-                    test_tube._check_materials_list()
+        # there is no group0 in any of the flange rating groups, and trying to
+        # look it up should generate a material group not found portion of the
+        # error string. This test sets the materials dataframe to an empty one
+        # with only Group and Grade columns, then adds a material group
+        # 'group0' to generate the desired error. Grade is set to 316L to
+        # avoid a grade-related error.
+        try:
+            test_tube._materials = self.fake_materials.copy()
+            test_tube._materials['Group'] = ['group0']
+            test_tube._materials['Grade'] = ['316L']
+            test_tube._check_materials_list()
+        except ValueError as err:
+            message = '\nmaterial group group0 not found\n'
+            assert message == str(err)
 
     def test_check_materials_list_no_welded_or_seamless(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
 
         def fake_listdir(*_):
             # causes welded/seamless warning
@@ -675,32 +800,22 @@ class TestTube:
                     'asdfflangegroup1asd',
                     'asdfstresswdasdg']
 
+        test_tube._material_groups = self.fake_material_groups
+        test_tube._materials = self.fake_materials
+
         with patch('builtins.open', new=self.FakeOpen):
-            with patch(
-                    'beaverdet.tube.Tube._get_material_groups',
-                    self.fake_get_material_groups
-            ):
-                with patch('os.listdir', new=fake_listdir):
-                    error_string = 'asdfstresswdasdg' + \
-                                   'does not indicate whether it is welded' + \
-                                   ' or seamless'
-                    with pytest.warns(Warning, match=error_string):
-                        test_tube._check_materials_list()
+            with patch('os.listdir', new=fake_listdir):
+                error_string = 'asdfstresswdasdg' + \
+                               'does not indicate whether it is welded' + \
+                               ' or seamless'
+                with pytest.warns(UserWarning, match=error_string):
+                    test_tube._check_materials_list()
 
     def test_check_materials_list_missing_material(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
 
         file_directory = os.path.join(
-            os.path.dirname(
-                os.path.relpath(__file__)
-            ),
-            '..',
+            'beaverdet',
             'lookup_data'
         )
 
@@ -712,57 +827,50 @@ class TestTube:
                     'asdfflangegroup1asd',
                     'asdfstressweldedasdg']
 
-        with patch('builtins.open', new=self.FakeOpen):
-            with patch(
-                    'beaverdet.tube.Tube._get_material_groups',
-                    self.fake_get_material_groups
-            ):
-                with patch('os.listdir', new=fake_listdir):
-                    class NewFakeFile:
-                        """
-                        FakeFile class that should fail material lookup
-                        """
-
-                        @staticmethod
-                        def readline(*_):
-                            """
-                            readline function that should fail material
-                            lookup for thing1
-                            """
-                            return 'ASDF,thing0\n'
-
-                    setattr(self.FakeOpen, 'FakeFile', NewFakeFile)
-                    error_string = '\nMaterial thing1 not found in ' + \
-                                   os.path.join(
-                                       file_directory,
-                                       'asdfstressweldedasdg'
-                                   )
-                    with pytest.raises(ValueError, message=error_string):
-                                test_tube._check_materials_list()
-
-    def test_check_current_material(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+        test_tube._material_groups = self.fake_material_groups
+        test_tube._materials = pd.DataFrame(
+            columns=['Grade', 'Group'],
+            data=list(map(list, zip(
+                self.fake_material_groups.keys(),
+                self.fake_material_groups.values()
+            )))
         )
-        with pytest.raises(
-            ValueError,
-            match='Pipe material not found in materials_list.csv'
-        ):
-            test_tube._check_current_material('magic')
+
+        with patch('builtins.open', new=self.FakeOpen):
+            with patch('os.listdir', new=fake_listdir):
+                class NewFakeFile:
+                    """
+                    FakeFile class that should fail material lookup
+                    """
+
+                    @staticmethod
+                    def readline(*_):
+                        """
+                        readline function that should fail material
+                        lookup for thing1
+                        """
+                        return 'ASDF,thing0\n'
+
+                setattr(self.FakeOpen, 'FakeFile', NewFakeFile)
+                error_string = '\nMaterial thing1 not found in ' + \
+                               os.path.join(
+                                   file_directory,
+                                   'asdfstressweldedasdg'
+                               ) + '\n'
+                try:
+                    test_tube._check_materials_list()
+                except ValueError as err:
+                    assert str(err) == error_string
 
     def test_get_material_groups(self):
         # ensure correctness by comparing to a pandas dataframe reading the
         # same file
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # file information
@@ -780,7 +888,7 @@ class TestTube:
         test_dataframe = pd.read_csv(file_location)
 
         # load data into a dictionary using get_material_groups()
-        test_output = test_tube._get_material_groups()
+        test_output = test_tube._material_groups
 
         # collect keys and values from dataframe that should correspond to
         # those of the dictionary
@@ -793,59 +901,8 @@ class TestTube:
             dataframe_value = values_from_dataframe[index]
             assert dict_value == dataframe_value
 
-    def test_get_material_groups_nonexistent_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
-        def fake_exists(*_):
-            return False
-
-        with patch(
-            'os.path.exists',
-            new=fake_exists
-        ):
-            with pytest.raises(
-                    ValueError,
-                    match='materials_list.csv does not exist'
-            ):
-                test_tube._get_material_groups()
-
-    def test_get_material_groups_blank_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
-        def fake_csv_import(*_):
-            raise pd.errors.EmptyDataError
-
-        with patch(
-            'pandas.read_csv',
-            new=fake_csv_import
-        ):
-            # check for proper error handling when file is blank
-            with pytest.raises(
-                    ValueError,
-                    match='materials_list.csv is empty'
-            ):
-                test_tube._get_material_groups()
-
-    def test_collect_materials(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+    def test_collect_tube_materials(self):
+        test_tube = tube.Tube()
         columns = ['Grade', 'Group', 'ElasticModulus', 'Density', 'Poisson']
         data = [
             ['304', 2.1, 200, 7.8, 0.28],
@@ -870,19 +927,9 @@ class TestTube:
             good_dataframe['Density']
         ]
 
-        test_dataframe = test_tube._collect_tube_materials()
+        assert test_tube._materials.equals(good_dataframe)
 
-        assert test_dataframe.equals(good_dataframe)
-
-    def test_collect_materials_nonexistent_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
+    def test_collect_tube_materials_nonexistent_file(self):
         def fake_exists(*_):
             return False
 
@@ -894,17 +941,10 @@ class TestTube:
                     ValueError,
                     match='materials_list.csv does not exist'
             ):
-                test_tube._get_material_groups()
+                tube.Tube()
 
-    def test_collect_materials_empty_file(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
+    def test_collect_tube_materials_empty_file(self):
+        # noinspection PyUnresolvedReferences
         def fake_csv_import(*_):
             raise pd.errors.EmptyDataError
 
@@ -917,152 +957,122 @@ class TestTube:
                     ValueError,
                     match='materials_list.csv is empty'
             ):
-                test_tube._get_material_groups()
+                tube.Tube()
 
     def test_get_flange_limits_from_csv(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
+        flange_class = '900'
+        temperature = test_tube._units.quant(400, 'degC')
 
-        # file information
-        my_input = 'testfile'
-        file_directory = os.path.join(
-            os.path.dirname(os.path.relpath(__file__)),
-            '..', 'lookup_data')
-        file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
-        file_location = os.path.relpath(os.path.join(file_directory, file_name))
+        # good pressures manually entered based on values from .csv files
+        good_pressures = {
+            '2.1': 85.3,
+            '2.2': 88.3,
+            '2.3': 72.9
+        }
 
-        # create test dataframe and write it to a .csv file
-        good_dataframe = pd.DataFrame(data=[[0, 1],  # temperatures
-                                            [2, 3]],  # pressures
-                                      columns=['Temperature', 'Class'])
-        good_dataframe.to_csv(file_location, index=False)
+        tests = []
+        for group, pressure in good_pressures.items():
+            # read the imported pressure and compare it to the correct pressure
+            test_pressure = test_tube._flange_limits[group] \
+                .loc[test_tube._flange_limits[group]['Temperature'] ==
+                     temperature][flange_class].values[0]
+            good_pressure = test_tube._units.quant(pressure, 'bar')
+            tests.append(test_pressure == good_pressure)
 
-        # add units to test dataframe
-        good_dataframe['Temperature'] = [
-            test_tube._units.quant(temp, 'degC') for temp in
-            good_dataframe['Temperature']
-        ]
-        good_dataframe['Class'] = [
-            test_tube._units.quant(pressure, 'bar') for pressure in
-            good_dataframe['Class']
-        ]
-
-        # read in test dataframe using get_flange_limits_from_csv()
-        test_dataframe = test_tube._get_flange_limits_from_csv(my_input)
-
-        os.remove(file_location)
-
-        assert test_dataframe.equals(good_dataframe)
+        assert all(tests)
 
     def test_get_flange_limits_from_csv_bad_group(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+        test_tube = tube.Tube()
+        file_name = 'ASME_B16_5_flange_ratings_group_2_1.csv'
+        file_directory = os.path.join(
+                os.path.dirname(os.path.relpath(tube.__file__)),
+                'lookup_data')
+        file_location = os.path.join(
+            file_directory,
+            file_name
         )
+        match_string = '\n' + file_location + 'not found'
 
-        my_input = 'batman'
-        bad_output = my_input + ' is not a valid group'
+        # bad group is identified by checking the existence of a .csv fil
+        def fake_os_path_exists(*_):
+            return False
 
-        # ensure the error is handled properly
-        with pytest.raises(
-                ValueError,
-                match=bad_output
+        with patch(
+            'os.path.exists',
+            new=fake_os_path_exists
         ):
-            test_tube._get_flange_limits_from_csv(my_input)
+            try:
+                test_tube._get_flange_limits_from_csv()
+            except FileNotFoundError as err:
+                err = str(err)
+                assert match_string == err
 
     def test_get_flange_limits_from_csv_bad_pressure(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
+        match_string = '\nPressure less than zero.'
 
-        # file information
-        my_input = 'testfile'
-        file_directory = os.path.join(
-            os.path.dirname(os.path.relpath(__file__)),
-            '..', 'lookup_data')
-        file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
-        file_location = os.path.relpath(os.path.join(file_directory, file_name))
+        # an error should be thrown when a non-temperature column has a
+        # negative value
+        def fake_read_csv(*_):
+            return pd.DataFrame(columns=['Temperature', '900'],
+                                data=[[10, -10]])
 
-        # create test dataframe and write it to a .csv file
-        bad_dataframe = pd.DataFrame(data=[[0, 1],  # temperatures
-                                           [2, -3]],  # pressures
-                                     columns=['Temperature', 'Class'])
-
-        bad_dataframe.to_csv(file_location, index=False)
-
-        with pytest.raises(
-                ValueError,
-                match='Pressure less than zero.'
+        with patch(
+                'pandas.read_csv',
+                new=fake_read_csv
         ):
-            test_tube._get_flange_limits_from_csv(my_input)
-
-        os.remove(file_location)
+            with pytest.raises(
+                ValueError,
+                match=match_string
+            ):
+                test_tube._get_flange_limits_from_csv()
 
     def test_get_flange_limits_from_csv_zeroed_non_numeric(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
 
-        # file information
-        my_input = 'testfile'
-        file_directory = os.path.join(
-            os.path.dirname(os.path.relpath(__file__)),
-            '..', 'lookup_data')
-        file_name = 'ASME_B16_5_flange_ratings_group_' + my_input + '.csv'
-        file_location = os.path.relpath(os.path.join(file_directory, file_name))
-
-        # create test dataframe and write it to a .csv file
+        # create test dataframe and a dataframe of what the output should
+        # look like after the test dataframe is imported
         test_temperatures = [9, 's', 'd']
-        good_temperatures = [9, 0, 0]
+        good_temperatures = [9., 0., 0.]
         test_pressures = ['a', 3, 'f']
-        good_pressures = [0, 3, 0]
+        good_pressures = [0., 3., 0.]
         test_dataframe = pd.DataFrame({'Temperature': test_temperatures,
                                        'Pressure': test_pressures})
         good_dataframe = pd.DataFrame({'Temperature': good_temperatures,
                                        'Pressure': good_pressures})
 
-        # add units to test dataframe
-        good_dataframe['Temperature'] = [
-            test_tube._units.quant(temp, 'degC') for temp in
-            good_dataframe['Temperature']
-        ]
-        good_dataframe['Pressure'] = [
-            test_tube._units.quant(pressure, 'bar') for pressure in
-            good_dataframe['Pressure']
-        ]
+        # convince the tube to load the test dataframe without having to
+        # write a .csv to disk
+        def fake_read_csv(*_):
+            return test_dataframe
 
-        test_dataframe.to_csv(file_location, index=False)
+        with patch(
+                'pandas.read_csv',
+                new=fake_read_csv
+        ):
+            test_tube._get_flange_limits_from_csv()
 
-        # ensure non-numeric pressures and temperatures are zeroed out
-        test_dataframe = test_tube._get_flange_limits_from_csv(my_input)
+            tests = []
+            for group in set(test_tube._material_groups.values()):
+                # pull the dataframe of flange limits for each material group
+                # and use applymap to remove units from all pint quantities.
+                # This is done to circumvent an error caused by using
+                # np.allclose for an array of pint quantities. Comparison to
+                # good_dataframe.values is done to avoid having to care about
+                # how the values are distributed by pandas.
+                df = test_tube._flange_limits[group]
+                test_values = df.applymap(lambda x: x.magnitude)
+                test = np.allclose(test_values,
+                                   good_dataframe.values)
+                tests.append(test)
 
-        os.remove(file_location)
-
-        assert test_dataframe.equals(good_dataframe)
+        assert all(tests)
 
     def test_get_pipe_stress_limits_welded(self):
         test_tube = tube.Tube(
-            '304',
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material='304',
+            welded=True
         )
 
         # known values for 304
@@ -1070,19 +1080,14 @@ class TestTube:
             [16, 16, 13.3, 12, 11, 10.5, 9.7, 9.5, 9.4, 9.2, 9,
              8.8, 8.7, 8.5, 8.3, 8.1, 7.6, 6.5, 5.4])
 
-        test_limits = test_tube._get_pipe_stress_limits(
-            welded=True
-        )
+        test_limits = test_tube._get_pipe_stress_limits()
         test_limits = np.array(test_limits['stress'][1])
         assert np.allclose(welded_values, test_limits)
 
     def test_get_pipe_stress_limits_seamless(self):
         test_tube = tube.Tube(
-            '304',
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material='304',
+            welded=False
         )
 
         # known values for 304
@@ -1091,9 +1096,7 @@ class TestTube:
              11.1, 10.8, 10.6, 10.4, 10.2, 10, 9.8, 9.5, 8.9,
              7.7, 6.1])
 
-        test_limits = test_tube._get_pipe_stress_limits(
-            welded=False
-        )
+        test_limits = test_tube._get_pipe_stress_limits()
         test_limits = np.array(test_limits['stress'][1])
         assert np.allclose(seamless_values, test_limits)
 
@@ -1110,11 +1113,11 @@ class TestTube:
             - pipe material not in materials list
         """
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         # from hand calcs, critical velocity is 1457.44 m/s, giving upper and
@@ -1126,14 +1129,13 @@ class TestTube:
             test_tube._units.quant(1400, 'm/s'),  # DLF 4
             test_tube._units.quant(1603, 'm/s'),  # DLF 4
             test_tube._units.quant(1604, 'm/s'),  # DLF 2
-            test_tube._units.quant(2000, 'm/s')  # DLF 2
+            test_tube._units.quant(2000, 'm/s')   # DLF 2
         ]
         expected_dlf = [1, 1, 4, 4, 4, 2, 2]
         test_dlf = []
         for cj_speed in cj_speeds:
-            test_tube.cj_speed = cj_speed
             test_dlf.append(
-                test_tube._get_pipe_dlf(plus_or_minus=0.1)
+                test_tube._get_pipe_dlf(plus_or_minus=0.1, cj_vel=cj_speed)
             )
 
         assert all(
@@ -1142,14 +1144,12 @@ class TestTube:
 
     def test_get_pipe_dlf_bad_plus_minus_value(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
-
-        test_tube.cj_speed = test_tube._units.quant(1200, 'm/s')
 
         # plus_or_minus outside of (0, 1)
         bad_plus_minus = [-1, 0, 1, 2]
@@ -1158,15 +1158,18 @@ class TestTube:
                 ValueError,
                 match='plus_or_minus factor not between 0 and 1'
             ):
-                test_tube._get_pipe_dlf(plus_minus)
+                test_tube._get_pipe_dlf(
+                    plus_or_minus=plus_minus,
+                    cj_vel=test_tube._units.quant(2, 'm/s')
+                )
 
     def test_calculate_max_stress_seamless(self):
         test_tube = tube.Tube(
-            '316L',
-            self.schedule,
-            self.nominal_size,
-            False,
-            self.safety_factor
+            material='316L',
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=False,
+            safety_factor=self.safety_factor
         )
 
         initial_temperatures = [
@@ -1175,24 +1178,26 @@ class TestTube:
             test_tube._units.quant(150, 'degF')
         ]
 
+        # in ksi
         good_stresses = [
-            test_tube._units.quant(15.7, 'ksi'),
-            test_tube._units.quant(13.3, 'ksi'),
-            test_tube._units.quant(14.5, 'ksi')
+            15.7,
+            13.3,
+            14.5
         ]
         for temperature, stress in zip(initial_temperatures, good_stresses):
+            test_tube.initial_temperature = temperature
             assert np.allclose(
-                test_tube.calculate_max_stress(temperature),
+                test_tube.calculate_max_stress().to('ksi').magnitude,
                 stress
             )
 
     def test_calculate_max_stress_welded(self):
         test_tube = tube.Tube(
-            '304',
-            self.schedule,
-            self.nominal_size,
-            True,
-            self.safety_factor
+            material='304',
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=True,
+            safety_factor=self.safety_factor
         )
 
         initial_temperatures = [
@@ -1201,25 +1206,21 @@ class TestTube:
             test_tube._units.quant(675, 'degF')
         ]
 
+        # in ksi
         good_stresses = [
-            test_tube._units.quant(9.5, 'ksi'),
-            test_tube._units.quant(9.4, 'ksi'),
-            test_tube._units.quant(9.45, 'ksi')
+            9.5,
+            9.4,
+            9.45
         ]
         for temperature, stress in zip(initial_temperatures, good_stresses):
+            test_tube.initial_temperature = temperature
             assert np.allclose(
-                test_tube.calculate_max_stress(temperature),
+                test_tube.calculate_max_stress().to('ksi').magnitude,
                 stress
             )
 
     def test_calculate_max_stress_non_monotonic(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
+        test_tube = tube.Tube()
 
         temp = test_tube._units.quant(100, 'degF')
 
@@ -1238,17 +1239,17 @@ class TestTube:
                 match='Stress limits require temperatures to be ' +
                       'monotonically increasing'
             ):
-                test_tube.calculate_max_stress(temp)
+                test_tube.initial_temperature = temp
 
     @staticmethod
     def test_calculate_max_pressure():
         safety_factor = 4
         test_tube = tube.Tube(
-            '304',
-            '80',
-            '6',
-            False,
-            safety_factor
+            material='304',
+            schedule='80',
+            nominal_size='6',
+            welded=False,
+            safety_factor=safety_factor
         )
 
         max_stress = test_tube._units.quant(18.8, 'ksi')
@@ -1261,193 +1262,117 @@ class TestTube:
         good_max_pressure = (
                 max_stress * (2 * wall_thickness) * asme_fs /
                 (mean_diameter * safety_factor)
-                             )
+                             ).to('Pa').magnitude
 
         test_tube.max_stress = max_stress
 
-        test_max_pressure = test_tube.calculate_max_pressure()
+        test_max_pressure = test_tube.calculate_max_pressure()\
+            .to('Pa').magnitude
 
         assert np.allclose(test_max_pressure, good_max_pressure)
 
-    @staticmethod
-    def test_calculate_max_pressure_with_given():
-        safety_factor = 4
+    def test_calculate_initial_pressure_no_mp(self):
         test_tube = tube.Tube(
-            '304',
-            '80',
-            '6',
-            False,
-            safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor,
+            mechanism='gri30.cti',
+            fuel='H2',
+            oxidizer='O2',
+            equivalence_ratio=1,
+            show_warnings=False,
+            initial_temperature=(300, 'K'),
+            autocalc_initial=True,
+            use_multiprocessing=False
+        )
+        # the initial pressure should cause the reflected detonation pressure
+        # to be equal to the tube's max pressure, accounting for dynamic load
+        # factor
+        correct_max = test_tube.max_pressure.to('Pa').magnitude
+        test_state = thermochem.calculate_reflected_shock_state(
+            test_tube.initial_temperature,
+            test_tube.initial_pressure,
+            test_tube.reactant_mixture,
+            test_tube.mechanism,
+            test_tube._units.ureg
         )
 
-        max_stress = test_tube._units.quant(18.8, 'ksi')
-        good_max_pressure = test_tube._units.quant(100, 'psi')
+        error = abs(
+            correct_max -
+            test_state['reflected']['state'].P * test_tube.dynamic_load_factor
+        ) / correct_max
 
-        test_tube.max_stress = max_stress
+        assert error <= 0.0005
 
-        test_max_pressure = test_tube.calculate_max_pressure(
-            good_max_pressure
-        )
-
-        assert np.allclose(test_max_pressure, good_max_pressure)
-
-    def test_calculate_max_pressure_no_max_stress(self):
+    def test_calculate_initial_pressure_with_mp(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor,
+            mechanism='gri30.cti',
+            fuel='H2',
+            oxidizer='O2',
+            equivalence_ratio=1,
+            show_warnings=False,
+            initial_temperature=(300, 'K'),
+            autocalc_initial=True,
+            use_multiprocessing=True,
+            verbose=True
+        )
+        # the initial pressure should cause the reflected detonation pressure
+        # to be equal to the tube's max pressure, accounting for dynamic load
+        # factor
+        correct_max = test_tube.max_pressure.to('Pa').magnitude
+        test_state = thermochem.calculate_reflected_shock_state(
+            test_tube.initial_temperature,
+            test_tube.initial_pressure,
+            test_tube.reactant_mixture,
+            test_tube.mechanism,
+            test_tube._units.ureg
         )
 
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate max pressure without max stress'
-        ):
-            test_tube.calculate_max_pressure()
+        error = abs(
+            correct_max -
+            test_state['reflected']['state'].P * test_tube.dynamic_load_factor
+        ) / correct_max
 
-    def test_calculate_initial_pressure(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-
-        initial_temperature = test_tube._units.quant(300, 'K')
-        test_tube.calculate_max_stress(initial_temperature)
-
-        species_dict = {'H2': 1, 'O2': 0.5}
-        mechanism = 'gri30.cti'
-        max_pressures = [
-            test_tube.calculate_max_pressure(
-                test_tube._units.quant(1200, 'psi')
-            ),
-            test_tube.calculate_max_pressure()
-        ]
-        error_tol = 1e-4
-
-        max_solutions = [max_pressures[0], quant(149.046409603932, 'atm')]
-
-        # test function output
-        for max_pressure, max_solution in zip(max_pressures, max_solutions):
-            test_tube.max_pressure = max_pressure
-            test_result = test_tube.calculate_initial_pressure(
-                species_dict,
-                mechanism,
-                error_tol=error_tol
-            )
-
-            states = thermochem.calculate_reflected_shock_state(
-                test_tube.initial_temperature,
-                test_result,
-                species_dict,
-                mechanism,
-                test_tube._units.ureg
-            )
-
-            # get dynamic load factor
-            test_tube.cj_speed = states['cj']['speed']
-            dlf = test_tube._get_pipe_dlf()
-
-            calc_max = states['reflected']['state'].P
-            max_solution = max_solution.to('Pa').magnitude / dlf
-
-            error = abs(max_solution - calc_max) / max_solution
-
-            assert error <= 0.0005
-
-    def test_calculate_initial_pressure_no_temperature_or_pressure(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-        test_tube.initial_temperature = None
-        test_tube.max_pressure = None
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate initial pressure without initial '
-                  'temperature and max pressure'
-        ):
-            test_tube.calculate_initial_pressure(
-                {'H2': 1, 'O2': 0.5},
-                'gri30.cti'
-            )
-
-    def test_calculate_initial_pressure_no_temperature(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-        test_tube.initial_temperature = None
-        test_tube.max_pressure = quant(100, 'psi')
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate initial pressure without initial '
-                  'temperature'
-        ):
-            test_tube.calculate_initial_pressure(
-                {'H2': 1, 'O2': 0.5},
-                'gri30.cti'
-            )
-
-    def test_calculate_initial_pressure_no_pressure(self):
-        test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
-        )
-        test_tube.initial_temperature = quant(75, 'degF')
-        test_tube.max_pressure = None
-        with pytest.raises(
-            ValueError,
-            match='cannot calculate initial pressure without max pressure'
-        ):
-            test_tube.calculate_initial_pressure(
-                {'H2': 1, 'O2': 0.5},
-                'gri30.cti'
-            )
+        assert error <= 0.0005
 
     def test_lookup_flange_class(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.max_pressure = test_tube._units.quant(125, 'bar')
         test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
-        assert test_tube.lookup_flange_class() == '1500'
+        assert test_tube.lookup_flange_class() == 1500
 
     def test_lookup_flange_class_bad_material(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
         test_tube.max_pressure = test_tube._units.quant(125, 'bar')
         test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
-        assert test_tube.lookup_flange_class() == '1500'
+        assert test_tube.lookup_flange_class() == 1500
 
     def test_lookup_flange_class_bad_temperature(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         test_temperatures = [
@@ -1458,7 +1383,10 @@ class TestTube:
         test_tube.max_pressure = test_tube._units.quant(125, 'bar')
 
         for temperature in test_temperatures:
-            test_tube.initial_temperature = temperature
+            # fake out the initial temperature set, because using the property
+            # directly causes flange class to be calculated. Direct calculation
+            # isn't desirable for this test because it is less direct.
+            test_tube._properties['initial_temperature'] = temperature
             with pytest.raises(
                     ValueError,
                     match='Temperature out of range.'
@@ -1467,24 +1395,22 @@ class TestTube:
 
     def test_lookup_flange_class_bad_pressure(self):
         test_tube = tube.Tube(
-            self.material,
-            self.schedule,
-            self.nominal_size,
-            self.welded,
-            self.safety_factor
+            material=self.material,
+            schedule=self.schedule,
+            nominal_size=self.nominal_size,
+            welded=self.welded,
+            safety_factor=self.safety_factor
         )
 
         test_tube.initial_temperature = test_tube._units.quant(350, 'degC')
 
-        test_pressures = [
-            test_tube._units.quant(-10, ureg.bar),
-            test_tube._units.quant(350, ureg.bar)
-        ]
-
-        for pressure in test_pressures:
-            test_tube.max_pressure = pressure
-            with pytest.raises(
-                    ValueError,
-                    match='Pressure out of range.'
-            ):
-                test_tube.lookup_flange_class()
+        test_pressure = test_tube._units.quant(350, ureg.bar)
+        # fake out the initial pressure set, because using the property
+        # directly causes flange class to be calculated. Direct calculation
+        # isn't desirable for this test because it is less direct.
+        test_tube._properties['max_pressure'] = test_pressure
+        with pytest.raises(
+                ValueError,
+                match='Pressure out of range.'
+        ):
+            test_tube.lookup_flange_class()

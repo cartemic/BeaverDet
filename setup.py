@@ -30,7 +30,6 @@ install_requires = [
     'sympy',
     'pint',
     'cantera',
-    'sd2',
     'nptdms',
     'scipy'
 ]

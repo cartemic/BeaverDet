@@ -173,7 +173,8 @@ def calculate_reflected_shock_state(
         initial_pressure,
         species_dict,
         mechanism,
-        ureg
+        ureg=pint.UnitRegistry(),
+        use_multiprocessing=False
 ):
     """
     Calculates the thermodynamic and chemical state of a reflected shock
@@ -191,6 +192,9 @@ def calculate_reflected_shock_state(
         Mechanism to use for chemical calculations, e.g. 'gri30.cti'
     ureg : pint.UnitRegistry
         Pint unit registry
+    use_multiprocessing : bool
+        True to use multiprocessing for CJ state calculation, which is faster
+        but requires the function to be run from __main__
 
     Returns
     -------
@@ -208,6 +212,7 @@ def calculate_reflected_shock_state(
     # define gas states
     initial_temperature = initial_temperature.to('K').magnitude
     initial_pressure = initial_pressure.to('Pa').magnitude
+
     initial_gas.TPX = [
         initial_temperature,
         initial_pressure,
@@ -225,7 +230,8 @@ def calculate_reflected_shock_state(
         initial_temperature,
         species_dict,
         mechanism,
-        return_state=True
+        return_state=True,
+        use_multiprocessing=use_multiprocessing
     )
 
     # get reflected state

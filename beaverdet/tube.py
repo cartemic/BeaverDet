@@ -10,7 +10,6 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
-
 import warnings
 import os
 from math import sqrt
@@ -145,15 +144,15 @@ class Bolt:
             # calculate screw tensile area using eq. 9 (p. 1482) in Fasteners
             # section of Machinery's Handbook 26 (also eq. 2a on p. 1490)
             screw_area_tensile = np.pi / 4 * (
-                basic_diameter - 0.9742785 / tpi
-            )**2
+                    basic_diameter - 0.9742785 / tpi
+            ) ** 2
         else:
             # calculate screw tensile area using eq. 2b (p. 1490) in Fasteners
             # section of Machinery's Handbook 26
             screw_area_tensile = np.pi * (
-                e_s_min / 2 -
-                0.16238 / tpi
-            )**2
+                    e_s_min / 2 -
+                    0.16238 / tpi
+            ) ** 2
 
         # calculate screw shear area using eq. 5 (p. 1491) in Fasteners section
         # of Machinery's Handbook 26
@@ -184,20 +183,20 @@ class Bolt:
         # calculate minimum engagement scale factor using eq. 3 (p. 1490) in
         # Fasteners section of Machinery's Handbook 26
         j_factor = (
-            (screw_area_shear * bolt_max_tensile) /
-            (thread['plate area'] * plate_max_tensile)
+                (screw_area_shear * bolt_max_tensile) /
+                (thread['plate area'] * plate_max_tensile)
         )
 
         # calculate minimum thread engagement (corrected for material
         # differences) using eqs. 1 and 4 (pp. 1490-1491) in Fasteners section
         # of Machinery's Handbook 26
         thread['minimum engagement'] = (
-            2 * screw_area_tensile /
-            (k_n_max * np.pi * (
-                1. / 2 + 0.57735 * tpi * (e_s_min - k_n_max)
-            )
-             )
-        ) * j_factor
+            2 * screw_area_tensile / (
+                k_n_max * np.pi * (
+                    1. / 2 + 0.57735 * tpi * (e_s_min - k_n_max)
+                    )
+                )
+            ) * j_factor
 
         return thread
 
@@ -281,18 +280,18 @@ class Bolt:
                                       or '3' in thread_class):
             thread_specs = thread_specs['internal']
         else:
-            raise ValueError('bad thread class')
+            raise ValueError('\nbad thread class')
 
         # ensure property is in the specs dataframe
         if thread_property not in thread_specs.keys():
-            raise KeyError('Thread property \'' +
+            raise KeyError('\nThread property \'' +
                            thread_property +
                            '\' not found. Available specs: ' +
                            "'" + "', '".join(thread_specs.keys()) + "'")
 
         # ensure thread size is in the specs dataframe
         if thread_size not in thread_specs.index:
-            raise KeyError('Thread size \'' +
+            raise KeyError('\nThread size \'' +
                            thread_size +
                            '\' not found')
 
@@ -330,11 +329,11 @@ class DDT:
         try:
             blockage_ratio = float(blockage_ratio)
         except ValueError:
-            raise ValueError('Non-numeric blockage ratio.')
+            raise ValueError('\nNon-numeric blockage ratio.')
 
         # ensure blockage ratio is on 0<BR<1
         if not 0 < blockage_ratio < 1:
-            raise ValueError('Blockage ratio outside of 0<BR<1')
+            raise ValueError('\nBlockage ratio outside of 0<BR<1')
 
         tools.check_pint_quantity(
             pipe_id,
@@ -386,9 +385,9 @@ class DDT:
 
         # ensure blockage diameter < tube diameter
         if tube_inner_diameter.magnitude == 0:
-            raise ValueError('tube ID cannot be 0')
+            raise ValueError('\ntube ID cannot be 0')
         elif blockage_diameter >= tube_inner_diameter:
-            raise ValueError('blockage diameter >= tube diameter')
+            raise ValueError('\nblockage diameter >= tube diameter')
 
         # calculate blockage ratio
         blockage_ratio = (1 - (1 - 2 * blockage_diameter.magnitude /
@@ -451,7 +450,7 @@ class DDT:
         """
 
         if blockage_ratio <= 0 or blockage_ratio > 0.75:
-            raise ValueError('Blockage ratio outside of correlation range')
+            raise ValueError('\nBlockage ratio outside of correlation range')
 
         tools.check_pint_quantity(
             tube_diameter,
@@ -737,9 +736,9 @@ class Window:
         # Ensure safety factor is numeric and > 1
         try:
             if safety_factor < 1:
-                raise ValueError('Window safety factor < 1')
+                raise ValueError('\nWindow safety factor < 1')
         except TypeError:
-            raise TypeError('Non-numeric window safety factor')
+            raise TypeError('\nNon-numeric window safety factor')
 
         thickness = cls.solver(
             length=length.to_base_units().magnitude,
@@ -785,7 +784,7 @@ class Window:
 
         # Ensure that 5 keyword arguments were given
         if kwargs.__len__() != 5:
-            raise ValueError('Incorrect number of arguments sent to solver')
+            raise ValueError('\nIncorrect number of arguments sent to solver')
 
         # Ensure all keyword arguments are correct
         good_arguments = [
@@ -802,7 +801,7 @@ class Window:
                 bad_args.append(arg)
 
         if len(bad_args) > 0:
-            error_string = 'Bad keyword argument:'
+            error_string = '\nBad keyword argument:'
             for arg in bad_args:
                 error_string += '\n' + arg
 
@@ -986,62 +985,150 @@ class Window:
 
 
 class Tube:
+    _all_quantities = {
+        'material',
+        'schedule',
+        'nominal_size',
+        'welded',
+        'initial_pressure',
+        'initial_temperature',
+        'max_pressure',
+        'max_stress',
+        'dynamic_load_factor',
+        'dimensions',
+        'fuel',
+        'oxidizer',
+        'diluent',
+        'equivalence_ratio',
+        'dilution_fraction',
+        'dilution_mode',
+        'mechanism',
+        'safety_factor',
+        'flange_class',
+        'cj_speed',
+        'dimensions',
+        'verbose',
+        'show_warnings'
+    }
+
     def __init__(
             self,
-            material,
-            schedule,
-            nominal_size,
-            welded,
-            safety_factor
+            *,
+            material='316L',
+            schedule='80',
+            nominal_size='6',
+            welded=False,
+            max_stress=None,
+            initial_temperature=(20, 'degC'),
+            max_pressure=None,
+            mechanism='gri30.cti',
+            fuel='CH4',
+            oxidizer='O2:1, N2:3.76',
+            diluent='N2',
+            equivalence_ratio=1,
+            dilution_fraction=0,
+            dilution_mode='mole',
+            safety_factor=4,
+            verbose=False,
+            show_warnings=True,
+            autocalc_initial=False,
+            use_multiprocessing=False
     ):
         """
         Parameters
         ----------
-        material : str
-            Material that pipe is made of, e.g. '316L'
-        schedule : str
-            Pipe schedule, e.g. '80', 'XXS'
-        nominal_size : str
-            Nominal pipe size in inches, e.g. '6' for NPS-6 or '1/4' for
-            NPS-1/4
-        welded : bool
-            True for welded pipe, False for seamless
-        safety_factor : float
-            Desired tube factor of safety
         """
+        self._initializing = True
+
+        # decide whether to allow automatic calculations
+        self._calculate_stress = max_stress is not None
+        self._calculate_max_pressure = max_pressure is not None
+        self._autocalc_initial = bool(autocalc_initial)
 
         # build local unit registry
         self._units = self._UnitSystem()
 
-        # allocate blank instance attributes as None
-        self.max_stress = None
-        self.initial_temperature = None
-        self.initial_pressure = None
-        self.max_pressure = None
-        self.cj_speed = None
-        self.flange_class = None
+        # initiate hidden dict of properties
+        self._properties = dict()
 
-        # make sure material is acceptable
-        self.material = None
-        self.change_material(material)
+        # define all non-input quantities as None
+        inputs = locals()
+        for item in self._all_quantities:
+            self._properties[item] = None
 
-        # assign tube information to self
-        self.safety_factor = safety_factor
-        self.schedule = schedule
+        # decide on use of multiprocessing (requires __main__)
+        self._use_multiprocessing = bool(use_multiprocessing)
+
+        # determine whether or not the tube is welded
+        self._properties['welded'] = bool(welded)
+
+        # check materials list to make sure it's good
+        # define and collect tube materials and groups
+        self._collect_tube_materials()
+        self._get_material_groups()
+        self._check_materials_list()
+        self._collect_material_limits()
+        self._get_flange_limits_from_csv()
+        self.material = material
+        self._pipe_schedules_import()
+        self._mechanisms = tools.find_mechanisms()
+
+        # determine whether or not to report progress or issues to the user
+        self.verbose = bool(verbose)
+        self._show_warnings = bool(show_warnings)
+
+        # initialize dimensions object and set nominal size and schedule
+        self._properties['dimensions'] = self._Dimensions()
         self.nominal_size = nominal_size
-        self.welded = welded
+        self.schedule = schedule
 
-        # get dimensions
-        self.dimensions = self._Dimensions()
-        self._get_dimensions()
+        # set initial temperature to 20 C if not defined
+        # if initial_temperature is None:
+        #     self._properties[
+        #         'initial_temperature'
+        #     ] = self._units.quant(20, 'degC')
+        # else:
+        self.initial_temperature = initial_temperature
 
-    class _Dimensions:
-        def __init__(
-                self
-        ):
-            self.inner_diameter = None
-            self.outer_diameter = None
-            self.wall_thickness = None
+        # set max stress
+        if max_stress is not None:
+            self._properties['max_stress'] = max_stress
+
+            # keep the user's input
+            self._calculate_stress = False
+        else:
+            # allow max stress to be recalculated
+            self._calculate_stress = True
+
+        # set safety factor
+        self.safety_factor = safety_factor
+
+        # set max pressure
+        if max_pressure is not None:
+            self.max_pressure = max_pressure
+            # allow max pressure to be recalculated
+            self._calculate_max_pressure = False
+
+        else:
+            # keep the user's input
+            self._calculate_max_pressure = True
+
+        # set mechanism and reactant mixture
+        if mechanism is not None:
+            self.mechanism = mechanism
+        self.fuel = fuel
+        self.oxidizer = oxidizer
+        self.diluent = diluent
+        self.equivalence_ratio = equivalence_ratio
+        self.dilution_mode = dilution_mode
+        self.dilution_fraction = dilution_fraction
+        self._initializing = False
+
+        # start auto-calculation chain
+        if self._calculate_stress:
+            self.calculate_max_stress()
+        elif self._calculate_max_pressure:
+            self.calculate_max_pressure()
 
     class _UnitSystem:
         def __init__(
@@ -1050,9 +1137,13 @@ class Tube:
             self.ureg = pint.UnitRegistry()
             self.quant = self.ureg.Quantity
 
-    def _get_dimensions(
-            self
-    ):
+    class _Dimensions:
+        def __init__(self):
+            self.inner_diameter = None
+            self.outer_diameter = None
+            self.wall_thickness = None
+
+    def _pipe_schedules_import(self):
         # collect pipe schedules
         file_directory = os.path.join(
             os.path.dirname(
@@ -1067,23 +1158,25 @@ class Tube:
                 file_name
             )
         )
-        schedule_info = pd.read_csv(file_location, index_col=0)
+        self._schedules = pd.read_csv(file_location, index_col=0)
 
-        # find which pipe sizes are available
+    def _dimensions_lookup(self):
         try:
             available_sizes = list(
-                schedule_info[self.schedule].dropna().to_dict().keys()
+                self._schedules[self.schedule].dropna().to_dict().keys()
             )
         except KeyError:
-            raise ValueError('Pipe schedule not found')
+            raise ValueError('\nPipe schedule not found')
 
         # ensure size exists
         if self.nominal_size not in available_sizes:
-            raise ValueError('Nominal size not found for given pipe schedule')
+            raise ValueError(
+                '\nNominal size not found for given pipe schedule'
+            )
 
         # look up/calculate dimensions
-        outer_diameter = schedule_info['OD'][self.nominal_size]
-        wall_thickness = schedule_info[self.schedule][self.nominal_size]
+        outer_diameter = self._schedules['OD'][self.nominal_size]
+        wall_thickness = self._schedules[self.schedule][self.nominal_size]
         inner_diameter = outer_diameter - 2 * wall_thickness
 
         # assign values to self with units
@@ -1100,12 +1193,93 @@ class Tube:
             'in'
         )
 
+        # recalculate stress and pressure
+        if self._calculate_stress:
+            self.calculate_max_stress()
+        elif self._calculate_max_pressure:
+            # this is elif because the change in max stress will trigger
+            # recalculation of max pressure if required
+            self.calculate_max_pressure()
+        else:
+            pass
+
+    @property
+    def autocalc_initial(self):
+        """
+        Determines whether or not to auto-calculate max initial pressure.
+        Defaults to False because this calculation takes a bit of time.
+        """
+        return self._autocalc_initial
+
+    @autocalc_initial.setter
+    def autocalc_initial(
+            self,
+            auto
+    ):
+        self._autocalc_initial = bool(auto)
+
+    @property
+    def show_warnings(self):
+        """
+        Determines whether or not to show warnings.
+        """
+        return self._show_warnings
+
+    @show_warnings.setter
+    def show_warnings(
+            self,
+            show
+    ):
+        self._show_warnings = bool(show)
+
+    @property
+    def available_pipe_sizes(self):
+        """
+        A list of available pipe sizes for detonation tube construction. Cannot
+        be set manually.
+        """
+        return list(self._schedules.index)
+
+    @available_pipe_sizes.setter
+    def available_pipe_sizes(
+            self,
+            _
+    ):
+        # the user doesn't need to update this, ignore their input
+        raise PermissionError(
+            '\nPipe sizes can not be set manually.'
+        )
+
+    @property
+    def available_pipe_schedules(self):
+        """
+        A list of available pipe schedules for detonation tube construction for
+        the current pipe size. Cannot be set manually.
+        """
+        schedules = self._schedules.loc[self.nominal_size].dropna().index[1:]
+        return list(schedules)
+
+    @available_pipe_schedules.setter
+    def available_pipe_schedules(
+            self,
+            _
+    ):
+        # the user doesn't need to update this, ignore their input
+        raise PermissionError(
+            '\nPipe schedules can not be set manually.'
+        )
+
     def _check_materials_list(
             self
     ):
         """
         Makes sure that the materials in materials_list.csv have stress limits
-        and flange ratings. This function relies on get_material_groups().
+        and flange ratings. This function relies on _get_material_groups(), and
+        either raises an error or returns True.
+
+        Returns
+        -------
+        True
         """
         # collect files
         file_directory = os.path.join(
@@ -1117,12 +1291,11 @@ class Tube:
         my_files = os.listdir(file_directory)
         flange_ratings = [file for file in my_files if "flange" in file.lower()]
         stress_limits = [file for file in my_files if "stress" in file.lower()]
-        materials_list = self._get_material_groups()
 
         # make sure things were actually loaded
         if not bool(flange_ratings + stress_limits):
             raise FileNotFoundError(
-                'no files containing "flange" or "stress" found'
+                '\nno files containing "flange" or "stress" found'
             )
 
         # initialize an error string and error indicator. Error string will be
@@ -1135,7 +1308,7 @@ class Tube:
         # other types are permitted, but will raise a warning
         for file in stress_limits:
             if ('welded' not in file.lower()) and (
-                    'seamless' not in file.lower()):
+                    'seamless' not in file.lower()) and self.show_warnings:
                 # warn that something is weird
                 warnings.warn(
                     file + 'does not indicate whether it is welded or seamless'
@@ -1154,18 +1327,18 @@ class Tube:
 
                 # check to make sure that each material in the list of available
                 # materials has a stress limit curve for the current limit type
-                for item in materials_list:
+                for item in self._materials['Grade'].values.astype(str):
                     if item not in materials:
                         # a material is missing from the limits spreadsheet.
                         # indicate that an error has occurred, and add it to the
                         # error string.
-                        error_string += 'Material ' + item + ' not found in '\
-                                        + file + '\n'
+                        error_string += 'Material ' + item + ' not found in ' \
+                                        + file_location + '\n'
                         has_errors = True
 
         # find out which material groups need to be inspected
         groups = set()
-        for _, group in materials_list.items():
+        for group in self._materials['Group'].values.astype(str):
             groups.add(group.replace('.', '_'))
 
         # check folder to make sure the correct files exist
@@ -1181,14 +1354,6 @@ class Tube:
 
         return True
 
-    def _check_current_material(
-            self,
-            material
-    ):
-        good_materials = self._collect_tube_materials()
-        if material not in good_materials['Grade'].values:
-            raise ValueError('Pipe material not found in materials_list.csv')
-
     def _get_material_groups(
             self
     ):
@@ -1200,14 +1365,13 @@ class Tube:
         -------
         groups_dict
         """
-        materials_dataframe = self._collect_tube_materials()
-        grades = materials_dataframe.Grade.values.astype(str)
-        groups = materials_dataframe.Group.values.astype(str)
+        grades = self._materials.Grade.values.astype(str)
+        groups = self._materials.Group.values.astype(str)
         groups_dict = {}
         for [grade, group] in zip(grades, groups):
             groups_dict[grade] = group
 
-        return groups_dict
+        self._material_groups = groups_dict
 
     def _collect_tube_materials(
             self,
@@ -1243,11 +1407,11 @@ class Tube:
                 materials_dataframe = pd.read_csv(file_location)
                 # type: pd.DataFrame
             except pd.errors.EmptyDataError:
-                raise ValueError(file_name + ' is empty')
+                raise ValueError('\n' + file_name + ' is empty')
 
         else:
             # raise an exception if the file doesn't exist
-            raise ValueError(file_name + ' does not exist')
+            raise ValueError('\n' + file_name + ' does not exist')
 
         # apply units
         materials_dataframe.ElasticModulus = [
@@ -1259,58 +1423,72 @@ class Tube:
             materials_dataframe.Density.values
         ]  # type: pd.DataFrame
 
-        return materials_dataframe
+        self._materials = materials_dataframe
 
-    def _get_flange_limits_from_csv(
+    @property
+    def available_tube_materials(self):
+        """
+        A list of available materials for detonation tube construction. Cannot
+        be set manually.
+        """
+        return list(self._materials['Grade'])
+
+    @available_tube_materials.setter
+    def available_tube_materials(
             self,
-            group=2.3
+            _
     ):
+        # the user doesn't need to update this, ignore their input
+        raise PermissionError(
+            '\nAvailable tube materials can not be set manually.'
+        )
+
+    def _get_flange_limits_from_csv(self):
         """
         Reads in flange pressure limits as a function of temperature for
         different pressure classes per ASME B16.5. Temperature is in Centigrade
         and pressure is in bar.
-
-        Parameters
-        ----------
-        group : float or str
-            ASME B16.5 material group (defaults to 2.3). Only groups 2.1, 2.2,
-            and 2.3 are included in the current release.
-
-        Returns
-        -------
-        flange_limits: pd.DataFrame
-            First column of is temperature. All other columns' keys are flange
-            classes, and the values are the appropriate pressure limits in bar.
         """
+        groups = ['2.1', '2.2', '2.3']
+        self._flange_limits = {group: None for group in groups}
 
-        # ensure group is valid
-        group = str(group).replace('.', '_')
-        file_directory = os.path.join(
-            os.path.dirname(os.path.relpath(__file__)),
-            'lookup_data')
-        file_name = 'ASME_B16_5_flange_ratings_group_' + group + '.csv'
-        file_location = os.path.relpath(os.path.join(file_directory, file_name))
+        for group in groups:
+            # ensure group is valid
+            file_group = str(group).replace('.', '_')
+            file_directory = os.path.join(
+                os.path.dirname(os.path.relpath(__file__)),
+                'lookup_data')
+            file_name = 'ASME_B16_5_flange_ratings_group_' + file_group + \
+                        '.csv'
+            file_location = os.path.relpath(
+                os.path.join(file_directory, file_name)
+            )
+            if not os.path.exists(file_location):
+                raise FileNotFoundError(
+                    '\n' + file_location + 'not found'
+                )
 
-        if os.path.exists(file_location):
             # import the correct .csv file as a pandas dataframe
             flange_limits = pd.read_csv(file_location)
 
-            # ensure all temperatures and pressures are floats, and check to
-            # make sure pressures are greater than zero
-            values = flange_limits.values
-            for row_number, row in enumerate(values):
-                for column_number, item in enumerate(row):
-                    # ensure each item is a float and assign non-numeric values
-                    # a value of zero
-                    try:
-                        values[row_number][column_number] = float(item)
-                    except ValueError:
-                        values[row_number][column_number] = 0.
+            # ensure all temperatures and pressures are floats
+            new_data = pd.np.array([
+                pd.to_numeric(flange_limits[column].values, errors='coerce')
+                for column in flange_limits.columns
+            ]).transpose()
+            flange_limits = pd.DataFrame(
+                columns=flange_limits.columns,
+                data=new_data
+            ).fillna(0)
 
-                    if column_number > 0:
-                        # these are pressures, which must be positive
-                        if values[row_number][column_number] < 0:
-                            raise ValueError('Pressure less than zero.')
+            # make sure pressures are positive
+            if not all(
+                flange_limits.loc[
+                    :,
+                    flange_limits.columns != 'Temperature'
+                ].fillna(0).values.flatten() >= 0
+            ):
+                raise ValueError('\nPressure less than zero.')
 
             # add units to temperature column
             flange_limits['Temperature'] = [
@@ -1321,21 +1499,22 @@ class Tube:
             # add units to pressure columns
             for key in flange_limits.keys():
                 if key != 'Temperature':
-                    flange_limits[key] = [
-                        self._units.quant(pressure, 'bar') for pressure in
-                        flange_limits[key]
-                    ]
+                    pressures = []
+                    for pressure in flange_limits[key]:
+                        if pressure < 0:
+                            pressures.append(np.NaN)
+                        else:
+                            pressures.append(self._units.quant(
+                                float(pressure), 'bar')
+                            )
+                    flange_limits[key] = pressures
 
-            return flange_limits
+            self._flange_limits[group] = flange_limits
 
-        else:
-            # the user gave a bad group label
-            raise ValueError('{0} is not a valid group'.format(group))
-
-    def _get_pipe_stress_limits(
-            self,
-            welded=False
-    ):
+    def _collect_material_limits(self):
+        """
+        Loads in material limits from cav.
+        """
         self._check_materials_list()
 
         # collect files
@@ -1346,7 +1525,7 @@ class Tube:
             'lookup_data'
         )
         file_name = 'ASME_B31_1_stress_limits_'
-        if welded:
+        if self.welded:
             file_name += 'welded.csv'
         else:
             file_name += 'seamless.csv'
@@ -1354,8 +1533,10 @@ class Tube:
             file_directory,
             file_name
         )
-        material_limits = pd.read_csv(file_location, index_col=0)
-        material_limits = material_limits[self.material]
+        self._material_limits = pd.read_csv(file_location, index_col=0)
+
+    def _get_pipe_stress_limits(self):
+        material_limits = self._material_limits[self.material]
 
         # apply units
         limits = {
@@ -1370,6 +1551,7 @@ class Tube:
 
     def _get_pipe_dlf(
             self,
+            cj_vel,
             plus_or_minus=0.1
     ):
         """
@@ -1399,12 +1581,11 @@ class Tube:
         """
         if not (0 < plus_or_minus < 1):
             raise ValueError(
-                'plus_or_minus factor not between 0 and 1'
+                '\nplus_or_minus factor not between 0 and 1'
             )
 
         # get material properties
-        properties_dataframe = self._collect_tube_materials().\
-            set_index('Grade')
+        properties_dataframe = self._materials.set_index('Grade')
         elastic_modulus = (
             properties_dataframe['ElasticModulus'][self.material].to
             ('Pa')
@@ -1418,9 +1599,8 @@ class Tube:
         # set geometry
         # first /2 for averaging
         # second /2 to to convert diameter to radius
-        radius = (
-                self.dimensions.outer_diameter + self.dimensions.inner_diameter
-        ) / 2. / 2.
+        radius = (self.dimensions.outer_diameter +
+                  self.dimensions.inner_diameter) / 2. / 2.
 
         # calculate critical velocity
         crit_velocity = (
@@ -1436,76 +1616,207 @@ class Tube:
             crit_velocity * (1. - plus_or_minus)
         ]
 
-        if self.cj_speed < bounds[1]:
+        if cj_vel < bounds[1]:
             dynamic_load_factor = 1
-        elif self.cj_speed > bounds[0]:
+        elif cj_vel > bounds[0]:
             dynamic_load_factor = 2
         else:
             dynamic_load_factor = 4
 
         return dynamic_load_factor
 
-    def change_nominal_size(
+    def _get_property(
             self,
-            nominal_size
+            current_property
     ):
         """
+        Looks up a property from the hidden property dictionary _all_quantities.
+
         Parameters
         ----------
-        nominal_size : str
-            Nominal pipe size in inches, e.g. '6' for NPS-6 or '1/4' for
-            NPS-1/4
-        """
-        self.nominal_size = nominal_size
-        self._get_dimensions()
-
-    def change_schedule(
-            self,
-            schedule
-    ):
-        """
-        Parameters
-        ----------
-        schedule : str
-            Pipe schedule, e.g. '80', 'XXS'
-        """
-        self.schedule = schedule
-        self._get_dimensions()
-
-    def change_material(
-            self,
-            material
-    ):
-        """
-        Parameters
-        ----------
-        material : str
-            Material that pipe is made of, e.g. '316L'
-        """
-        # make sure material is okay and store value
-        self._check_materials_list()
-        self._check_current_material(material)
-        self.material = material
-
-        # recalculate max stress if initial temperature exists
-        if self.initial_temperature:
-            self.calculate_max_stress(self.initial_temperature)
-
-    def calculate_max_stress(
-            self,
-            initial_temperature
-    ):
-        """
-        Parameters
-        ----------
-        initial_temperature : pint quantity
-            Pint quantity of initial mixture temperature
+        current_property
 
         Returns
         -------
-        max_stress : pint quantity
-            Pint quantity of maximum allowable tube stress
+        whichever property you asked for
         """
+        if self._properties[current_property] is not None:
+            return self._properties[current_property]
+        else:
+            if self.show_warnings:
+                warnings.warn('{0} has not been defined.'
+                              .format(current_property))
+            return None
+
+    def _set_property(
+            self,
+            current_property,
+            value
+    ):
+        if current_property in Tube._all_quantities:
+            if (
+                    (self._properties[current_property] is None)
+                    or
+                    (isinstance(
+                        value,
+                        type(self._properties[current_property])
+                    ))
+            ):
+                # if the quantity is currently None or the type is the same as
+                # the previously set quantity, go ahead and set the new one
+                self._properties[current_property] = value
+
+            elif current_property == 'mechanism' and (
+                    isinstance(value, str) or isinstance(value, dict)
+            ):
+                # an exception to the type matching rule is mechanism, which
+                # can be either a str or dict
+                self._properties[current_property] = value
+
+            else:
+                # the quantity is the wrong type, don't set it
+                raise TypeError('\nWrong quantity type')
+
+        else:
+            # the quantity being set is not on the approved list
+            raise ValueError(
+                '\nBad quantity designator. Approved quantities are:\n' +
+                '\n'.join(self._all_quantities)
+            )
+
+    @property
+    def nominal_size(self):
+        """
+        The nominal pipe size (NPS) of the pipe used to construct the detonation
+        tube. NPS should be set using a string, e.g.
+
+        `mytube.nominal_size = '1/4'`
+
+        for NPS-1/4 or
+
+        `mytube.nominal_size = '6'`
+
+        for NPS-6.
+        """
+        return self._get_property('nominal_size')
+
+    @nominal_size.setter
+    def nominal_size(
+            self,
+            nominal_size
+    ):
+        nominal_size = str(nominal_size)
+        if nominal_size not in self.available_pipe_sizes:
+            raise ValueError(
+                '\n{0} is not a valid pipe size. '.format(nominal_size) +
+                'For a list of available sizes, try \n' +
+                '`mytube.available_pipe_sizes`'
+            )
+        self._set_property('nominal_size', nominal_size)
+        if not self._initializing:
+            self._dimensions_lookup()
+
+    @property
+    def schedule(self):
+        """
+        Pipe schedule as a string, e.g. '80', 'XXS'
+        """
+        return self._get_property('schedule')
+
+    @schedule.setter
+    def schedule(
+            self,
+            schedule
+    ):
+        schedule = str(schedule)
+        if schedule not in self.available_pipe_schedules:
+            raise ValueError(
+                '\n{0} is not a valid pipe schedule for this nominal size. '
+                .format(schedule) +
+                'For a list of available schedules, try \n' +
+                '`mytube.available_pipe_schedules`'
+            )
+        self._set_property('schedule', schedule)
+        self._dimensions_lookup()
+
+    @property
+    def dimensions(self):
+        """
+        Cross-sectional dimensions of the pipe used to build the detonation
+        tube.
+        """
+        return self._get_property('dimensions')
+
+    @dimensions.setter
+    def dimensions(
+            self,
+            _
+    ):
+        raise PermissionError(
+            '\nTube dimensions are looked up based on nominal pipe size and ' +
+            'schedule, not set. Try `mytube.schedule()` or ' +
+            '`mytube.nominal_size()` instead.'
+        )
+
+    @property
+    def material(self):
+        """
+        Material that pipe is made of as a string, e.g. '316L'
+        """
+        return self._get_property('material')
+
+    @material.setter
+    def material(
+            self,
+            material
+    ):
+        # make sure material is okay and store value
+        material = str(material)
+        if material not in self._materials['Grade'].values:
+            raise ValueError('\nPipe material not found. For a list of '
+                             'available materials try:\n'
+                             '`mytube.available_tube_materials`')
+        else:
+            self._properties['material'] = material
+            if self._calculate_stress and not self._initializing:
+                self.calculate_max_stress()
+
+    @property
+    def welded(self):
+        """
+        True for welded pipe, False for seamless.
+        """
+        return self._get_property('welded')
+
+    @welded.setter
+    def welded(
+            self,
+            welded
+    ):
+        self._set_property('welded', bool(welded))
+
+        # recalculate max stress
+        if self._calculate_stress and not self._initializing:
+            self.calculate_max_stress()
+
+    @property
+    def initial_temperature(self):
+        """
+        Initial temperature for reactant mixture. Can be set with either a pint
+        quantity or an iterable of (temperature, 'units').
+        """
+        return self._get_property('initial_temperature')
+
+    @initial_temperature.setter
+    def initial_temperature(
+            self,
+            initial_temperature
+    ):
+        # check to see if input was an iterable
+        initial_temperature = self._parse_quant_input(
+            initial_temperature
+        )
+
         # ensure temperature is a pint quantity, and convert it to the local
         # unit registry to avoid problems
         tools.check_pint_quantity(
@@ -1513,16 +1824,533 @@ class Tube:
             'temperature',
             ensure_positive=True
         )
-        initial_temperature = self._units.quant(
-            initial_temperature.magnitude,
-            initial_temperature.units.format_babel()
+
+        self._set_property('initial_temperature', initial_temperature)
+        if not self._initializing:
+            if not self._calculate_stress:
+                self.lookup_flange_class()
+                if self.autocalc_initial:
+                    self.calculate_initial_pressure()
+            else:
+                self.calculate_max_stress()
+                if not self._calculate_max_pressure:
+                    self.lookup_flange_class()
+                else:
+                    # flange lookup and initial pressure calc will spring from
+                    # max pressure calculation
+                    pass
+
+    def _parse_quant_input(
+            self,
+            quant_input
+    ):
+        """
+        Converts an iterable of (magnitude, 'units') to a pint quantity or
+        converts a pint quantity to the local registry.
+
+        Parameters
+        ----------
+        quant_input
+
+        Returns
+        -------
+        input as a pint quantity
+        """
+        if hasattr(quant_input, 'magnitude'):
+            return self._units.quant(
+                quant_input.magnitude,
+                quant_input.units.format_babel()
+            )
+        elif hasattr(quant_input, '__iter__'):
+            if len(quant_input) != 2 and self.show_warnings:
+                warnings.warn('too many arguments given, ignoring extras')
+
+            return self._units.quant(float(quant_input[0]), quant_input[1])
+        else:
+            raise ValueError(
+                'bad quantity input: {0}'.format(quant_input)
+            )
+
+    @property
+    def safety_factor(self):
+        """
+        Desired safety factor for the detonation tube
+        """
+        return self._get_property('safety_factor')
+
+    @safety_factor.setter
+    def safety_factor(
+            self,
+            safety_factor
+    ):
+        self._set_property('safety_factor', float(safety_factor))
+
+        if self._calculate_max_pressure:
+            self.calculate_max_pressure()
+
+    @property
+    def max_stress(self):
+        """
+        Maximum allowable pipe stress. Can be set with either a pint quantity
+        or an iterable of (max stress, 'units').
+        """
+        return self._get_property('max_stress')
+
+    @max_stress.setter
+    def max_stress(
+            self,
+            max_stress
+    ):
+        # check to see if input was an iterable
+        max_stress = self._parse_quant_input(
+            max_stress
         )
-        self.initial_temperature = initial_temperature
+
+        # make sure input stress is a pint quantity with pressure units
+        # and use it
+        tools.check_pint_quantity(
+            max_stress,
+            'pressure',
+            ensure_positive=True
+        )
+        self._set_property('max_stress', max_stress)
+
+        # keep the user-input max stress
+        self._calculate_stress = False
+
+        if self._calculate_max_pressure:
+            self.calculate_max_pressure()
+
+    @property
+    def max_pressure(self):
+        """
+        Maximum allowable pressure within the detonation tube, which should
+        correspond to the reflection pressure. Can be set with either a pint
+        quantity or an iterable of (max pressure, 'units').
+        """
+        return self._get_property('max_pressure')
+
+    @max_pressure.setter
+    def max_pressure(
+            self,
+            max_pressure
+    ):
+        # check to see if input was an iterable
+        max_pressure = self._parse_quant_input(
+            max_pressure
+        )
+
+        # make sure input pressure is a pint quantity with pressure units
+        # and use it
+        tools.check_pint_quantity(
+            max_pressure,
+            'pressure',
+            ensure_positive=True
+        )
+        self._set_property('max_pressure', max_pressure)
+
+        # keep the user-input max pressure
+        self._calculate_max_pressure = False
+
+        self.lookup_flange_class()
+        if self.autocalc_initial:
+            self.calculate_initial_pressure()
+
+    @property
+    def mechanism(self):
+        """
+        Mechanism file for Cantera solution objects.
+        """
+        return self._get_property('mechanism')
+
+    @mechanism.setter
+    def mechanism(
+            self,
+            mechanism
+    ):
+        if mechanism not in self._mechanisms:
+            raise ValueError('\nMechanism not found. Available mechanisms:\n' +
+                             '\n'.join(self._mechanisms))
+        else:
+            self._set_property('mechanism', mechanism)
+
+            if not self._initializing:
+                species = {'fuel': self.fuel,
+                           'oxidizer': self.oxidizer,
+                           'diluent': self.diluent}
+                for component, item in species.items():
+                    try:
+                        self._check_species(item)
+                    except ValueError:
+                        if self.show_warnings:
+                            warnings.warn(str(item) +
+                                          ' not found in mechanism ' +
+                                          self.mechanism +
+                                          ', please define a new ' +
+                                          component)
+                        self._properties[component] = None
+                        self._reactant_mixture = None
+
+    def _check_species(
+            self,
+            species
+    ):
+        """
+        Checks to make sure a species (fuel, oxidizer, diluent) is in the
+        current mechanism.
+        """
+        gas = ct.Solution(self.mechanism)
+
+        try:
+            components = species.replace(' ', '').split(',')
+            if len(components) > 1:
+                # multiple components given, convert to a dict
+                mixture = dict()
+                for component in components:
+                    current_species = component.split(':')
+                    mixture[current_species[0]] = float(current_species[1])
+            else:
+                # single component as string
+                mixture = {species: 1}
+
+            gas.X = mixture
+
+        except ct.CanteraError as err:
+            err = str(err)
+            start_loc = err.find('Unknown')
+            end_loc = err.rfind('\n*******************************************'
+                                '****************************\n')
+            raise ValueError('\n' + err[start_loc:end_loc])
+
+        except AttributeError:
+            # this happens when a component is None, which occurs when the
+            # mechanism is changed and the component is not in that mechanism.
+            # Passing because the _get_property method already generates a
+            # warning for this.
+            pass
+
+    @property
+    def fuel(self):
+        """
+        Fuel to use in the reactant mixture, as a string. Must be included in
+        the mechanism.
+        """
+        return self._get_property('fuel')
+
+    @fuel.setter
+    def fuel(
+            self,
+            fuel
+    ):
+        self._check_species(fuel)
+        self._set_property('fuel', fuel)
+
+        if not self._initializing:
+            self._build_gas_mixture()
+
+    @property
+    def oxidizer(self):
+        """
+        Oxidizer to use in the reactant mixture, as a string. Must be included
+        in the mechanism.
+        """
+        return self._get_property('oxidizer')
+
+    @oxidizer.setter
+    def oxidizer(
+            self,
+            oxidizer
+    ):
+        self._check_species(oxidizer)
+        self._set_property('oxidizer', oxidizer)
+
+        if not self._initializing:
+            self._build_gas_mixture()
+
+    @property
+    def diluent(self):
+        """
+        Diluent to use in the reactant mixture, as a string. Must be included in
+        the mechanism.
+        """
+        return self._get_property('diluent')
+
+    @diluent.setter
+    def diluent(
+            self,
+            diluent
+    ):
+        self._check_species(diluent)
+        self._set_property('diluent', diluent)
+
+        if not self._initializing:
+            self._build_gas_mixture()
+
+    @property
+    def equivalence_ratio(self):
+        """
+        Desired reactant equivalence ratio. Cantera treats equivalence ratios
+        less than or equal to zero as 100% oxidizer.
+        """
+        return self._get_property('equivalence_ratio')
+
+    @equivalence_ratio.setter
+    def equivalence_ratio(
+            self,
+            equivalence_ratio
+    ):
+        # note: if equivalence is <=0, cantera makes the mixture 100% oxidizer
+        equivalence_ratio = float(equivalence_ratio)
+        self._set_property('equivalence_ratio', equivalence_ratio)
+
+        if not self._initializing:
+            self._build_gas_mixture()
+
+    @property
+    def dilution_mode(self):
+        """
+        method of dilution (mass or mole)
+        """
+        return self._get_property('dilution_mode')
+
+    @dilution_mode.setter
+    def dilution_mode(
+            self,
+            dilution_mode
+    ):
+        dilution_mode = str(dilution_mode)
+        if any([dilution_mode == 'mole',
+                dilution_mode == 'mol',
+                dilution_mode == 'molar']):
+            # kind of easy to screw this one up
+            dilution_mode = 'mole'
+        elif dilution_mode == 'mass':
+            # explicit is better, leaving this in.
+            pass
+        else:
+            raise ValueError('\nBad dilution mode. Please use \'mole\' or'
+                             ' \'mass\'')
+
+        self._set_property('dilution_mode', dilution_mode)
+
+        if not self._initializing:
+            self._build_gas_mixture()
+
+    @property
+    def dilution_fraction(self):
+        """
+        Fraction of gas to be made up of diluent, by either mass or mole
+        depending on dilution_mode.
+        """
+        return self._get_property('dilution_fraction')
+
+    @dilution_fraction.setter
+    def dilution_fraction(
+            self,
+            dilution_fraction
+    ):
+        dilution_fraction = float(dilution_fraction)
+        if dilution_fraction < 0 or dilution_fraction > 1:
+            raise ValueError(
+                '\ndilution fraction must be between 0 and 1'
+            )
+        self._set_property('dilution_fraction', dilution_fraction)
+        self._build_gas_mixture()
+
+    def _build_gas_mixture(self):
+        """
+        Builds a reactant gas mixture from fuel, oxidizer, diluent, equivalence
+        ratio, dilution fraction, and dilution mode
+        """
+        # if any of the components are None, the mixture can't be built. The
+        # case of diluent=None is handled during the dilution step, meaning
+        # that a mixture with no diluent won't crash the whole system.
+        if not any([
+            self.fuel is None,
+            self.oxidizer is None
+        ]):
+            # initialize gas object
+            gas = ct.Solution(self.mechanism)
+
+            # set equivalence ratio
+            gas.set_equivalence_ratio(
+                self.equivalence_ratio,
+                self.fuel,
+                self.oxidizer
+            )
+
+            def dilute():
+                return '{0}: {1} {2}: {3} {4}: {5}'.format(
+                    self.diluent,
+                    self.dilution_fraction,
+                    self.fuel,
+                    new_fuel_fraction,
+                    self.oxidizer,
+                    new_oxidizer_fraction)
+
+            # apply dilution
+            if self.dilution_fraction > 0:
+                if self.diluent is None:
+                    raise ValueError(
+                        '\nCannot dilute mixture, please define a diluent'
+                    )
+                else:
+                    if self.dilution_mode == 'mole':
+                        mole_fractions = gas.mole_fraction_dict()
+                        new_fuel_fraction = (1 - self.dilution_fraction) * \
+                            mole_fractions[self.fuel]
+                        new_oxidizer_fraction = (1 - self.dilution_fraction) * \
+                            mole_fractions[self.oxidizer]
+                        gas.X = dilute()
+                        self._reactant_mixture = gas.mole_fraction_dict()
+                    else:
+                        mass_fractions = gas.mass_fraction_dict()
+                        new_fuel_fraction = (1 - self.dilution_fraction) * \
+                            mass_fractions[self.fuel]
+                        new_oxidizer_fraction = (1 - self.dilution_fraction) * \
+                            mass_fractions[self.oxidizer]
+                        gas.Y = dilute()
+                        self._reactant_mixture = gas.mass_fraction_dict()
+            else:
+                # undiluted
+                self._reactant_mixture = gas.mole_fraction_dict()
+
+    @property
+    def reactant_mixture(self):
+        """
+        Reactant mixture for detonations.
+        """
+        return self._reactant_mixture
+
+    @reactant_mixture.setter
+    def reactant_mixture(
+            self,
+            _
+    ):
+        raise PermissionError(
+            '\nReactant mixture is automatically adjusted based on:\n'
+            '    - fuel\n'
+            '    - oxidizer\n'
+            '    - equivalence ratio\n'
+            '    - diluent\n'
+            '    - dilution fraction\n'
+            '    - dilution mode'
+        )
+
+    @property
+    def initial_pressure(self):
+        """
+        Maximum initial pressure resulting in the desired safety factor.
+        """
+        return self._get_property('initial_pressure')
+
+    @initial_pressure.setter
+    def initial_pressure(
+            self,
+            _
+    ):
+        raise PermissionError(
+            '\nInitial pressure must be calculated, not set. Try'
+            ' `mytube.calculate_initial_pressure()` instead.'
+        )
+
+    @property
+    def dynamic_load_factor(self):
+        """
+        Factor accounting for the transient tube response to the detonation, per
+        J. Shepherd, "Structural Response of Piping to Internal Gas Detonation",
+        Journal of Pressure Vessel Technology, vol. 131, issue 3, pp. 031204,
+        2009
+        """
+        return self._get_property('dynamic_load_factor')
+
+    @dynamic_load_factor.setter
+    def dynamic_load_factor(
+            self,
+            _
+    ):
+        raise PermissionError(
+            '\nDynamic load factor must be calculated, not set. DLF calculation'
+            ' occurs during initial pressure calculations. Try'
+            ' `mytube.calculate_initial_pressure()` instead.'
+        )
+
+    @property
+    def cj_speed(self):
+        """
+        Chapman-Jouguet speed resulting from a detonation in the reactant
+        mixture.
+        """
+        return self._get_property('cj_speed')
+
+    @cj_speed.setter
+    def cj_speed(
+            self,
+            _
+    ):
+        raise PermissionError(
+            '\nCJ speed must be calculated, not set. CJ speed calculation'
+            ' occurs during initial pressure calculations. Try'
+            ' `mytube.calculate_initial_pressure()` instead.'
+        )
+
+    @property
+    def flange_class(self):
+        """
+        Minimum safe flange class to be used in tube construction.
+        """
+        return self._get_property('flange_class')
+
+    @flange_class.setter
+    def flange_class(
+            self,
+            _
+    ):
+        raise PermissionError(
+            '\nFlange class must be calculated looked up based on max pressure,'
+            ' not set. Try `mytube.lookup_flange_class()` instead.'
+        )
+
+    @property
+    def verbose(self):
+        """
+        If True, calculation status will be printed to the console.
+        """
+        return self._get_property('verbose')
+
+    @verbose.setter
+    def verbose(
+            self,
+            verbose
+    ):
+        if verbose:
+            verbose = True
+        else:
+            verbose = False
+
+        self._set_property('verbose', verbose)
+
+    def calculate_max_stress(self):
+        """
+        Finds the maximum allowable stress of a tube material at the tube's
+        initial temperature
+
+        Returns
+        -------
+        max_stress : pint quantity
+            Pint quantity of maximum allowable tube stress
+        """
+        # Requires: initial_temperature, welded, material
+        # ---------------------------------------------------------------------
+        # initial temperature has default on __init__
+        # welded has default on __init__
+        # material has default on __init__
+
+        if self.verbose:
+            print('calculating max stress... ', end='')
 
         # look up stress-temperature limits and units
-        stress_limits = self._get_pipe_stress_limits(
-            self.welded
-        )
+        stress_limits = self._get_pipe_stress_limits()
         stress_units = stress_limits['stress'][0]
         stresses = stress_limits['stress'][1]
         temp_units = stress_limits['temperature'][0]
@@ -1532,88 +2360,83 @@ class Tube:
         # temperatures, otherwise the np.interp "results are nonsense" per
         # scipy docs
         if not np.all(np.diff(temperatures) > 0):
-            raise ValueError('Stress limits require temperatures to be ' +
+            raise ValueError('\nStress limits require temperatures to be ' +
                              'monotonically increasing')
 
         # interpolate max stress
-        self.max_stress = self._units.quant(
+        # noinspection PyAttributeOutsideInit
+        max_stress = self._units.quant(
             np.interp(
-                initial_temperature.to(temp_units).magnitude,
+                self.initial_temperature.to(temp_units).magnitude,
                 temperatures,
                 stresses
             ),
             stress_units
         )
 
-        return self.max_stress
+        if self.verbose:
+            print('Done')
+
+        # noinspection PyAttributeOutsideInit
+        self.max_stress = max_stress
+
+        # allow max stress to be recalculated automatically
+        self._calculate_stress = True
+        return max_stress
 
     def calculate_max_pressure(
-            self,
-            max_pressure=False
+            self
     ):
         """
-        Parameters
-        ----------
-        max_pressure : bool False or pint quantity
-            Max pressure input may be either a pint quantity, in which case
-            it represents the maximum allowable pressure from hydrostatic
-            testing, or a boolean False (default), in which case the maximum
-            allowable pressure will be calculated from the limits found in
-            ASME B31.1.
+        Calculates the maximum allowable pressure from the limits found in ASME
+        B31.1, with the option to modify the safety factor via
 
-        Returns
-        -------
-        max_pressure : pint quantity
-            Maximum allowable tube pressure
+        `mytube.safety_factor()`
+
+        and returns it as a pint quantity.
         """
-        if not max_pressure:
-            # user didn't give max pressure
-            # ensure that max stress has been calculated
-            if not self.max_stress:
-                raise ValueError('cannot calculate max pressure' +
-                                 ' without max stress')
 
-            # calculate max pressure using basic longitudinal joint formula
-            # on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
-            mean_diameter = (self.dimensions.outer_diameter +
-                             self.dimensions.inner_diameter) / 2.
-            asme_fs = 4
-            self.max_pressure = (
-                    self.max_stress *
-                    (2 * self.dimensions.wall_thickness) *
-                    asme_fs /
-                    (mean_diameter * self.safety_factor)
-            )
-        else:
-            # make sure input pressure is a pint quantity with pressure units
-            # and use it
-            tools.check_pint_quantity(
-                max_pressure,
-                'pressure',
-                ensure_positive=True
-            )
+        # Requires: max stress, dimensions, safety factor
+        # ---------------------------------------------------------------------
+        # safety factor has default on __init__
+        # dimensions are found from schedule and nominal, which have defaults
+        # max stress is either set by the user or calc'd on __init__
 
-            self.max_pressure = self._units.quant(
-                max_pressure.magnitude,
-                max_pressure.units.format_babel()
-            )
+        if self.verbose:
+            print('calculating max pressure... ', end='')
 
-        return self.max_pressure
+        # get required quantities
+        dimensions = self._properties['dimensions']
+        max_stress = self._properties['max_stress']
+        safety_factor = self._properties['safety_factor']
+
+        # calculate max pressure using basic longitudinal joint formula
+        # on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
+        mean_diameter = (dimensions.outer_diameter +
+                         dimensions.inner_diameter) / 2.
+        asme_fs = 4
+        max_pressure = (
+                max_stress * (2 * dimensions.wall_thickness) *
+                asme_fs / (mean_diameter * safety_factor)
+        )
+
+        if self.verbose:
+            print('Done')
+
+        self.max_pressure = max_pressure
+
+        # allow max pressure to be recalculated automatically
+        self._calculate_max_pressure = True
+        return max_pressure
 
     def calculate_initial_pressure(
             self,
-            species_dict,
-            mechanism,
             error_tol=1e-4,
             max_iterations=500
     ):
         """
         Parameters
         ----------
-        species_dict: dict
-            Dictionary of reactant mixture components
-        mechanism : str
-            Mechanism to use for calculations, e.g. 'gri30.cti'
         error_tol : float
             Relative error tolerance below which initial pressure calculations
             are considered 'good enough'
@@ -1626,62 +2449,79 @@ class Tube:
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
         """
-        # ensure that initial temperature and max pressure have been
-        # calculated
-        if (not self.initial_temperature) and (not self.max_pressure):
-            raise ValueError('cannot calculate initial pressure' +
-                             ' without initial temperature' +
-                             ' and max pressure')
-        elif not self.initial_temperature:
-            raise ValueError('cannot calculate initial pressure' +
-                             ' without initial temperature')
-        elif not self.max_pressure:
-            raise ValueError('cannot calculate initial pressure' +
-                             ' without max pressure')
+        # Requires: reactant_mixture, mechanism, max_pressure, and
+        # initial_temperature
+        # ---------------------------------------------------------------------
+        # reactant mixture is set from args with defaults on __init__
+        # mechanism has default on __init__
+        # max pressure is either set by user or calc'd on __init__
+        # initial temperature is either set by user or calc'd on __init__
 
-        # define error and pressure initial guesses and start solution loop
-        initial_pressure = self._units.quant(101325, 'Pa')
-        error = 1000
+        if self.verbose:
+            print('calculating initial pressure...')
+
+        # get a rough estimate of the initial pressure
+        # CJ pressure is approximately 17.5 times initial
+        # reflected pressure is approximately 2.5 times CJ
+        # worst case dynamic load factor is 4
+        p_max = self.max_pressure.to('Pa')
+        # initial_pressure = p_max / (17.5 * 2.5 * 4)
+        initial_pressure = self._units.quant(1, 'atm')
         counter = 0
-        while error > error_tol and counter < max_iterations:
+        error_tol = abs(error_tol)
+
+        if self.verbose:
+            print('    calculating reflected shock state... ', end='')
+        state = thermochem.calculate_reflected_shock_state(
+            self.initial_temperature,
+            initial_pressure,
+            self.reactant_mixture,
+            self.mechanism,
+            self._units.ureg,
+            use_multiprocessing=self._use_multiprocessing
+        )
+        dlf = self._get_pipe_dlf(state['cj']['speed'])
+
+        error = (initial_pressure.magnitude * dlf / p_max.magnitude) - 1.
+        if self.verbose:
+            print('  error: {0:1.3} %'.format(error * 100.))
+        while abs(error) > error_tol and counter < max_iterations:
             counter += 1
+
+            # update initial pressure guess
+            initial_pressure = initial_pressure * p_max.magnitude / \
+                (dlf * state['reflected']['state'].P)
+
+            if self.verbose:
+                print('    recalculating reflected shock state... ', end='')
+
             # get reflected shock pressure
-            states = thermochem.calculate_reflected_shock_state(
+            state = thermochem.calculate_reflected_shock_state(
                 self.initial_temperature,
                 initial_pressure,
-                species_dict,
-                mechanism,
-                self._units.ureg
+                self.reactant_mixture,
+                self.mechanism,
+                self._units.ureg,
+                use_multiprocessing=self._use_multiprocessing
             )
 
-            reflected_pressure = states['reflected']['state'].P
-            reflected_pressure = self._units.quant(
-                reflected_pressure,
-                'Pa'
-            )
-            cj_speed = states['cj']['speed']
-            self.cj_speed = self._units.quant(
-                cj_speed.to('m/s').magnitude,
-                'm/s')
+            # calculate new error, accounting for dynamic load factor
+            dlf = self._get_pipe_dlf(state['cj']['speed'])
+            error = (state['reflected']['state'].P * dlf - p_max.magnitude) \
+                / p_max.magnitude
+            if self.verbose:
+                print('error: {0:1.3} %'.format(error * 100.))
 
-            # get dynamic load factor
-            dlf = self._get_pipe_dlf()
+        self._set_property('initial_pressure', initial_pressure)
+        self._set_property('cj_speed',
+                           self._units.quant(
+                               state['cj']['speed'].to('m/s').magnitude,
+                               'm/s'
+                           ))
+        self._set_property('dynamic_load_factor', dlf)
 
-            # calculate error, accounting for dynamic load factor
-            error = abs(
-                reflected_pressure.to_base_units().magnitude -
-                self.max_pressure.to_base_units().magnitude / dlf) / \
-                (self.max_pressure.to_base_units().magnitude / dlf)
-
-            # find new initial pressure
-            initial_pressure = (
-                    initial_pressure *
-                    self.max_pressure.to_base_units().magnitude /
-                    dlf /
-                    reflected_pressure.to_base_units().magnitude
-            )
-
-        self.initial_pressure = initial_pressure
+        if self.verbose:
+            print('Done.')
         return initial_pressure
 
     def lookup_flange_class(
@@ -1696,15 +2536,24 @@ class Tube:
         flange_class: str
             String representing the minimum allowable flange class
         """
+        # Requires: max_pressure, initial_temperature, material
+        # ---------------------------------------------------------------------
+        # max pressure is either set by user or calc'd on __init__
+        # initial temperature is either set by user or calc'd on __init__
+        # material has default on __init__
 
-        # read in available materials and their associated groups
-        materials_dict = self._get_material_groups()
+        if self.verbose:
+            print('looking up flange class... ', end='')
 
-        # material is good, get ASME B16.5 material group
-        group = materials_dict[self.material]
+        max_pressure = self.max_pressure
+        initial_temperature = self.initial_temperature
+        material = self.material
+
+        # get ASME B16.5 material group
+        group = self._material_groups[material]
 
         # import flange limits from csv
-        flange_limits = self._get_flange_limits_from_csv(group)
+        flange_limits = self._flange_limits[group]
 
         # locate max pressure and convert to bar just in case
         class_keys = flange_limits.keys()[1:]
@@ -1712,23 +2561,22 @@ class Tube:
         for key in class_keys:
             if int(key) > int(max_key):
                 max_key = key
-        max_pressure = flange_limits[max_key].max().to('bar')
+        max_ok_pressure = flange_limits[max_key].dropna().max()
 
         # ensure pressure is within bounds
-        if ((self.max_pressure.magnitude < 0) or
-                (self.max_pressure.magnitude > max_pressure.magnitude)):
+        if max_pressure > max_ok_pressure:
             # pressure is outside of range, return an error
-            raise ValueError('Pressure out of range.')
+            raise ValueError('\nPressure out of range.')
 
         # locate max and min temperature and convert to degC just in case
-        max_temp = flange_limits['Temperature'].max().to('degC')
-        min_temp = flange_limits['Temperature'].min().to('degC')
+        max_temp = flange_limits['Temperature'].max()
+        min_temp = flange_limits['Temperature'].min()
 
         # ensure temperature is within bounds
-        if ((self.initial_temperature.magnitude < min_temp.magnitude) or (
-                self.initial_temperature.magnitude > max_temp.magnitude)):
+        if ((initial_temperature < min_temp) or (
+                initial_temperature > max_temp)):
             # temperature is outside of range, return an error
-            raise ValueError('Temperature out of range.')
+            raise ValueError('\nTemperature out of range.')
 
         # ensure class keys are sorted in rising order
         class_keys = sorted([(int(key), key) for key in class_keys])
@@ -1737,10 +2585,12 @@ class Tube:
         # find proper flange class
         correct_class = None
         for key in class_keys:
-            max_class_pressure = flange_limits[key].max().to('bar').magnitude
-            if self.max_pressure.magnitude < max_class_pressure:
-                correct_class = key
+            max_class_pressure = flange_limits[key].dropna().max()
+            if max_pressure < max_class_pressure:
+                correct_class = int(key)
                 break
 
-        self.flange_class = correct_class
+        self._set_property('flange_class', correct_class)
+        if self.verbose:
+            print('Done')
         return correct_class
