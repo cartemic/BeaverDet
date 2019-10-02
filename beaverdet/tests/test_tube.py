@@ -518,7 +518,6 @@ class TestWindow:
 
 
 # noinspection PyProtectedMember
-@pytest.mark.tube
 class TestTube:
     material = '316L'
     schedule = '80'
@@ -643,7 +642,7 @@ class TestTube:
 
     def test_prop_nominal_size_set_get(self):
         test_tube = tube.Tube()
-        inputs = [(1), 6, '1 1/2']
+        inputs = [(1,), 6, '1 1/2']
         expected = [str(item) for item in inputs]
         results = []
         for value, correct in zip(inputs, expected):
