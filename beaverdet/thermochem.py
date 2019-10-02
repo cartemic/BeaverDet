@@ -13,7 +13,7 @@ CREATED BY:
 import pint
 import numpy as np
 import cantera as ct
-from . import tools, sd
+from . import tools, _sd
 
 
 def calculate_laminar_flamespeed(
@@ -86,7 +86,11 @@ def calculate_laminar_flamespeed(
 
     # find laminar flame speed
     flame = ct.FreeFlame(gas)
-    flame.set_refine_criteria(ratio=3, slope=0.1, curve=0.1)
+    flame.set_refine_criteria(
+        ratio=3,
+        slope=0.1,
+        curve=0.1
+    )
     flame.solve(loglevel=0)
 
     return quant(flame.u[0], 'm/s')
@@ -178,7 +182,7 @@ def calculate_reflected_shock_state(
 ):
     """
     Calculates the thermodynamic and chemical state of a reflected shock
-    using sd2.
+    using modified sdtoolbox functions.
 
     Parameters
     ----------
@@ -225,7 +229,7 @@ def calculate_reflected_shock_state(
     ]
 
     # get CJ state
-    cj_calcs = sd.Detonation.cj_speed(
+    cj_calcs = _sd.Detonation.cj_speed(
         initial_pressure,
         initial_temperature,
         species_dict,
@@ -237,7 +241,7 @@ def calculate_reflected_shock_state(
     # get reflected state
     [_,
      reflected_speed,
-     reflected_gas] = sd.Reflection.reflect(
+     reflected_gas] = _sd.Reflection.reflect(
         initial_gas,
         cj_calcs['cj state'],
         reflected_gas,

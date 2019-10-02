@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Test functions in sd.py
+Test functions in _sd.py
 """
 
 import pytest
 import numpy as np
 from cantera import Solution
-from .. import sd
+from .. import _sd
 
 
 def test_curve_fit():
@@ -16,7 +16,7 @@ def test_curve_fit():
     x_values = np.linspace(0, 10, 100)
     y_values = abc[0] * np.power(x_values, 2) + abc[1] * x_values + abc[2]
 
-    fit = sd.cj_curve_fit(x_values, y_values)
+    fit = _sd.cj_curve_fit(x_values, y_values)
     assert np.allclose(abc, fit)
 
 
@@ -37,7 +37,7 @@ class TestCalculateCJSpeed:
         # CJ speed calculated by SDToolbox given *test_args
         original_cj_speed = 2353.2706464533471
 
-        test_speed = sd.Detonation.cj_speed(*test_args)['cj speed']
+        test_speed = _sd.Detonation.cj_speed(*test_args)['cj speed']
 
         assert np.allclose(original_cj_speed, test_speed)
 
@@ -57,7 +57,7 @@ class TestCalculateCJSpeed:
         # CJ speed calculated by SDToolbox given *test_args
         original_cj_speed = 2353.2706464533471
 
-        test_speed = sd.Detonation.cj_speed(*test_args)['cj speed']
+        test_speed = _sd.Detonation.cj_speed(*test_args)['cj speed']
 
         assert np.allclose(original_cj_speed, test_speed)
 
@@ -72,7 +72,7 @@ class TestCalculateCJSpeed:
             False,  # return r squared
             True    # return state
         ]
-        test_info = sd.Detonation.cj_speed(*test_args)
+        test_info = _sd.Detonation.cj_speed(*test_args)
         required_keys = {
             'cj speed',
             'cj state'
@@ -94,7 +94,7 @@ class TestCalculateCJSpeed:
             True,   # return r squared
             False   # return state
         ]
-        test_info = sd.Detonation.cj_speed(*test_args)
+        test_info = _sd.Detonation.cj_speed(*test_args)
         required_keys = {
             'cj speed',
             'R^2'
@@ -116,7 +116,7 @@ class TestCalculateCJSpeed:
             True,   # return r squared
             True    # return state
         ]
-        test_info = sd.Detonation.cj_speed(*test_args)
+        test_info = _sd.Detonation.cj_speed(*test_args)
         required_keys = {
             'cj speed',
             'cj state',
@@ -142,7 +142,7 @@ class TestCalculateCJState:
         working_gas = Solution(mechanism)
         working_gas.TPX = 300, 101325 * 2, {'H2': 1}
 
-        cj_calcs = sd.Detonation.cj_state(
+        cj_calcs = _sd.Detonation.cj_state(
             working_gas,
             initial_gas,
             1e-5,
@@ -191,7 +191,7 @@ class TestCalculateCJState:
             Warning,
             match='No convergence within 1 iterations'
         ):
-            sd.Detonation.cj_state(
+            _sd.Detonation.cj_state(
                 working_gas,
                 initial_gas,
                 1e-50,
