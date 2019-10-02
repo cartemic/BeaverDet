@@ -107,8 +107,8 @@ class TestGetEqSoundSpeed:
 
 
 def test_calculate_reflected_shock_state():
-    # this is just a handler for some sd2 functions, and this test is to ensure
-    # that it doesn't throw any errors
+    # this is just a handler for some sdtoolbox functions, and this test is to
+    # ensure that it doesn't throw any errors
     initial_temperature = quant(80, 'degF')
     initial_pressure = quant(1, 'atm')
     species_dict = {'H2': 1, 'O2': 0.5}
