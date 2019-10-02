@@ -99,7 +99,7 @@ class Bolt:
         thread = dict()
 
         # look up thread specs for stress area calculations
-        thread_specs = cls._import_thread_specs()  # type: pd.DataFrame
+        thread_specs = cls._import_thread_specs()
         k_n_max = quant(
             thread_specs['internal']
             ['minor diameter max']
@@ -1402,10 +1402,8 @@ class Tube:
 
         # read in csv and extract information
         if os.path.exists(file_location):
-            # noinspection PyUnresolvedReferences
             try:
                 materials_dataframe = pd.read_csv(file_location)
-                # type: pd.DataFrame
             except pd.errors.EmptyDataError:
                 raise ValueError('\n' + file_name + ' is empty')
 
@@ -1416,12 +1414,12 @@ class Tube:
         # apply units
         materials_dataframe.ElasticModulus = [
             self._units.quant(item, 'GPa') for item in
-            materials_dataframe.ElasticModulus.values
-        ]  # type: pd.DataFrame
+            materials_dataframe['ElasticModulus'].values
+        ]
         materials_dataframe.Density = [
             self._units.quant(item, 'g/cm^3') for item in
-            materials_dataframe.Density.values
-        ]  # type: pd.DataFrame
+            materials_dataframe['Density'].values
+        ]
 
         self._materials = materials_dataframe
 
