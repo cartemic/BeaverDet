@@ -19,10 +19,10 @@ def cj_curve_fit(x, y):
 
     Parameters
     ----------
-    x
-        iterable with independent data points for curve fitting
-    y
-        iterable with dependent data points for curve fitting
+    x : iterable
+        independent data points for curve fitting
+    y : iterable
+        dependent data points for curve fitting
 
     Returns
     -------

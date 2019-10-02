@@ -12,5 +12,4 @@ dependencies:
   - pandas
   - sympy
   - cantera
-  - sd2
   - mock
