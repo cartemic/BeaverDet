@@ -10,7 +10,8 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-
+# TODO: organize imports, change `pint quantity` in type notes to
+#  pint.quantity._Quantity
 import pint
 import cantera as ct
 import os
@@ -109,6 +110,12 @@ def add_dataframe_row(
 
 
 def find_mechanisms():
+    """
+    TODO: add documentation
+    Returns
+    -------
+
+    """
     mechanism_path = os.path.join(
         os.path.split(os.path.abspath(ct.__file__))[0],
         'data'

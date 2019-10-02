@@ -9,7 +9,8 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-
+# TODO: organize imports, change `pint quantity` in type notes to
+#  pint.quantity._Quantity
 import pint
 import numpy as np
 import cantera as ct
@@ -266,6 +267,9 @@ def calculate_reflected_shock_state(
 
 
 class Mixture:
+    """
+    TODO: add docstring for Mixture class
+    """
     def __init__(
             self,
             initial_pressure,
@@ -278,6 +282,20 @@ class Mixture:
             mechanism='gri30.cti',
             unit_registry=None
     ):
+        """
+        TODO: document this
+        Parameters
+        ----------
+        initial_pressure
+        initial_temperature
+        fuel
+        oxidizer
+        diluent
+        equivalence
+        diluent_mole_fraction
+        mechanism
+        unit_registry
+        """
         if not unit_registry:
             unit_registry = pint.UnitRegistry()
 
@@ -350,6 +368,7 @@ class Mixture:
     ):
         """
         Sets the equivalence ratio of the undiluted mixture using Cantera
+        TODO: paremeters/returns
         """
         equivalence_ratio = float(equivalence_ratio)
 
@@ -366,6 +385,7 @@ class Mixture:
         """
         Adds a diluent to an undiluted mixture, keeping the same equivalence
         ratio.
+        TODO: paremeters/returns
         """
         # make sure diluent is available in mechanism and isn't the fuel or ox
         if diluent not in self.undiluted.species_names:
@@ -412,6 +432,7 @@ class Mixture:
         the molecular weights in kg/kmol to get the density in kg/m^3. This
         is then multiplied by the tube volume to get the total mass of each
         component.
+        TODO: paremeters/returns
         """
         tools.check_pint_quantity(
             tube_volume,
@@ -450,6 +471,7 @@ class Mixture:
         """
         Cantera is used to get the mole fractions of each species, which are
         then multiplied by the initial pressure to get each partial pressure.
+        TODO: paremeters/returns
         """
         if diluted and self.diluted is None:
             raise ValueError('Mixture has not been diluted')

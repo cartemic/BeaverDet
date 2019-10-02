@@ -5,7 +5,7 @@ Functions for detonation calculations.
 Original functions from Shock and Detonation Toolbox
 http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 """
-
+# TODO: organize imports
 import warnings
 import numpy as np
 import cantera as ct

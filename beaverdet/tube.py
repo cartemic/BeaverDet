@@ -9,7 +9,8 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-
+# TODO: organize imports, change `pint quantity` in type notes to
+#  pint.quantity._Quantity
 import warnings
 import os
 from math import sqrt
@@ -23,6 +24,9 @@ from . import thermochem
 
 
 class Bolt:
+    """
+    TODO: class documentation
+    """
     @classmethod
     def calculate_stress_areas(
             cls,
@@ -208,8 +212,8 @@ class Bolt:
         Returns
         -------
         thread_specs : dict
-            [internal thread specs, external thread specs]. Both sets of thread
-            specifications are multi-indexed with (thread size, thread class).
+            {internal, external}. Both sets of thread specifications are
+            multi-indexed with (thread size, thread class).
         """
         file_directory = os.path.join(
             os.path.dirname(
@@ -416,7 +420,7 @@ class DDT:
 
         [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
         detonation in ducts,” Prog. Energy Combust. Sci., vol. 34, no. 4, pp.
-        499–550, Aug. 2008.
+        499–550, Aug. 2008. # TODO: DOI?
 
         Parameters
         ----------
@@ -604,6 +608,9 @@ class DDT:
 
 
 class Window:
+    """
+    TODO: class documentation
+    """
     @classmethod
     def safety_factor(
             cls,
@@ -770,8 +777,7 @@ class Window:
         calculate_window_sf().
 
         Equation from:
-        https://www.crystran.co.uk/userfiles/files/
-        design-of-pressure-windows.pdf
+        https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
 
         Parameters
         ----------
@@ -985,6 +991,9 @@ class Window:
 
 
 class Tube:
+    """
+    TODO: documentation for class
+    """
     _all_quantities = {
         'material',
         'schedule',
@@ -1035,6 +1044,7 @@ class Tube:
             use_multiprocessing=False
     ):
         """
+        TODO: parameter documentation
         Parameters
         ----------
         """
@@ -1082,12 +1092,6 @@ class Tube:
         self.nominal_size = nominal_size
         self.schedule = schedule
 
-        # set initial temperature to 20 C if not defined
-        # if initial_temperature is None:
-        #     self._properties[
-        #         'initial_temperature'
-        #     ] = self._units.quant(20, 'degC')
-        # else:
         self.initial_temperature = initial_temperature
 
         # set max stress
@@ -1161,6 +1165,12 @@ class Tube:
         self._schedules = pd.read_csv(file_location, index_col=0)
 
     def _dimensions_lookup(self):
+        """
+        TODO: document this function
+        Returns
+        -------
+
+        """
         try:
             available_sizes = list(
                 self._schedules[self.schedule].dropna().to_dict().keys()
@@ -1206,6 +1216,7 @@ class Tube:
     @property
     def autocalc_initial(self):
         """
+        TODO: type hinting
         Determines whether or not to auto-calculate max initial pressure.
         Defaults to False because this calculation takes a bit of time.
         """
@@ -1221,6 +1232,7 @@ class Tube:
     @property
     def show_warnings(self):
         """
+        TODO: type hinting
         Determines whether or not to show warnings.
         """
         return self._show_warnings
@@ -1534,6 +1546,12 @@ class Tube:
         self._material_limits = pd.read_csv(file_location, index_col=0)
 
     def _get_pipe_stress_limits(self):
+        """
+        TODO: document function
+        Returns
+        -------
+
+        """
         material_limits = self._material_limits[self.material]
 
         # apply units
@@ -1651,6 +1669,17 @@ class Tube:
             current_property,
             value
     ):
+        """
+        TODO: document function
+        Parameters
+        ----------
+        current_property
+        value
+
+        Returns
+        -------
+
+        """
         if current_property in Tube._all_quantities:
             if (
                     (self._properties[current_property] is None)
@@ -1685,6 +1714,7 @@ class Tube:
     @property
     def nominal_size(self):
         """
+        TODO: type hinting
         The nominal pipe size (NPS) of the pipe used to construct the detonation
         tube. NPS should be set using a string, e.g.
 
@@ -1717,6 +1747,7 @@ class Tube:
     @property
     def schedule(self):
         """
+        TODO: type hinting
         Pipe schedule as a string, e.g. '80', 'XXS'
         """
         return self._get_property('schedule')
@@ -1741,7 +1772,7 @@ class Tube:
     def dimensions(self):
         """
         Cross-sectional dimensions of the pipe used to build the detonation
-        tube.
+        tube. Cannot be set manually -- change nominal_size or schedule instead.
         """
         return self._get_property('dimensions')
 
@@ -1759,6 +1790,7 @@ class Tube:
     @property
     def material(self):
         """
+        TODO: type hinting
         Material that pipe is made of as a string, e.g. '316L'
         """
         return self._get_property('material')
@@ -1782,6 +1814,7 @@ class Tube:
     @property
     def welded(self):
         """
+        TODO: type hinting
         True for welded pipe, False for seamless.
         """
         return self._get_property('welded')
@@ -1800,6 +1833,7 @@ class Tube:
     @property
     def initial_temperature(self):
         """
+        TODO: type hinting
         Initial temperature for reactant mixture. Can be set with either a pint
         quantity or an iterable of (temperature, 'units').
         """
@@ -1872,6 +1906,7 @@ class Tube:
     @property
     def safety_factor(self):
         """
+        TODO: type hinting
         Desired safety factor for the detonation tube
         """
         return self._get_property('safety_factor')
@@ -1889,6 +1924,7 @@ class Tube:
     @property
     def max_stress(self):
         """
+        TODO: type hinting
         Maximum allowable pipe stress. Can be set with either a pint quantity
         or an iterable of (max stress, 'units').
         """
@@ -1922,6 +1958,7 @@ class Tube:
     @property
     def max_pressure(self):
         """
+        TODO: type hinting
         Maximum allowable pressure within the detonation tube, which should
         correspond to the reflection pressure. Can be set with either a pint
         quantity or an iterable of (max pressure, 'units').
@@ -1957,6 +1994,7 @@ class Tube:
     @property
     def mechanism(self):
         """
+        TODO: type hinting
         Mechanism file for Cantera solution objects.
         """
         return self._get_property('mechanism')
@@ -2030,6 +2068,7 @@ class Tube:
     @property
     def fuel(self):
         """
+        TODO: type hinting
         Fuel to use in the reactant mixture, as a string. Must be included in
         the mechanism.
         """
@@ -2049,6 +2088,7 @@ class Tube:
     @property
     def oxidizer(self):
         """
+        TODO: type hinting
         Oxidizer to use in the reactant mixture, as a string. Must be included
         in the mechanism.
         """
@@ -2068,6 +2108,7 @@ class Tube:
     @property
     def diluent(self):
         """
+        TODO: type hinting
         Diluent to use in the reactant mixture, as a string. Must be included in
         the mechanism.
         """
@@ -2087,6 +2128,7 @@ class Tube:
     @property
     def equivalence_ratio(self):
         """
+        TODO: type hinting
         Desired reactant equivalence ratio. Cantera treats equivalence ratios
         less than or equal to zero as 100% oxidizer.
         """
@@ -2107,6 +2149,7 @@ class Tube:
     @property
     def dilution_mode(self):
         """
+        TODO: type hinting
         method of dilution (mass or mole)
         """
         return self._get_property('dilution_mode')
@@ -2137,6 +2180,7 @@ class Tube:
     @property
     def dilution_fraction(self):
         """
+        TODO: type hinting
         Fraction of gas to be made up of diluent, by either mass or mole
         depending on dilution_mode.
         """
@@ -2238,7 +2282,9 @@ class Tube:
     @property
     def initial_pressure(self):
         """
-        Maximum initial pressure resulting in the desired safety factor.
+        Maximum initial pressure resulting in the desired safety factor. Must
+        be calculated, not set. Try `mytube.calculate_initial_pressure()`
+        instead.
         """
         return self._get_property('initial_pressure')
 
@@ -2258,7 +2304,7 @@ class Tube:
         Factor accounting for the transient tube response to the detonation, per
         J. Shepherd, "Structural Response of Piping to Internal Gas Detonation",
         Journal of Pressure Vessel Technology, vol. 131, issue 3, pp. 031204,
-        2009
+        2009 TODO: DOI?
         """
         return self._get_property('dynamic_load_factor')
 
@@ -2277,7 +2323,9 @@ class Tube:
     def cj_speed(self):
         """
         Chapman-Jouguet speed resulting from a detonation in the reactant
-        mixture.
+        mixture. Must be calculated, not set. CJ speed calculation occurs
+        during initial pressure calculations. Try
+        `mytube.calculate_initial_pressure()` instead.
         """
         return self._get_property('cj_speed')
 
@@ -2295,7 +2343,9 @@ class Tube:
     @property
     def flange_class(self):
         """
-        Minimum safe flange class to be used in tube construction.
+        Minimum safe flange class to be used in tube construction. Must be
+        looked up based on max pressure, not set. Try
+        `mytube.lookup_flange_class()` instead.
         """
         return self._get_property('flange_class')
 
@@ -2305,13 +2355,14 @@ class Tube:
             _
     ):
         raise PermissionError(
-            '\nFlange class must be calculated looked up based on max pressure,'
+            '\nFlange class must be looked up based on max pressure,'
             ' not set. Try `mytube.lookup_flange_class()` instead.'
         )
 
     @property
     def verbose(self):
         """
+        TODO: type hinting
         If True, calculation status will be printed to the console.
         """
         return self._get_property('verbose')
@@ -2338,12 +2389,6 @@ class Tube:
         max_stress : pint quantity
             Pint quantity of maximum allowable tube stress
         """
-        # Requires: initial_temperature, welded, material
-        # ---------------------------------------------------------------------
-        # initial temperature has default on __init__
-        # welded has default on __init__
-        # material has default on __init__
-
         if self.verbose:
             print('calculating max stress... ', end='')
 
@@ -2362,7 +2407,6 @@ class Tube:
                              'monotonically increasing')
 
         # interpolate max stress
-        # noinspection PyAttributeOutsideInit
         max_stress = self._units.quant(
             np.interp(
                 self.initial_temperature.to(temp_units).magnitude,
@@ -2375,7 +2419,6 @@ class Tube:
         if self.verbose:
             print('Done')
 
-        # noinspection PyAttributeOutsideInit
         self.max_stress = max_stress
 
         # allow max stress to be recalculated automatically
@@ -2388,18 +2431,8 @@ class Tube:
         """
         Calculates the maximum allowable pressure from the limits found in ASME
         B31.1, with the option to modify the safety factor via
-
-        `mytube.safety_factor()`
-
-        and returns it as a pint quantity.
+        `mytube.safety_factor()` and returns it as a pint quantity.
         """
-
-        # Requires: max stress, dimensions, safety factor
-        # ---------------------------------------------------------------------
-        # safety factor has default on __init__
-        # dimensions are found from schedule and nominal, which have defaults
-        # max stress is either set by the user or calc'd on __init__
-
         if self.verbose:
             print('calculating max pressure... ', end='')
 
@@ -2447,23 +2480,10 @@ class Tube:
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
         """
-        # Requires: reactant_mixture, mechanism, max_pressure, and
-        # initial_temperature
-        # ---------------------------------------------------------------------
-        # reactant mixture is set from args with defaults on __init__
-        # mechanism has default on __init__
-        # max pressure is either set by user or calc'd on __init__
-        # initial temperature is either set by user or calc'd on __init__
-
         if self.verbose:
             print('calculating initial pressure...')
 
-        # get a rough estimate of the initial pressure
-        # CJ pressure is approximately 17.5 times initial
-        # reflected pressure is approximately 2.5 times CJ
-        # worst case dynamic load factor is 4
         p_max = self.max_pressure.to('Pa')
-        # initial_pressure = p_max / (17.5 * 2.5 * 4)
         initial_pressure = self._units.quant(1, 'atm')
         counter = 0
         error_tol = abs(error_tol)
@@ -2534,12 +2554,6 @@ class Tube:
         flange_class: str
             String representing the minimum allowable flange class
         """
-        # Requires: max_pressure, initial_temperature, material
-        # ---------------------------------------------------------------------
-        # max pressure is either set by user or calc'd on __init__
-        # initial temperature is either set by user or calc'd on __init__
-        # material has default on __init__
-
         if self.verbose:
             print('looking up flange class... ', end='')
 
