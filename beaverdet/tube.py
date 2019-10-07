@@ -9,7 +9,6 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-# TODO: change `pint quantity` in type notes to pint.quantity._Quantity
 # stdlib imports
 import os
 import warnings
@@ -51,11 +50,11 @@ class Bolt:
         thread_class : str
             Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
             automatically appended for internal/external threads
-        bolt_max_tensile : pint quantity
+        bolt_max_tensile : pint.quantity._Quantity
             Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint quantity
+        plate_max_tensile : pint.quantity._Quantity
             Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint quantity
+        engagement_length : pint.quantity._Quantity
             Pint quantity of total thread engagement length
         unit_registry : pint unit registry
             Unit registry for managing units to prevent conflicts with parent
@@ -319,7 +318,7 @@ class DDT:
 
         Parameters
         ----------
-        pipe_id : pint quantity
+        pipe_id : pint.quantity._Quantity
             Length scale representing the inner diameter of the pipe used for
             the detonation tube
         blockage_ratio : float
@@ -327,7 +326,7 @@ class DDT:
 
         Returns
         -------
-        spiral_diameter : pint quantity
+        spiral_diameter : pint.quantity._Quantity
             Shchelkin spiral diameter inside a tube of pipe_id inner diameter
             giving a blockage ratio of blockage_ratio %. Units are the same as
             pipe_id.
@@ -363,9 +362,9 @@ class DDT:
 
         Parameters
         ----------
-        tube_inner_diameter : pint quantity
+        tube_inner_diameter : pint.quantity._Quantity
             Length scale corresponding to the ID of the detonation tube
-        blockage_diameter : pint quantity
+        blockage_diameter : pint.quantity._Quantity
             Length scale corresponding to the OD of a Shchelkin spiral
 
         Returns
@@ -430,11 +429,11 @@ class DDT:
         blockage_ratio : float
             Ratio of the cross-sectional area of the detonation tube and a
             periodic blockage used to cause DDT
-        tube_diameter : pint quantity
+        tube_diameter : pint.quantity._Quantity
             Internal diameter of the detonation tube
-        initial_temperature : pint quantity
+        initial_temperature : pint.quantity._Quantity
             Mixture initial temperature
-        initial_pressure : pint quantity
+        initial_pressure : pint.quantity._Quantity
             Mixture initial pressure
         species_dict : dict
             Dictionary containing the species in the mixture as keys, with total
@@ -452,7 +451,7 @@ class DDT:
 
         Returns
         -------
-        runup_distance : pint quantity
+        runup_distance : pint.quantity._Quantity
             Predicted DDT distance, with the same units as the tube diameter
         """
 
@@ -630,16 +629,16 @@ class Window:
 
         Parameters
         ----------
-        length : pint quantity with length units
+        length : pint.quantity._Quantity
             Window unsupported (viewing) length
-        width : pint quantity with length units
+        width : pint.quantity._Quantity
             Window unsupported (viewing) width
-        thickness : pint quantity with length units
+        thickness : pint.quantity._Quantity
             Window thickness
-        pressure : pint quantity with pressure units
+        pressure : pint.quantity._Quantity
             Design pressure differential across window at which factor of
             safety is to be calculated
-        rupture_modulus : pint quantity with pressure units
+        rupture_modulus : pint.quantity._Quantity
             Rupture modulus of desired window material.
 
         Returns
@@ -701,23 +700,23 @@ class Window:
 
         Parameters
         ----------
-        length : pint quantity with length units
+        length : pint.quantity._Quantity
             Window unsupported (viewing) length
-        width : pint quantity with length units
+        width : pint.quantity._Quantity
             Window unsupported (viewing) width
         safety_factor : float
             Safety factor
-        pressure : pint quantity with pressure units
+        pressure : pint.quantity._Quantity
             Design pressure differential across window at which factor of
             safety is to be calculated
-        rupture_modulus : pint quantity with pressure units
+        rupture_modulus : pint.quantity._Quantity
             Rupture modulus of desired window material.
         unit_registry : pint unit registry
             Keeps output consistent with parent registry, avoiding conflicts
 
         Returns
         -------
-        thickness : pint quantity
+        thickness : pint.quantity._Quantity
             Window thickness
         """
         quant = unit_registry.Quantity
@@ -881,9 +880,9 @@ class Window:
 
         Parameters
         ----------
-        max_pressure : pint quantity
+        max_pressure : pint.quantity._Quantity
             Pint quantity of tube maximum pressure (absolute)
-        window_area : pint quantity
+        window_area : pint.quantity._Quantity
             Pint quantity of window area exposed to high pressure environment
         num_bolts : int
             Number of bolts used to secure each viewing window
@@ -892,11 +891,11 @@ class Window:
         thread_class : str
             Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
             automatically appended for internal/external threads
-        bolt_max_tensile : pint quantity
+        bolt_max_tensile : pint.quantity._Quantity
             Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint quantity
+        plate_max_tensile : pint.quantity._Quantity
             Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint quantity
+        engagement_length : pint.quantity._Quantity
             Pint quantity of total thread engagement length
         unit_registry : pint unit registry
             Keeps output consistent with parent registry, avoiding conflicts
@@ -1889,7 +1888,7 @@ class Tube:
 
         Returns
         -------
-        input as a pint quantity
+        pint.quantity._Quantity
         """
         if hasattr(quant_input, 'magnitude'):
             return self._units.quant(
@@ -2389,7 +2388,7 @@ class Tube:
 
         Returns
         -------
-        max_stress : pint quantity
+        max_stress : pint.quantity._Quantity
             Pint quantity of maximum allowable tube stress
         """
         if self.verbose:
@@ -2479,7 +2478,7 @@ class Tube:
 
         Returns
         -------
-        initial_pressure : pint quantity
+        initial_pressure : pint.quantity._Quantity
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
         """

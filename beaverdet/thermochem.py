@@ -9,7 +9,6 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-# TODO: change `pint quantity` in type notes to pint.quantity._Quantity
 # third party imports
 import cantera as ct
 import numpy as np
@@ -33,9 +32,9 @@ def calculate_laminar_flamespeed(
 
     Parameters
     ----------
-    initial_temperature : pint quantity
+    initial_temperature : pint.quantity._Quantity
         Initial temperature of gas mixture
-    initial_pressure : pint quantity
+    initial_pressure : pint.quantity._Quantity
         Initial pressure of gas mixture
     species_dict : dict
         Dictionary with species names (all caps) as keys and moles as values
@@ -49,7 +48,8 @@ def calculate_laminar_flamespeed(
 
     Returns
     -------
-    Laminar flame speed in m/s as a pint quantity
+    pint.quantity._Quantity
+        Laminar flame speed in m/s
     """
     gas = ct.Solution(mechanism, phase_specification)
 
@@ -112,9 +112,9 @@ def get_eq_sound_speed(
 
     Parameters
     ----------
-    temperature : pint quantity
+    temperature : pint.quantity._Quantity
         Initial mixture temperature
-    pressure : pint quantity
+    pressure : pint.quantity._Quantity
         Initial mixture pressure
     species_dict : dict
         Dictionary of mixture mole fractions
@@ -128,7 +128,7 @@ def get_eq_sound_speed(
 
     Returns
     -------
-    sound_speed : pint quantity
+    sound_speed : pint.quantity._Quantity
         local speed of sound in m/s
     """
     if not unit_registry:
@@ -189,9 +189,9 @@ def calculate_reflected_shock_state(
 
     Parameters
     ----------
-    initial_temperature : pint quantity
+    initial_temperature : pint.quantity._Quantity
         Pint quantity of mixture initial temperature
-    initial_pressure : pint quantity
+    initial_pressure : pint.quantity._Quantity
         Pint quantity of mixture initial pressure
     species_dict : dict
         Dictionary of initial reactant mixture

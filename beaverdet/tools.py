@@ -10,7 +10,6 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-# TODO: change `pint quantity` in type notes to pint.quantity._Quantity
 # stdlib imports
 import os
 
@@ -38,7 +37,7 @@ def check_pint_quantity(
 
     Parameters
     ----------
-    quantity : pint quantity
+    quantity : pint.quantity._Quantity
         Pint quantity which is to be checked for dimensionality
     dimension_type : str
         Dimensionality that quantity should have
