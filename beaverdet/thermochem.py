@@ -9,12 +9,14 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-# TODO: organize imports, change `pint quantity` in type notes to
-#  pint.quantity._Quantity
-import pint
-import numpy as np
+# TODO: change `pint quantity` in type notes to pint.quantity._Quantity
+# third party imports
 import cantera as ct
-from . import tools, _sd
+import numpy as np
+import pint
+
+# local imports
+from . import _sd, tools
 
 
 def calculate_laminar_flamespeed(

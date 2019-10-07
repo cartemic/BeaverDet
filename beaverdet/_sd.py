@@ -5,11 +5,13 @@ Functions for detonation calculations.
 Original functions from Shock and Detonation Toolbox
 http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
 """
-# TODO: organize imports
+# stdlib imports
 import warnings
-import numpy as np
+
+# third party imports
 import cantera as ct
 import multiprocessing as mp
+import numpy as np
 
 
 def cj_curve_fit(x, y):

@@ -9,18 +9,21 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-# TODO: organize imports, change `pint quantity` in type notes to
-#  pint.quantity._Quantity
-import warnings
+# TODO: change `pint quantity` in type notes to pint.quantity._Quantity
+# stdlib imports
 import os
-from math import sqrt
-import pint
-import pandas as pd
-import numpy as np
-import sympy as sp
+import warnings
+
+# third party imports
 import cantera as ct
-from . import tools
-from . import thermochem
+import numpy as np
+import pandas as pd
+import pint
+import sympy as sp
+from math import sqrt
+
+# local imports
+from . import thermochem, tools
 
 
 class Bolt:

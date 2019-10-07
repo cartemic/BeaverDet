@@ -10,11 +10,13 @@ CREATED BY:
     CIRE and Propulsion Lab
     cartemic@oregonstate.edu
 """
-# TODO: organize imports, change `pint quantity` in type notes to
-#  pint.quantity._Quantity
-import pint
-import cantera as ct
+# TODO: change `pint quantity` in type notes to pint.quantity._Quantity
+# stdlib imports
 import os
+
+# third party imports
+import cantera as ct
+import pint
 
 
 def check_pint_quantity(
