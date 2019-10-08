@@ -112,10 +112,10 @@ def add_dataframe_row(
 
 def find_mechanisms():
     """
-    TODO: add documentation
     Returns
     -------
-
+    available : set
+        Set of mechanisms available in local cantera installation
     """
     mechanism_path = os.path.join(
         os.path.split(os.path.abspath(ct.__file__))[0],

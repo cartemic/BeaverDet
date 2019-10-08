@@ -270,7 +270,8 @@ def calculate_reflected_shock_state(
 
 class Mixture:
     """
-    TODO: add docstring for Mixture class
+    An object for managing initial gas mixtures. Mixtures can be undiluted or
+    diluted by mole fraction.
     """
     def __init__(
             self,
@@ -285,18 +286,31 @@ class Mixture:
             unit_registry=None
     ):
         """
-        TODO: document this
+        TODO: allow for mixed fuel, oxidizer, diluent, and update docstring
         Parameters
         ----------
-        initial_pressure
-        initial_temperature
-        fuel
-        oxidizer
-        diluent
-        equivalence
-        diluent_mole_fraction
-        mechanism
-        unit_registry
+        initial_pressure : pint.quantity._Quantity
+            Initial reactant pressure
+        initial_temperature : pint.quantity._Quantity
+            Initial reactant temperature
+        fuel : str
+            Fuel species (e.g. `CH4`). Must be in the mechanism file.
+        oxidizer : str
+            Oxidizer species (e.g. `O2`). Must be in the mechanism file.
+        diluent : str or None
+            Oxidizer species (e.g. `N2`). Must either be None or in the
+            mechanism file.
+        equivalence : float
+            Equivalence ratio.
+        diluent_mole_fraction : float
+            Mole fraction of diluent.
+        mechanism : str
+            Mechanism file to use in Cantera solution object.
+        unit_registry : pint.registry.UnitRegistry or None
+            Pint unit registry to convert units into. Passing the local unit
+            registry from the parent method will allow the mixture's output
+            quantities to be directly compared with the input quantities.
+            Passing None will generate a new unit registry.
         """
         if not unit_registry:
             unit_registry = pint.UnitRegistry()
@@ -369,8 +383,17 @@ class Mixture:
             equivalence_ratio
     ):
         """
-        Sets the equivalence ratio of the undiluted mixture using Cantera
-        TODO: paremeters/returns
+        Sets the equivalence ratio of the undiluted mixture using Cantera.
+        Modifies self.equivalence; no value is returned.
+
+        Parameters
+        ----------
+        equivalence_ratio : float
+            Equivalence ratio to set.
+
+        Returns
+        -------
+
         """
         equivalence_ratio = float(equivalence_ratio)
 
@@ -383,11 +406,24 @@ class Mixture:
 
         self.equivalence = equivalence_ratio
 
-    def add_diluent(self, diluent, mole_fraction):
+    def add_diluent(
+            self,
+            diluent,
+            mole_fraction
+    ):
         """
+        TODO: allow for mixed fuel, oxidizer, diluent, and update docstring
         Adds a diluent to an undiluted mixture, keeping the same equivalence
         ratio.
-        TODO: paremeters/returns
+
+        Parameters
+        ----------
+        diluent : str
+            Diluent species (e.g. `N2`). Must be in the mechanism file.
+            You are not allowed to dilute with fuel or oxidizer. Mole fraction
+            cannot be less than zero.
+        mole_fraction : float
+            Mole fraction of diluent to add.
         """
         # make sure diluent is available in mechanism and isn't the fuel or ox
         if diluent not in self.undiluted.species_names:
@@ -434,7 +470,19 @@ class Mixture:
         the molecular weights in kg/kmol to get the density in kg/m^3. This
         is then multiplied by the tube volume to get the total mass of each
         component.
-        TODO: paremeters/returns
+
+        Parameters
+        ----------
+        tube_volume : pint.quantity._Quantity
+            Total volume of detonation tube
+        diluted : bool
+            Tells the method which solution object to use.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the total mass of each species in the
+            reactant mixture.
         """
         tools.check_pint_quantity(
             tube_volume,
@@ -473,7 +521,17 @@ class Mixture:
         """
         Cantera is used to get the mole fractions of each species, which are
         then multiplied by the initial pressure to get each partial pressure.
-        TODO: paremeters/returns
+
+        Parameters
+        ----------
+        diluted : bool
+            Tells the method which solution object to use.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the partial pressure of each species in the
+            reactant mixture.
         """
         if diluted and self.diluted is None:
             raise ValueError('Mixture has not been diluted')

@@ -404,3 +404,17 @@ class TestMixture:
         ]
 
         assert all([key_check, value_check])
+
+    # def test_mixed_oxidizer(self):
+    #     test_mixture = thermochem.Mixture(
+    #         self.initial_pressure,
+    #         self.initial_temperature,
+    #         self.good_fuel,
+    #         'O2:1 N2:3.76'
+    #     )
+    #     test_mixture.get_masses(
+    #             self.good_volume,
+    #             diluted=False
+    #         )
+    #     # TODO: write tests for mixed fuel, oxidizer, diluent
+    #     assert False

@@ -27,7 +27,14 @@ from . import thermochem, tools
 
 class Bolt:
     """
-    TODO: class documentation
+    An object collecting methods which can be used for bolt stress
+    calculations. All methods are either class methods or static methods, so
+    no initialization is required. Public methods are:
+        * `calculate_stress_areas()`
+        * `get_thread_property()`
+
+    Properties are read in from .csv files in the lookup_data directory within
+    the beaverdet package directory, and may be updated by the user as needed.
     """
     @classmethod
     def calculate_stress_areas(
@@ -307,6 +314,14 @@ class Bolt:
 
 
 class DDT:
+    """
+    An object collecting methods which can be used for calculations regarding
+    the deflagration to detonation transition (DDT). All methods are static,
+    so no initialization is required. Public methods are:
+        * `calculate_spiral_diameter()`
+        * `calculate_blockage_ratio()`
+        * `calculate_run_up()`
+    """
     @staticmethod
     def calculate_spiral_diameter(
             pipe_id,
@@ -422,7 +437,7 @@ class DDT:
 
         [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
         detonation in ducts,” Prog. Energy Combust. Sci., vol. 34, no. 4, pp.
-        499–550, Aug. 2008. # TODO: DOI?
+        499–550, Aug. 2008. https://doi.org/10.1016/j.pecs.2007.11.002
 
         Parameters
         ----------
@@ -611,7 +626,14 @@ class DDT:
 
 class Window:
     """
-    TODO: class documentation
+    An object collecting methods which can be used for sizing viewing windows
+    and determining bolt patterns for window retention. All methods are either
+    class methods or static methods, so no initialization is required.
+    Public methods are:
+        * `safety_factor()`
+        * `minimum_thickness()`
+        * `solver()`
+        * `calculate_bolt_sfs()`
     """
     @classmethod
     def safety_factor(
@@ -994,7 +1016,47 @@ class Window:
 
 class Tube:
     """
-    TODO: documentation for class
+    An object which allows a user to design a detonation tube. A typical
+    workflow would look like:
+        1. Create an instance of Tube with the desired pipe construction and
+           reactant mixture
+        2. Calculate maximum allowable stress for the tube
+        3. Calculate the maximum allowable pressure in the tube
+        4. Determine the required flange class
+        5. Find the corresponding maximum safe initial pressure
+
+    Public methods are:
+        * `calculate_max_stress()`
+        * `calculate_max_pressure()`
+        * `calculate_initial_pressure()`
+        * `lookup_flange_class()`
+
+    Properties are:
+        * `autocalc_initial`
+        * `available_tube_materials`
+        * `available_pipe_schedules`
+        * `available_pipe_sizes`
+        * `cj_speed`
+        * `diluent`
+        * `dilution_mode`
+        * `dilution_fraction`
+        * `dimensions`
+        * `dynamic_load_factor`
+        * `equivalence_ratio`
+        * `flange_class`
+        * `fuel`
+        * `initial_temperature`
+        * `material`
+        * `max_stress`
+        * `mechanism`
+        * `nominal_size`
+        * `oxidizer`
+        * `reactant_mixture`
+        * `safety_factor`
+        * `schedule`
+        * `show_warnings`
+        * `verbose`
+        * `welded`
     """
     _all_quantities = {
         'material',
@@ -1024,7 +1086,6 @@ class Tube:
 
     def __init__(
             self,
-            *,
             material='316L',
             schedule='80',
             nominal_size='6',
@@ -1046,9 +1107,50 @@ class Tube:
             use_multiprocessing=False
     ):
         """
-        TODO: parameter documentation
         Parameters
         ----------
+        material : str
+            Tube material.
+        schedule : int or str
+            Schedule of pipe used to build the detonation tube.
+        nominal_size : int or str
+            Nominal size of pipe used to build the detonation tube
+        welded : bool
+            True for welded pipe, False for seamless
+        max_stress : pint.quantity._Quantity or None
+            Leave blank or pass None for max allowable stress to be calculated,
+            or pass a pint quantity with a prescribed max stress
+        initial_temperature : iterable or pint.quantity._Quantity
+            Initial reactant temperature. Pass a pint quantity or a tuple of
+            (T, U) where T is the numeric value of the initial temperature and
+            U is a unit string, e.g. `initial_temperature=(25, 'degC')`.
+        max_pressure todo: update after fixing bug
+        mechanism : str
+            Mechanism file for Cantera (e.g. gri30.cti)
+        fuel todo: update when it works with composites
+        oxidizer todo: update when it works with composites
+        diluent todo: update when it works with composites
+        equivalence_ratio : float
+            Equivalence ratio of reactant mixture.
+        dilution_fraction : float
+            Dilution fraction of reactant mixture. For no diluent, set this
+            to 0. Can be either by mole or mass depending on dilution_mode.
+        dilution_mode : str
+            'mole' to apply dilution on a molar basis, 'mass' for a mas basis.
+        safety_factor : float
+            Desired tube safety factor >= 1.
+        verbose : bool
+            If True this will tell you when each calculation is starting
+            or finishing.
+        show_warnings : bool
+            Allows you to suppress warnings.
+        autocalc_initial : bool
+            If True the tube object will automatically calculate maximum
+            initial pressure on instantiation.
+        use_multiprocessing : bool
+            Allows detonation calculations to be parallelized. This will
+            only work if called from __main__. Due to the nature of the
+            multiprocessing package it cannot be called in the REPL.
         """
         self._initializing = True
 
@@ -1109,12 +1211,13 @@ class Tube:
         # set safety factor
         self.safety_factor = safety_factor
 
+        # TODO: figure out why an error is thrown when initializing with only
+        #  max_pressure specified
         # set max pressure
         if max_pressure is not None:
             self.max_pressure = max_pressure
             # allow max pressure to be recalculated
             self._calculate_max_pressure = False
-
         else:
             # keep the user's input
             self._calculate_max_pressure = True
