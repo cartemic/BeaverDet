@@ -1382,7 +1382,7 @@ class Tube:
 
         Returns
         -------
-        materials_dataframe : pd.DataFrame
+        df_materials : pd.DataFrame
             Dataframe of materials and their corresponding material groups and
             properties
         """
@@ -1404,7 +1404,7 @@ class Tube:
         if os.path.exists(file_location):
             # noinspection PyUnresolvedReferences
             try:
-                materials_dataframe = pd.read_csv(file_location)
+                df_materials = pd.read_csv(file_location)
                 # type: pd.DataFrame
             except pd.errors.EmptyDataError:
                 raise ValueError('\n' + file_name + ' is empty')
@@ -1414,16 +1414,16 @@ class Tube:
             raise ValueError('\n' + file_name + ' does not exist')
 
         # apply units
-        materials_dataframe.ElasticModulus = [
+        df_materials["ElasticModulus"] = [
             self._units.quant(item, 'GPa') for item in
-            materials_dataframe.ElasticModulus.values
-        ]  # type: pd.DataFrame
-        materials_dataframe.Density = [
+            df_materials["ElasticModulus"].values
+        ]
+        df_materials["Density"] = [
             self._units.quant(item, 'g/cm^3') for item in
-            materials_dataframe.Density.values
-        ]  # type: pd.DataFrame
+            df_materials["Density"].values
+        ]
 
-        self._materials = materials_dataframe
+        self._materials = df_materials
 
     @property
     def available_tube_materials(self):
