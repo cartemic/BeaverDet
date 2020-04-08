@@ -16,7 +16,7 @@ import cantera as ct
 from . import tools, sd
 
 
-def calculate_laminar_flamespeed(
+def calculate_laminar_flame_speed(
         initial_temperature,
         initial_pressure,
         species_dict,
@@ -92,6 +92,7 @@ def calculate_laminar_flamespeed(
     return quant(flame.u[0], 'm/s')
 
 
+# noinspection SpellCheckingInspection
 def get_eq_sound_speed(
         temperature,
         pressure,

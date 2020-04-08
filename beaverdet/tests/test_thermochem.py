@@ -30,7 +30,7 @@ class TestCalculateLaminarFlamespeed:
             'N2': 0.71482889733840305
         }
         good_result = 0.39  # value approximated from Law fig. 7.7.7
-        test_flamespeed = thermochem.calculate_laminar_flamespeed(
+        test_flamespeed = thermochem.calculate_laminar_flame_speed(
             self.initial_temperature,
             self.initial_pressure,
             species,
@@ -44,7 +44,7 @@ class TestCalculateLaminarFlamespeed:
                 ValueError,
                 match='Empty species dictionary'
         ):
-            thermochem.calculate_laminar_flamespeed(
+            thermochem.calculate_laminar_flame_speed(
                 self.initial_temperature,
                 self.initial_pressure,
                 species,
@@ -61,7 +61,7 @@ class TestCalculateLaminarFlamespeed:
                 ValueError,
                 match='Species not in mechanism:\nWayne\nGarth\n'
         ):
-            thermochem.calculate_laminar_flamespeed(
+            thermochem.calculate_laminar_flame_speed(
                 self.initial_temperature,
                 self.initial_pressure,
                 species,

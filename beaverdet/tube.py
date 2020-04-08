@@ -415,8 +415,8 @@ class DDT:
         phase_specification option may be necessary depending on the mechanism.
 
         [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
-        detonation in ducts,” Prog. Energy Combust. Sci., vol. 34, no. 4, pp.
-        499–550, Aug. 2008.
+        detonation in ducts,” Progress in Energy and Combustion Science,
+        vol. 34, no. 4, pp. 499–550, Aug. 2008.
 
         Parameters
         ----------
@@ -477,8 +477,8 @@ class DDT:
             tube_diameter.units.format_babel()
         )
 
-        # calculate laminar flamespeed
-        laminar_fs = thermochem.calculate_laminar_flamespeed(
+        # calculate laminar flame speed
+        laminar_fs = thermochem.calculate_laminar_flame_speed(
             initial_temperature,
             initial_pressure,
             species_dict,
@@ -518,8 +518,8 @@ class DDT:
             """
             Calculate runup distance for blockage ratios <= 0.1 using equation
             4.1 from G. Ciccarelli and S. Dorofeev, “Flame acceleration and
-            transition to detonation in ducts,” Prog. Energy Combust. Sci.,
-            vol. 34, no. 4, pp. 499–550, Aug. 2008.
+            transition to detonation in ducts,” Progress in Energy and
+            Combustion Science, vol. 34, no. 4, pp. 499–550, Aug. 2008.
             """
             # define constants
             kappa = 0.4
@@ -559,8 +559,8 @@ class DDT:
             """
             Calculate runup for blockage ratios between 0.3 and 0.75 using
             equation 4.4 in G. Ciccarelli and S. Dorofeev, “Flame acceleration
-            and transition to detonation in ducts,” Prog. Energy Combust. Sci.,
-            vol. 34, no. 4, pp. 499–550, Aug. 2008.
+            and transition to detonation in ducts,” Progress in Energy and
+            Combustion Science, vol. 34, no. 4, pp. 499–550, Aug. 2008.
             """
             # define constants
             aa = 2.

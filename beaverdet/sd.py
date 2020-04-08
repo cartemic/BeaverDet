@@ -12,24 +12,25 @@ import cantera as ct
 import multiprocessing as mp
 
 
+# noinspection SpellCheckingInspection
 def cj_curve_fit(x, y):
     """
-    Determines least squares fit of parabolic data.
-    Original function: LSQ_CJspeed from sdtoolbox, but vectorized
+        Determines least squares fit of parabolic data.
+        Original function: LSQ_CJspeed from sdtoolbox, but vectorized
 
-    Parameters
-    ----------
-    x
-        iterable with independent data points for curve fitting
-    y
-        iterable with dependent data points for curve fitting
+        Parameters
+        ----------
+        x
+            iterable with independent data points for curve fitting
+        y
+            iterable with dependent data points for curve fitting
 
-    Returns
-    -------
-    tuple
-        a, b, c, r_squared where:
-        a, b, c = coefficients of quadratic function (ax^2 + bx + c = 0)
-    """
+        Returns
+        -------
+        tuple
+            a, b, c, r_squared where:
+            a, b, c = coefficients of quadratic function (ax^2 + bx + c = 0)
+        """
     # enforce numpy and float dtype
     x = np.array(x, dtype=float)
     y = np.array(y, dtype=float)
@@ -275,6 +276,7 @@ class Detonation:
 
         return current_state_number, current_velocity
 
+    # noinspection SpellCheckingInspection
     @classmethod
     def cj_speed(
             cls,
@@ -435,6 +437,7 @@ class Detonation:
 
 
 class Properties:
+    # noinspection SpellCheckingInspection
     @staticmethod
     def equilibrium(
             gas,
@@ -471,6 +474,7 @@ class Properties:
 
 
 class GetError:
+    # noinspection SpellCheckingInspection
     @staticmethod
     def equilibrium(
             working_gas,
