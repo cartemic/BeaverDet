@@ -99,7 +99,7 @@ class Bolt:
         thread = dict()
 
         # look up thread specs for stress area calculations
-        thread_specs = cls._import_thread_specs()  # type: pd.DataFrame
+        thread_specs = cls._import_thread_specs()
         k_n_max = quant(
             thread_specs['internal']
             ['minor diameter max']
