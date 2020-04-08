@@ -11,16 +11,18 @@ CREATED BY:
 """
 
 
-from math import sqrt
-import pytest
-import pint
 import os
+from math import sqrt
+
 import cantera as ct
 import numpy as np
 import pandas as pd
+import pint
+import pytest
 from mock import patch
-from .. import tube
+
 from .. import thermochem
+from .. import tube
 
 ureg = pint.UnitRegistry()
 quant = ureg.Quantity

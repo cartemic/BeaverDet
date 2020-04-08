@@ -10,9 +10,10 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
-import pint
-import numpy as np
 import cantera as ct
+import numpy as np
+import pint
+
 from . import tools, sd
 
 

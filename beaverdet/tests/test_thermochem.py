@@ -10,9 +10,10 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
+import numpy as np
 import pint
 import pytest
-import numpy as np
+
 from .. import thermochem
 
 ureg = pint.UnitRegistry()

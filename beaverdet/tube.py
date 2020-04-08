@@ -10,16 +10,18 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
-import warnings
 import os
+import warnings
 from math import sqrt
-import pint
-import pandas as pd
-import numpy as np
-import sympy as sp
+
 import cantera as ct
-from . import tools
+import numpy as np
+import pandas as pd
+import pint
+import sympy as sp
+
 from . import thermochem
+from . import tools
 
 
 class Bolt:

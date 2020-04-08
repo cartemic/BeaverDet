@@ -10,9 +10,10 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
-import pytest
-import pint
 import pandas as pd
+import pint
+import pytest
+
 from .. import tools
 
 

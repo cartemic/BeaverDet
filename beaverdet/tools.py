@@ -11,9 +11,10 @@ CREATED BY:
     cartemic@oregonstate.edu
 """
 
-import pint
-import cantera as ct
 import os
+
+import cantera as ct
+import pint
 
 
 def check_pint_quantity(

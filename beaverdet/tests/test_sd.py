@@ -4,9 +4,10 @@
 Test functions in sd.py
 """
 
-import pytest
 import numpy as np
+import pytest
 from cantera import Solution
+
 from .. import sd
 
 

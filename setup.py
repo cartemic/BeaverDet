@@ -1,10 +1,12 @@
+import sys
 from codecs import open
 from os import path
-import sys
+
 from setuptools import setup
 
 here = path.abspath(path.dirname(__file__))
 
+__version__ = None
 with open(path.join(here, 'beaverdet', '_version.py')) as version_file:
     exec(version_file.read())
 
@@ -16,6 +18,7 @@ with open(path.join(here, 'CHANGELOG.md')) as changelog_file:
 
 desc = readme + '\n\n' + changelog
 try:
+    # noinspection PyPackageRequirements
     import pypandoc
     long_description = pypandoc.convert_text(desc, 'rst', format='md')
     with open(path.join(here, 'README.rst'), 'w') as rst_readme:
