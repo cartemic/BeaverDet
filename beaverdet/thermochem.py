@@ -17,6 +17,9 @@ import pint
 from . import tools, sd
 
 
+_U = pint.UnitRegistry()
+
+
 def calculate_laminar_flame_speed(
         initial_temperature,
         initial_pressure,
@@ -31,9 +34,9 @@ def calculate_laminar_flame_speed(
 
     Parameters
     ----------
-    initial_temperature : pint quantity
+    initial_temperature : pint.Quantity
         Initial temperature of gas mixture
-    initial_pressure : pint quantity
+    initial_pressure : pint.Quantity
         Initial pressure of gas mixture
     species_dict : dict
         Dictionary with species names (all caps) as keys and moles as values
@@ -41,18 +44,16 @@ def calculate_laminar_flame_speed(
         String of mechanism to use (e.g. 'gri30.cti')
     phase_specification : str
         Phase specification for cantera solution
-    unit_registry : pint unit registry
+    unit_registry : pint.UnitRegistry
         Unit registry for managing units to prevent conflicts with parent
         unit registry
 
     Returns
     -------
-    Laminar flame speed in m/s as a pint quantity
+    pint.Quantity
+        Laminar flame speed in m/s as a pint quantity
     """
     gas = ct.Solution(mechanism, phase_specification)
-
-    if not unit_registry:
-        unit_registry = pint.UnitRegistry()
     quant = unit_registry.Quantity
 
     tools.check_pint_quantity(
@@ -100,16 +101,16 @@ def get_eq_sound_speed(
         species_dict,
         mechanism,
         phase_specification='',
-        unit_registry=None
+        unit_registry=_U
 ):
     """
     Calculates the equilibrium speed of sound in a mixture
 
     Parameters
     ----------
-    temperature : pint quantity
+    temperature : pint.Quantity
         Initial mixture temperature
-    pressure : pint quantity
+    pressure : pint.Quantity
         Initial mixture pressure
     species_dict : dict
         Dictionary of mixture mole fractions
@@ -117,18 +118,15 @@ def get_eq_sound_speed(
         Desired chemical mechanism
     phase_specification : str
         Phase specification for cantera solution
-    unit_registry : pint unit registry
+    unit_registry : pint.UnitRegistry
         Unit registry for managing units to prevent conflicts with parent
         unit registry
 
     Returns
     -------
-    sound_speed : pint quantity
+    sound_speed : pint.Quantity
         local speed of sound in m/s
     """
-    if not unit_registry:
-        unit_registry = pint.UnitRegistry()
-
     quant = unit_registry.Quantity
 
     tools.check_pint_quantity(
@@ -175,7 +173,7 @@ def calculate_reflected_shock_state(
         initial_pressure,
         species_dict,
         mechanism,
-        ureg=pint.UnitRegistry(),
+        unit_registry=_U,
         use_multiprocessing=False
 ):
     """
@@ -184,15 +182,15 @@ def calculate_reflected_shock_state(
 
     Parameters
     ----------
-    initial_temperature : pint quantity
+    initial_temperature : pint.Quantity
         Pint quantity of mixture initial temperature
-    initial_pressure : pint quantity
+    initial_pressure : pint.Quantity
         Pint quantity of mixture initial pressure
     species_dict : dict
         Dictionary of initial reactant mixture
     mechanism : str
         Mechanism to use for chemical calculations, e.g. 'gri30.cti'
-    ureg : pint.UnitRegistry
+    unit_registry : pint.UnitRegistry
         Pint unit registry
     use_multiprocessing : bool
         True to use multiprocessing for CJ state calculation, which is faster
@@ -205,7 +203,7 @@ def calculate_reflected_shock_state(
         contains 'speed', indicating the related wave speed, and 'state',
         which is a Cantera gas object at the specified state.
     """
-    quant = ureg.Quantity
+    quant = unit_registry.Quantity
 
     # define gas objects
     initial_gas = ct.Solution(mechanism)
