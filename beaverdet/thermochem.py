@@ -26,7 +26,7 @@ def calculate_laminar_flame_speed(
         species_dict,
         mechanism,
         phase_specification='',
-        unit_registry=None
+        unit_registry=_U
 ):
     """
     This function uses cantera to calculate the laminar flame speed of a given
@@ -178,7 +178,7 @@ def calculate_reflected_shock_state(
 ):
     """
     Calculates the thermodynamic and chemical state of a reflected shock
-    using sd2.
+    using customized sdtoolbox functions.
 
     Parameters
     ----------
@@ -272,11 +272,22 @@ class Mixture:
             equivalence=1,
             diluent_mole_fraction=0,
             mechanism='gri30.cti',
-            unit_registry=None
+            unit_registry=_U
     ):
-        if not unit_registry:
-            unit_registry = pint.UnitRegistry()
+        """ TODO: docstring updates
 
+        Parameters
+        ----------
+        initial_pressure
+        initial_temperature
+        fuel
+        oxidizer
+        diluent
+        equivalence
+        diluent_mole_fraction
+        mechanism
+        unit_registry
+        """
         self._quant = unit_registry.Quantity
 
         tools.check_pint_quantity(
@@ -344,7 +355,7 @@ class Mixture:
             self,
             equivalence_ratio
     ):
-        """
+        """ TODO: docstring updates
         Sets the equivalence ratio of the undiluted mixture using Cantera
         """
         equivalence_ratio = float(equivalence_ratio)
@@ -359,7 +370,7 @@ class Mixture:
         self.equivalence = equivalence_ratio
 
     def add_diluent(self, diluent, mole_fraction):
-        """
+        """ TODO: docstring updates
         Adds a diluent to an undiluted mixture, keeping the same equivalence
         ratio.
         """
@@ -408,6 +419,18 @@ class Mixture:
         the molecular weights in kg/kmol to get the density in kg/m^3. This
         is then multiplied by the tube volume to get the total mass of each
         component.
+
+        Parameters
+        ----------
+        tube_volume : pint.Quantity
+            Total volume of the reactant mixture
+        diluted : bool
+            True to use the diluted mixture, False to use the undiluted mixture
+
+        Returns
+        -------
+        dict
+            Dictionary of component masses within the reactant mixture
         """
         tools.check_pint_quantity(
             tube_volume,
@@ -443,7 +466,7 @@ class Mixture:
             self,
             diluted=False
     ):
-        """
+        """ TODO: docstring updates
         Cantera is used to get the mole fractions of each species, which are
         then multiplied by the initial pressure to get each partial pressure.
         """
