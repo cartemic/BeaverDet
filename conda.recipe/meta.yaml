@@ -1,5 +1,5 @@
 package:
-  name: beaverdet
+  name: pypbomb
   version: {{ load_setup_py_data().version }}
 
 source:
@@ -27,7 +27,7 @@ requirements:
 
 test:
   imports:
-    - beaverdet
+    - pypbomb
     - numpy
     - pint
     - pandas
@@ -41,7 +41,7 @@ test:
     - pytest-cov
 
   commands:
-    - pytest -vv --pyargs beaverdet
+    - pytest -vv --pyargs pypbomb
 
 about:
   license: MIT

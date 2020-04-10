@@ -817,7 +817,7 @@ class TestTube:
         test_tube = tube.Tube()
 
         file_directory = os.path.join(
-            'beaverdet',
+            'pypbomb',
             'lookup_data'
         )
 
@@ -1233,7 +1233,7 @@ class TestTube:
             }
 
         with patch(
-            'beaverdet.tube.Tube._get_pipe_stress_limits',
+            'pypbomb.tube.Tube._get_pipe_stress_limits',
             new=make_non_monotonic
         ):
             with pytest.raises(

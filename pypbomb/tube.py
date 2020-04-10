@@ -1474,7 +1474,7 @@ class Tube:
             flange_limits = pd.read_csv(file_location)
 
             # ensure all temperatures and pressures are floats
-            new_data = pd.np.array([
+            new_data = np.array([
                 pd.to_numeric(flange_limits[column].values, errors='coerce')
                 for column in flange_limits.columns
             ]).transpose()
@@ -2596,3 +2596,64 @@ class Tube:
         if self.verbose:
             print('Done')
         return correct_class
+
+
+# class TubeFixed:
+#     @classmethod
+#     def calculate_max_stress(
+#             cls,
+#             initial_temperature,
+#             verbose=False,
+#             ureg=None
+#     ):
+#         """
+#         Finds the maximum allowable stress of a tube material at the tube's
+#         initial temperature
+#
+#         Returns
+#         -------
+#         max_stress : pint quantity
+#             Pint quantity of maximum allowable tube stress
+#         """
+#         # Requires: initial_temperature, welded, material
+#         # ---------------------------------------------------------------------
+#         # initial temperature has default on __init__
+#         # welded has default on __init__
+#         # material has default on __init__
+#
+#         if verbose:
+#             print('calculating max stress... ', end='')
+#
+#         # look up stress-temperature limits and units
+#         stress_limits = cls._get_pipe_stress_limits()
+#         stress_units = stress_limits['stress'][0]
+#         stresses = stress_limits['stress'][1]
+#         temp_units = stress_limits['temperature'][0]
+#         temperatures = stress_limits['temperature'][1]
+#
+#         # ensure material stress limits have monotonically increasing
+#         # temperatures, otherwise the np.interp "results are nonsense" per
+#         # scipy docs
+#         if not np.all(np.diff(temperatures) > 0):
+#             raise ValueError('\nStress limits require temperatures to be ' +
+#                              'monotonically increasing')
+#
+#         # interpolate max stress
+#         max_stress = cls._units.quant(
+#             np.interp(
+#                 initial_temperature.to(temp_units).magnitude,
+#                 temperatures,
+#                 stresses
+#             ),
+#             stress_units
+#         )
+#
+#         if cls.verbose:
+#             print('Done')
+#
+#         # noinspection PyAttributeOutsideInit
+#         cls.max_stress = max_stress
+#
+#         # allow max stress to be recalculated automatically
+#         cls._calculate_stress = True
+#         return max_stress
