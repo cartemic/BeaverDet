@@ -22,6 +22,32 @@ import sympy as sp
 
 from . import thermochem
 from . import tools
+from .thermochem import _U
+
+
+_Q = _U.Quantity
+
+
+_DIR_LOOKUP_DATA = os.path.join(
+        os.path.dirname(os.path.relpath(__file__)),
+        "lookup_data"
+)
+_MATERIAL_LIMITS = dict(
+    welded=pd.read_csv(
+        os.path.join(
+            _DIR_LOOKUP_DATA,
+            "ASME_B31_1_stress_limits_welded.csv"
+        ),
+        # index_col=0
+    ),
+    seamless=pd.read_csv(
+        os.path.join(
+            _DIR_LOOKUP_DATA,
+            "ASME_B31_1_stress_limits_seamless.csv"
+        ),
+        # index_col=0
+    )
+)
 
 
 class Bolt:
@@ -2598,62 +2624,91 @@ class Tube:
         return correct_class
 
 
-# class TubeFixed:
-#     @classmethod
-#     def calculate_max_stress(
-#             cls,
-#             initial_temperature,
-#             verbose=False,
-#             ureg=None
-#     ):
-#         """
-#         Finds the maximum allowable stress of a tube material at the tube's
-#         initial temperature
-#
-#         Returns
-#         -------
-#         max_stress : pint quantity
-#             Pint quantity of maximum allowable tube stress
-#         """
-#         # Requires: initial_temperature, welded, material
-#         # ---------------------------------------------------------------------
-#         # initial temperature has default on __init__
-#         # welded has default on __init__
-#         # material has default on __init__
-#
-#         if verbose:
-#             print('calculating max stress... ', end='')
-#
-#         # look up stress-temperature limits and units
-#         stress_limits = cls._get_pipe_stress_limits()
-#         stress_units = stress_limits['stress'][0]
-#         stresses = stress_limits['stress'][1]
-#         temp_units = stress_limits['temperature'][0]
-#         temperatures = stress_limits['temperature'][1]
-#
-#         # ensure material stress limits have monotonically increasing
-#         # temperatures, otherwise the np.interp "results are nonsense" per
-#         # scipy docs
-#         if not np.all(np.diff(temperatures) > 0):
-#             raise ValueError('\nStress limits require temperatures to be ' +
-#                              'monotonically increasing')
-#
-#         # interpolate max stress
-#         max_stress = cls._units.quant(
-#             np.interp(
-#                 initial_temperature.to(temp_units).magnitude,
-#                 temperatures,
-#                 stresses
-#             ),
-#             stress_units
-#         )
-#
-#         if cls.verbose:
-#             print('Done')
-#
-#         # noinspection PyAttributeOutsideInit
-#         cls.max_stress = max_stress
-#
-#         # allow max stress to be recalculated automatically
-#         cls._calculate_stress = True
-#         return max_stress
+class TubeFixed:
+    @classmethod
+    def calculate_max_stress(
+            cls,
+            initial_temperature,
+            material,
+            welded,
+            verbose=False,
+            unit_registry=thermochem._U
+    ):
+        """
+        Finds the maximum allowable stress of a tube material at the tube's
+        initial temperature
+
+        Returns
+        -------
+        max_stress : pint quantity
+            Pint quantity of maximum allowable tube stress
+        """
+        # Requires: initial_temperature, welded, material
+        # ---------------------------------------------------------------------
+        # initial temperature has default on __init__
+        # welded has default on __init__
+        # material has default on __init__
+
+        if verbose:
+            print('calculating max stress... ', end='')
+
+        # look up stress-temperature limits and units
+        stress_limits = cls._get_pipe_stress_limits(
+            material=material,
+            welded=welded,
+            unit_registry=unit_registry
+        )
+        stress_units = stress_limits['stress'][0]
+        stresses = stress_limits['stress'][1]
+        temp_units = stress_limits['temperature'][0]
+        temperatures = stress_limits['temperature'][1]
+
+        # ensure material stress limits have monotonically increasing
+        # temperatures, otherwise the np.interp "results are nonsense" per
+        # scipy docs
+        if not np.all(np.diff(temperatures) > 0):
+            raise ValueError('\nStress limits require temperatures to be ' +
+                             'monotonically increasing')
+
+        # interpolate max stress
+        max_stress = unit_registry.quant(
+            np.interp(
+                initial_temperature.to(temp_units).magnitude,
+                temperatures,
+                stresses
+            ),
+            stress_units
+        )
+
+        return max_stress
+
+    @classmethod
+    def _get_pipe_stress_limits(
+            cls,
+            material,
+            welded,
+            unit_registry
+    ):
+        quant = unit_registry.Quantity
+        if welded:
+            material_limits = _MATERIAL_LIMITS["welded"][["Temp", material]]
+        else:
+            material_limits = _MATERIAL_LIMITS["seamless"][["Temp", material]]
+        material_limits.columns = ["temperature", "stress"]
+
+        material_limits = pd.Series(
+            data=[quant(t, "ksi") for t in material_limits["stress"].values],
+            index=[quant(t, "degF")
+                   for t in material_limits["temperature"].values],
+            name="stress"
+        )
+        # apply units
+        # limits = {
+        #     'temperature': ('degF', []),
+        #     'stress': ('ksi', [])
+        # }
+        # for temp, stress in material_limits.items():
+        #     limits['temperature'][1].append(temp)
+        #     limits['stress'][1].append(stress)
+
+        return material_limits
