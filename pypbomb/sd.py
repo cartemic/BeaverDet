@@ -394,6 +394,7 @@ class Detonation:
             max_density_ratio = adjusted_density_ratio * (1 + 0.001)
             counter += 1
 
+        pool.close()
         cj_speed = a * adjusted_density_ratio**2 + \
             b * adjusted_density_ratio + c
 
