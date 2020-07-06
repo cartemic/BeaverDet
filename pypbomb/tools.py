@@ -12,6 +12,7 @@ CREATED BY:
 """
 
 import os
+import warnings
 
 import cantera as ct
 import pint
@@ -87,6 +88,39 @@ def check_pint_quantity(
     return True
 
 
+def parse_quant_input(
+        quant_input,
+        unit_registry
+):
+    """
+    Converts an iterable of (magnitude, 'units') to a pint quantity or
+    converts a pint quantity to the local registry.
+
+    Parameters
+    ----------
+    quant_input : Union[Tuple, List, pint.Quantity]
+        Iterable or quantity to be parsed
+    unit_registry : pint.UnitRegistry
+        Unit registry to be used for pint quantities
+
+    Returns
+    -------
+    pint.Quantity
+        input as a pint quantity
+    """
+    if hasattr(quant_input, "magnitude"):
+        return unit_registry.Quantity(
+            quant_input.magnitude,
+            quant_input.units.format_babel()
+        )
+    elif hasattr(quant_input, "__iter__") and len(quant_input) == 2:
+        return unit_registry.Quantity(float(quant_input[0]), quant_input[1])
+    else:
+        raise ValueError(
+            "Bad quantity input: {0}".format(quant_input)
+        )
+
+
 def add_dataframe_row(
         dataframe,
         row
@@ -112,10 +146,10 @@ def add_dataframe_row(
 def find_mechanisms():
     mechanism_path = os.path.join(
         os.path.split(os.path.abspath(ct.__file__))[0],
-        'data'
+        "data"
     )
 
     available = {item for item in os.listdir(mechanism_path) if
-                 ('.cti' in item) or ('.xml' in item)}
+                 (".cti" in item) or (".xml" in item)}
 
     return available

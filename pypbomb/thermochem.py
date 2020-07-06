@@ -302,27 +302,16 @@ class Mixture:
             ensure_positive=True
         )
 
+        self.fuel = fuel
+        self.oxidizer = oxidizer
+        self.diluent = diluent
+
         # initialize diluted and undiluted gas solution in Cantera
         self.undiluted = ct.Solution(mechanism)
         self.undiluted.TP = (
             initial_temperature.to("degK").magnitude,
             initial_pressure.to("Pa").magnitude
         )
-
-        # make sure the user input species that are in the mechanism file
-        good_species = self.undiluted.species_names
-        if fuel in good_species:
-            self.fuel = fuel
-        else:
-            raise ValueError("Bad fuel")
-        if oxidizer in good_species:
-            self.oxidizer = oxidizer
-        else:
-            raise ValueError("Bad oxidizer")
-        if (diluent and diluent in good_species) or not diluent:
-            self.diluent = diluent
-        else:
-            raise ValueError("Bad diluent")
 
         # define givens
         self.mechanism = mechanism
@@ -388,21 +377,6 @@ class Mixture:
         Adds a diluent to an undiluted mixture, keeping the same equivalence
         ratio.
         """
-        # make sure diluent is available in mechanism and isn't the fuel or ox
-        if diluent in [self.fuel, self.oxidizer]:
-            raise ValueError("You can\'t dilute with fuel or oxidizer!")
-        elif diluent not in self.undiluted.species_names:
-            if len(diluent.split(" ")) > 1:
-                _check_compound_component(
-                    diluent,
-                    self.undiluted.species_names
-                )
-            else:
-                raise ValueError("Bad diluent: {}".format(diluent))
-
-        if mole_fraction > 1. or mole_fraction < 0:
-            raise ValueError("Bro, do you even mole fraction?")
-
         self.diluent = diluent
         self.diluent_mol_fraction = mole_fraction
 
@@ -417,8 +391,8 @@ class Mixture:
                 mole_fraction
             )
         self.diluted.TPX = (
-            self.initial_temperature.to('degK').magnitude,
-            self.initial_pressure.to('Pa').magnitude,
+            self.initial_temperature.to("degK").magnitude,
+            self.initial_pressure.to("Pa").magnitude,
             new_species
         )
 
@@ -548,19 +522,28 @@ def _diluted_species_dict(
     dict
         new mole_fraction_dict to be inserted into the cantera solution object
     """
+    if diluent_mol_frac >= 1. or diluent_mol_frac < 0:
+        msg = "Bad mole fraction: %f. Must be in 0<=mf<1." % diluent_mol_frac
+        raise ValueError(msg)
     # collect total diluent moles
     moles_dil = 0.
     diluent_dict = dict()
     split_diluents = diluent.split(" ")
-    if len(split_diluents) > 1:
-        for d in split_diluents:
+    for d in split_diluents:
+        try:
             key, value = d.split(":")
-            value = float(value)
+        except ValueError:
+            key = d
+            value = 1
+        value = float(value)
+        if key in diluent_dict.keys():
+            # todo: test for duplicate key check
+            raise ValueError("duplicate component: %s" % key)
+        elif key in spec.keys():
+            raise ValueError("%s already in undiluted mixture" % key)
+        else:
             diluent_dict[key] = value
-            moles_dil += value
-    else:
-        diluent_dict[diluent] = 1
-        moles_dil = 1
+        moles_dil += value
 
     for key in diluent_dict.keys():
         diluent_dict[key] /= moles_dil

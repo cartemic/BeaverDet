@@ -150,7 +150,7 @@ class Detonation:
             # check for non-convergence
             if loop_counter == max_iterations:
                 warnings.warn(
-                    'No convergence within {0} iterations'.format(
+                    "No convergence within {0} iterations".format(
                         max_iterations
                     ),
                     Warning
@@ -423,21 +423,21 @@ class Detonation:
 
         if return_r_squared and return_state:
             # noinspection PyUnboundLocalVariable
-            return {'cj speed': cj_speed,
-                    'R^2': r_squared,
-                    'cj state': working_gas
+            return {"cj speed": cj_speed,
+                    "R^2": r_squared,
+                    "cj state": working_gas
                     }
         elif return_state:
             # noinspection PyUnboundLocalVariable
-            return {'cj speed': cj_speed,
-                    'cj state': working_gas
+            return {"cj speed": cj_speed,
+                    "cj state": working_gas
                     }
         elif return_r_squared:
-            return {'cj speed': cj_speed,
-                    'R^2': r_squared
+            return {"cj speed": cj_speed,
+                    "R^2": r_squared
                     }
         else:
-            return {'cj speed': cj_speed}
+            return {"cj speed": cj_speed}
 
 
 class Properties:
@@ -470,11 +470,11 @@ class Properties:
         """
 
         gas.TD = temperature, density
-        gas.equilibrate('TV')
+        gas.equilibrate("TV")
         pressure = gas.P
         enthalpy = gas.enthalpy_mass
 
-        return {'pressure': pressure, 'enthalpy': enthalpy}
+        return {"pressure": pressure, "enthalpy": enthalpy}
 
 
 class GetError:
@@ -604,6 +604,7 @@ class Reflection:
             incident_shock_speed
     ):
         """
+        todo: fix returns
         This function calculates equilibrium post-reflected-shock state assuming
         u1 = 0
 
@@ -742,10 +743,10 @@ class Reflection:
                 )
         ):
             loop_counter += 1
-            if loop_counter == max_iterations:
+            if loop_counter == max_iterations:  # pragma: no cover
                 warnings.warn(
-                    'Calculation did not converge for U = {0:.2f} ' +
-                    'after {1} iterations'.format(particle_speed, loop_counter))
+                    "Calculation did not converge for U = {0:.2f} " +
+                    "after {1} iterations".format(particle_speed, loop_counter))
                 return working_gas
 
             # calculate enthalpy and pressure error for current guess
