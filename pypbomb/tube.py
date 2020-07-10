@@ -94,7 +94,7 @@ def _collect_tube_materials():
             raise ValueError("\n" + file_name + " is empty")
 
     else:
-        # raise an exception if the file doesn"t exist
+        # raise an exception if the file doesn't exist
         raise ValueError("\n" + file_name + " does not exist")
 
     # apply units
@@ -1691,7 +1691,7 @@ class Flange:
         with warnings.catch_warnings():
             # ignore max iteration warning during interpolation
             warnings.simplefilter("ignore")
-            df_interp.interpolate(method="spline", order=3, inplace=True)
+            df_interp.interpolate(method="slinear", inplace=True)
         ser_result = df_interp.iloc[-1]
         return ser_result.keys()[
             ser_result > max_pressure.to_base_units().magnitude
@@ -1704,14 +1704,41 @@ class Flange:
             material
     ):
         _check_material(material)
-        group = TUBE_MATERIALS.Group[
+        group = str(TUBE_MATERIALS.Group[
             TUBE_MATERIALS.Grade == material
-        ].iloc[0]
+        ].iloc[0])
         Flange._check_flange_class(flange_class, group)
 
+        # ensure correct unit registry is used for comparison
+        if hasattr(temperature, "_REGISTRY"):
+            ureg_out = temperature._REGISTRY
+        else:
+            ureg_out = _U
+
+        temperature = tools.parse_quant_input(temperature, _U)
+
+        df_limits = FLANGE_LIMITS[group]
         # ensure temperature is in range
-        # TODO: get max flange pressure
-        pass
+        if (
+                temperature < df_limits["Temperature"].min()
+        ) or (
+                temperature > df_limits["Temperature"].max()
+        ):
+            raise ValueError("\nTemperature out of range.")
+
+        df_limits = df_limits.applymap(
+            lambda x: x.to_base_units().magnitude
+        )
+
+        df_interp = pd.DataFrame(columns=df_limits.columns)
+        df_interp["Temperature"] = [temperature.to_base_units().magnitude]
+        df_interp = pd.concat((df_limits, df_interp)).set_index("Temperature")
+        with warnings.catch_warnings():
+            # ignore max iteration warning during interpolation
+            warnings.simplefilter("ignore")
+            df_interp.interpolate(method="slinear", inplace=True)
+        ser_result = df_interp.iloc[-1]
+        return ureg_out.Quantity(ser_result[flange_class], "Pa")
 
     @staticmethod
     def get_max_temperature(
@@ -1719,5 +1746,39 @@ class Flange:
             pressure,
             material
     ):
-        # TODO: get max flange temperature
-        pass
+        _check_material(material)
+        group = str(TUBE_MATERIALS.Group[
+            TUBE_MATERIALS.Grade == material
+        ].iloc[0])
+        Flange._check_flange_class(flange_class, group)
+
+        # ensure correct unit registry is used for comparison
+        if hasattr(pressure, "_REGISTRY"):
+            ureg_out = pressure._REGISTRY
+        else:
+            ureg_out = _U
+
+        pressure = tools.parse_quant_input(pressure, _U)
+
+        df_limits = FLANGE_LIMITS[group]
+        # ensure pressure is in range
+        if (
+                pressure < df_limits[flange_class].min()
+        ) or (
+                pressure > df_limits[flange_class].max()
+        ):
+            raise ValueError("\nPressure out of range.")
+
+        df_limits = df_limits.applymap(
+            lambda x: x.to_base_units().magnitude
+        )[["Temperature", flange_class]]
+
+        df_interp = pd.DataFrame(columns=df_limits.columns)
+        df_interp[flange_class] = [pressure.to_base_units().magnitude]
+        df_interp = pd.concat((df_limits, df_interp)).set_index(flange_class)
+        with warnings.catch_warnings():
+            # ignore max iteration warning during interpolation
+            warnings.simplefilter("ignore")
+            df_interp.interpolate(method="slinear", inplace=True)
+        ser_result = df_interp.iloc[-1]
+        return ureg_out.Quantity(ser_result["Temperature"], "K")
