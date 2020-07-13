@@ -298,27 +298,31 @@ class Bolt:
         Parameters
         ----------
         thread_size : str
-            Size of threads to be evaluated, e.g. '1/4-20' or '1 1/2-6'
+            Size of threads to be evaluated, e.g. ``"1/4-20"`` or ``"1 1/2-6"``
         thread_class : str
             Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
             automatically appended for internal/external threads
-        bolt_max_tensile : pint quantity
+        bolt_max_tensile : pint.Quantity
             Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint quantity
+        plate_max_tensile : pint.Quantity
             Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint quantity
+        engagement_length : pint.Quantity
             Pint quantity of total thread engagement length
-        unit_registry : pint unit registry
+        unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
-            unit registry
+            unit registry todo: reword this garbage
 
         Returns
         -------
         thread : dict
-            Dictionary with the following key/value pairs:
-            'plate area': stress area of internal threads within the plate
-            'screw area': stress area of external threads on the screw
-            'minimum engagement': minimum engagement length causing screw to
+            Dictionary with the following keys:
+
+            ``"plate area"``
+                Stress area of internal threads within the plate
+            ``"screw area"``
+                Stress area of external threads on the screw
+            ``"minimum engagement"``
+                Minimum engagement length causing screw to
                 fail in tension rather than shear, thus preventing the plate
                 from stripping.
         """
@@ -1017,12 +1021,9 @@ class Window:
         """
         This function uses sympy to solve for a missing window measurement.
         Inputs are five keyword arguments, with the following possible values:
-            length
-            width
-            thickness
-            pressure
-            rupture_modulus
-            safety_factor
+
+        length, width, thickness, pressure, rupture_modulus, safety_factor
+
         All of these arguments should be floats, and dimensions should be
         consistent (handling should be done in other functions, such as
         calculate_window_sf().
@@ -1037,7 +1038,9 @@ class Window:
 
         Returns
         -------
-        missing value as a float, or NaN if the result is imaginary
+        missing dimension : float or np.NaN
+            Missing dimension is returned as a float upon successful calculation
+            or NaN if the result is imaginary
         """
 
         # Ensure that 5 keyword arguments were given
