@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from cantera import Solution
 
-from ..pypbomb import sd
+from .. import sd
 
 
 def test_curve_fit():
