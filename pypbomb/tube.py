@@ -1697,7 +1697,7 @@ class Flange:
             df_interp.interpolate(method="slinear", inplace=True)
         ser_result = df_interp.iloc[-1]
         return ser_result.keys()[
-            ser_result > max_pressure.to_base_units().magnitude
+            ser_result >= max_pressure.to_base_units().magnitude
         ][0]
 
     @staticmethod
