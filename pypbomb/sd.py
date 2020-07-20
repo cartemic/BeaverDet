@@ -34,9 +34,10 @@ def cj_curve_fit(x, y):
         Returns
         -------
         tuple
-            (a, b, c, r_squared)
-                a, b, c = coefficients of quadratic function :math:`ax^2 + bx +
-                c = 0`
+            A tuple containing ``(a, b, c, r_squared)`` where ``a``, ``b``, and
+            ``c`` are the coefficients of quadratic function
+            :math:`ax^2 + bx + c = 0` and ``r_squared`` is the :math:`R^2` value
+            of the curve fit.
         """
     # enforce numpy and float dtype
     x = np.array(x, dtype=float)
@@ -124,7 +125,7 @@ class Detonation:
         tuple(`ct.Solution`, `float`)
             A tuple containing:
 
-            * Gas mixture at equilibrium state (`ct.Solution)
+            * Gas mixture at equilibrium state (`ct.Solution`)
             * Initial velocity resulting in the input density ratio, in m/s
               (`float`)
         """
