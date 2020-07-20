@@ -11,7 +11,6 @@ CREATED BY:
 """
 
 import numpy as np
-import pandas as pd
 import pint
 import pytest
 
@@ -46,6 +45,7 @@ class TestCheckPintQuantity:
                 bad_dimension_type
             )
 
+    # noinspection PyTypeChecker
     @staticmethod
     def test_non_pint_quantity():
         with pytest.raises(
