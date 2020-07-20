@@ -1,18 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-PURPOSE:
-    A series of accessories used in the function of the detonation design
-    tools
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
+A series of accessories used in the function of the detonation tube design tools
 """
 
 import os
-import warnings
 
 import cantera as ct
 import pint
@@ -24,20 +15,19 @@ def check_pint_quantity(
         ensure_positive=False
 ):
     """
-    This function checks to make sure that a quantity is an instance of a pint
-    quantity, and that it has the correct units.
+    Checks to make sure that a quantity is an instance of a pint quantity, and
+    that it has the correct units. Currently supported dimension types:
 
-    Currently supported dimension types:
-        length
-        area
-        volume
-        temperature
-        pressure
-        velocity
+        * length
+        * area
+        * volume
+        * temperature
+        * pressure
+        * velocity
 
     Parameters
     ----------
-    quantity : pint quantity
+    quantity : pint.Quantity
         Pint quantity which is to be checked for dimensionality
     dimension_type : str
         Dimensionality that quantity should have
@@ -47,8 +37,8 @@ def check_pint_quantity(
 
     Returns
     -------
-    True if no errors are raised
-
+    bool
+        True if no errors are raised
     """
 
     ureg = pint.UnitRegistry()
@@ -93,7 +83,7 @@ def parse_quant_input(
         unit_registry
 ):
     """
-    Converts an iterable of (magnitude, 'units') to a pint quantity or
+    Converts an iterable of ``(magnitude, "units")`` to a pint quantity or
     converts a pint quantity to the local registry.
 
     Parameters
@@ -106,7 +96,7 @@ def parse_quant_input(
     Returns
     -------
     pint.Quantity
-        input as a pint quantity
+        Input as a pint quantity
     """
     if hasattr(quant_input, "magnitude"):
         return unit_registry.Quantity(
@@ -121,29 +111,26 @@ def parse_quant_input(
         )
 
 
-def add_dataframe_row(
-        dataframe,
-        row
+def find_mechanisms(
+        return_directory=False
 ):
     """
-    Adds a row to a pandas dataframe
-
-    https://stackoverflow.com/questions/10715965/
-    add-one-row-in-a-pandas-dataframe
+    Figure out which mechanisms the local cantera install has access to.
 
     Parameters
     ----------
-    dataframe : pd.DataFrame
-    row : list or tuple or np.ndarray
+    return_directory : bool, optional
+        Whether or not to return the location of the mechanism files as well
+        as its contents. Defaults to ``False``.
 
     Returns
     -------
-
+    set or tuple
+        Set of available mechanisms in the cantera data directory. If
+        `return_directory` is set to True, a tuple is returned where the first
+        item is the set of available mechanisms, and the second is the location
+        of the cantera data directory.
     """
-    dataframe.loc[len(dataframe.index)] = row
-
-
-def find_mechanisms():
     mechanism_path = os.path.join(
         os.path.split(os.path.abspath(ct.__file__))[0],
         "data"
@@ -152,4 +139,7 @@ def find_mechanisms():
     available = {item for item in os.listdir(mechanism_path) if
                  (".cti" in item) or (".xml" in item)}
 
-    return available
+    if return_directory:
+        return available, mechanism_path
+    else:
+        return available

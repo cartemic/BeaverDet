@@ -22,25 +22,6 @@ _U = pint.UnitRegistry()
 _Q = _U.Quantity
 
 
-def test_add_dataframe_row():
-    column_names = ["a", "s", "d", "f"]
-    added_row = [0, "f", 3, "asd"]
-
-    good_dataframe = pd.DataFrame(
-        columns=column_names,
-        data=[added_row],
-        dtype=object
-    )
-
-    test_dataframe = pd.DataFrame(
-        columns=column_names,
-        dtype=object
-    )
-    tools.add_dataframe_row(test_dataframe, added_row)
-
-    assert test_dataframe.equals(good_dataframe)
-
-
 class TestCheckPintQuantity:
     ureg = pint.UnitRegistry()
     quant = ureg.Quantity
