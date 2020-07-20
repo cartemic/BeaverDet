@@ -29,23 +29,23 @@ def calculate_laminar_flame_speed(
     Parameters
     ----------
     initial_temperature : pint.Quantity
-        Initial temperature of gas mixture
+        Mixture initial temperature
     initial_pressure : pint.Quantity
-        Initial pressure of gas mixture
+        Mixture initial pressure
     species_dict : dict
         Dictionary with species names (all caps) as keys and moles as values
     mechanism : str
-        String of mechanism to use (e.g. "gri30.cti")
-    phase_specification : str
+        String of mechanism to use (e.g. ``gri30.cti``)
+    phase_specification : str, optional
         Phase specification for cantera solution
-    unit_registry : pint.UnitRegistry
+    unit_registry : pint.UnitRegistry, optional
         Unit registry for managing units to prevent conflicts with parent
         unit registry
 
     Returns
     -------
     pint.Quantity
-        Laminar flame speed in m/s as a pint quantity
+        Laminar flame speed
     """
     gas = ct.Solution(mechanism, phase_specification)
     quant = unit_registry.Quantity
@@ -103,23 +103,23 @@ def get_eq_sound_speed(
     Parameters
     ----------
     temperature : pint.Quantity
-        Initial mixture temperature
+        Mixture initial temperature
     pressure : pint.Quantity
-        Initial mixture pressure
+        Mixture initial pressure
     species_dict : dict
         Dictionary of mixture mole fractions
     mechanism : str
         Desired chemical mechanism
-    phase_specification : str
+    phase_specification : str, optional
         Phase specification for cantera solution
-    unit_registry : pint.UnitRegistry
+    unit_registry : pint.UnitRegistry, optional
         Unit registry for managing units to prevent conflicts with parent
         unit registry
 
     Returns
     -------
     sound_speed : pint.Quantity
-        local speed of sound in m/s
+        local speed of sound
     """
     quant = unit_registry.Quantity
 
@@ -177,24 +177,24 @@ def calculate_reflected_shock_state(
     Parameters
     ----------
     initial_temperature : pint.Quantity
-        Pint quantity of mixture initial temperature
+        Mixture initial temperature
     initial_pressure : pint.Quantity
-        Pint quantity of mixture initial pressure
+        Mixture initial pressure
     species_dict : dict
         Dictionary of initial reactant mixture
     mechanism : str
-        Mechanism to use for chemical calculations, e.g. "gri30.cti"
-    unit_registry : pint.UnitRegistry
+        Mechanism to use for chemical calculations, e.g. ``gri30.cti``
+    unit_registry : pint.UnitRegistry, optional
         Pint unit registry
-    use_multiprocessing : bool
+    use_multiprocessing : bool, optional
         True to use multiprocessing for CJ state calculation, which is faster
-        but requires the function to be run from __main__
+        but requires the function to be run from ``__main__``
 
     Returns
     -------
     dict
-        Dictionary containing keys "reflected" and "cj". Each of these
-        contains "speed", indicating the related wave speed, and "state",
+        Dictionary containing keys ``reflected`` and ``cj``. Each of these
+        contains speed``, indicating the related wave speed, and ``state``,
         which is a Cantera gas object at the specified state.
     """
     quant = unit_registry.Quantity
