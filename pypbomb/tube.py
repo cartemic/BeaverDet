@@ -1610,9 +1610,12 @@ class Tube:
 
 
 class Flange:
-    available_materials = TUBE_MATERIALS.Grade[
+    """
+    Methods pertaining to flange class and max pressure calculations
+    """
+    available_materials = list(TUBE_MATERIALS.Grade[
         pd.notna(TUBE_MATERIALS.Group)
-    ].values
+    ].values)
 
     @staticmethod
     def _check_flange_class(flange_class, group):
@@ -1632,13 +1635,27 @@ class Flange:
             unit_registry=_U
     ):
         """
-        Finds the minimum allowable flange class per ASME B16.5 for a give
+        Finds the minimum allowable flange class per ASME B16.5 for a given
         flange temperature and tube pressure.
+
+        Parameters
+        ----------
+        max_pressure : pint.Quantity or tuple
+            Maximum pressure within the system as a quantity or tuple of
+            ``(magnitude, "units")``
+        temperature : pint.Quantity or tuple
+            Flange temperature as a quantity or tuple of
+            ``(magnitude, "units")``
+        material : str
+            Flange material. See ``flange.available_materials``
+        unit_registry : pint.UnitRegistry, optional
+            Pint unit registry, if output within a particular registry is
+            desired
 
         Returns
         -------
-        flange_class: str
-            String representing the minimum allowable flange class
+        str
+            Minimum allowable flange class
         """
         max_pressure = tools.parse_quant_input(
             max_pressure,
@@ -1714,6 +1731,24 @@ class Flange:
             temperature,
             material
     ):
+        """
+        Finds the max allowable pressure for a flange of a given material and
+        class at the desired temperature.
+
+        Parameters
+        ----------
+        flange_class : str
+            Class of the flange to evaluate, e.g. ``"900"``
+        temperature : pint.Quantity
+            Flange temperature
+        material : str
+            Flange material. See ``flange.available_materials``
+
+        Returns
+        -------
+        pint.Quantity
+            Maximum allowable pressure
+        """
         _check_material(material)
         group = str(TUBE_MATERIALS.Group[
             TUBE_MATERIALS.Grade == material
@@ -1757,6 +1792,24 @@ class Flange:
             pressure,
             material
     ):
+        """
+        Finds the max allowable temperature for a flange of a given material and
+        class at the desired pressure.
+
+        Parameters
+        ----------
+        flange_class : str
+            Class of the flange to evaluate, e.g. ``"900"``
+        pressure : pint.Quantity
+            System pressure
+        material : str
+            Flange material. See ``flange.available_materials``
+
+        Returns
+        -------
+        pint.Quantity
+            Max allowable flange temperature
+        """
         _check_material(material)
         group = str(TUBE_MATERIALS.Group[
             TUBE_MATERIALS.Grade == material
