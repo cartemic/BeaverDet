@@ -83,12 +83,12 @@ def parse_quant_input(
         unit_registry
 ):
     """
-    Converts an iterable of ``(magnitude, "units")`` to a pint quantity or
+    Converts a tuple of ``(magnitude, "units")`` to a pint quantity or
     converts a pint quantity to the local registry.
 
     Parameters
     ----------
-    quant_input : Union[Tuple, List, pint.Quantity]
+    quant_input : pint.Quantity or tuple
         Iterable or quantity to be parsed
     unit_registry : pint.UnitRegistry
         Unit registry to be used for pint quantities
