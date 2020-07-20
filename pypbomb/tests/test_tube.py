@@ -96,24 +96,6 @@ class TestBolt:
             )
 
     @staticmethod
-    def test_import_thread_specs():
-        # good input
-        test_size = "0-80"
-        test_type = ["external", "internal"]
-        test_property = "pitch diameter max"
-        test_classes = [["2A", "3A"], ["2B", "3B"]]
-        good_result = [[0.0514, 0.0519], [0.0542, 0.0536]]
-        specifications = tube.Bolt._import_thread_specs()
-        for thread, classes, expected in zip(test_type, test_classes,
-                                             good_result):
-            # check for correct output
-            current_frame = specifications[thread]
-            for thread_class, result in zip(classes, expected):
-                test_result = current_frame[test_property][test_size][
-                    thread_class]
-                assert abs(test_result - result) < 1e-7
-
-    @staticmethod
     def test_get_thread_property():
         # good input
         good_args = [
@@ -141,14 +123,13 @@ class TestBolt:
 
     @staticmethod
     def test_get_thread_property_not_in_dataframe():
-        dataframes = tube.Bolt._import_thread_specs()
         # property not in dataframe
         bad_property = "jello"
         bad_message = (
                 "Thread property \'" +
                 bad_property +
                 "\' not found. Available specs: " +
-                "'" + "', '".join(dataframes["internal"].keys()) + "'"
+                "'" + "', '".join(tube.THREAD_SPECS["internal"].keys()) + "'"
         )
         with pytest.raises(
                 KeyError,
@@ -1289,3 +1270,20 @@ class TestCheckMaterialList:
                 except ValueError as err:
                     tube.TUBE_MATERIALS = old_materials
                     assert str(err) == error_string
+
+
+def test_import_thread_specs():
+    # good input
+    test_size = "0-80"
+    test_type = ["external", "internal"]
+    test_property = "pitch diameter max"
+    test_classes = [["2A", "3A"], ["2B", "3B"]]
+    good_result = [[0.0514, 0.0519], [0.0542, 0.0536]]
+    for thread, classes, expected in zip(test_type, test_classes,
+                                         good_result):
+        # check for correct output
+        current_frame = tube.THREAD_SPECS[thread]
+        for thread_class, result in zip(classes, expected):
+            test_result = current_frame[test_property][test_size][
+                thread_class]
+            assert abs(test_result - result) < 1e-7

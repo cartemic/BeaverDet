@@ -280,10 +280,53 @@ def _get_flange_limits_from_csv():
 FLANGE_LIMITS = _get_flange_limits_from_csv()
 
 
+def _import_thread_specs():
+    """
+    Imports thread specifications from .csv files
+
+    Returns
+    -------
+    thread_specs : dict
+        [internal thread specs, external thread specs]. Both sets of thread
+        specifications are multi-indexed with (thread size, thread class).
+    """
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.relpath(__file__)
+        ),
+        "lookup_data"
+    )
+    file_names = [
+        "ANSI_inch_internal_thread.csv",
+        "ANSI_inch_external_thread.csv"
+    ]
+    file_locations = [
+        os.path.relpath(
+            os.path.join(
+                file_directory,
+                name
+            )
+        )
+        for name in file_names
+    ]
+
+    thread_specs = {
+        key: pd.read_csv(location, index_col=(0, 1)) for location, key in
+        zip(file_locations, ["internal", "external"])
+    }
+
+    return thread_specs
+
+
+THREAD_SPECS = _import_thread_specs()
+
+
 class Bolt:
-    @classmethod
+    """
+    Methods relating to bolt calculations and property lookup.
+    """
+    @staticmethod
     def calculate_stress_areas(
-            cls,
             thread_size,
             thread_class,
             bolt_max_tensile,
@@ -300,31 +343,28 @@ class Bolt:
         thread_size : str
             Size of threads to be evaluated, e.g. ``"1/4-20"`` or ``"1 1/2-6"``
         thread_class : str
-            Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
-            automatically appended for internal/external threads
+            Class of threads to be evaluated, ``"2"`` or ``"3"``. ``"A"`` or
+            ``"B"`` are automatically appended for internal/external threads
         bolt_max_tensile : pint.Quantity
-            Pint quantity of bolt (ext. thread) tensile failure stress
+            Pint quantity of bolt (external thread) tensile failure stress
         plate_max_tensile : pint.Quantity
-            Pint quantity of plate (int. thread) tensile failure stress
+            Pint quantity of plate (internal thread) tensile failure stress
         engagement_length : pint.Quantity
             Pint quantity of total thread engagement length
         unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
-            unit registry todo: reword this garbage
+            unit registry
 
         Returns
         -------
-        thread : dict
+        dict
             Dictionary with the following keys:
 
-            ``"plate area"``
-                Stress area of internal threads within the plate
-            ``"screw area"``
-                Stress area of external threads on the screw
-            ``"minimum engagement"``
-                Minimum engagement length causing screw to
-                fail in tension rather than shear, thus preventing the plate
-                from stripping.
+            * ``"plate area"``: Stress area of internal threads within the plate
+            * ``"screw area"``: Stress area of external threads on the screw
+            * ``"minimum engagement"``: Minimum engagement length causing screw
+              to fail in tension rather than shear, thus preventing the plate
+              from stripping.
         """
         quant = unit_registry.Quantity
 
@@ -361,30 +401,29 @@ class Bolt:
         thread = dict()
 
         # look up thread specs for stress area calculations
-        thread_specs = cls._import_thread_specs()
         k_n_max = quant(
-            thread_specs["internal"]
+            THREAD_SPECS["internal"]
             ["minor diameter max"]
             [thread_size]
             [thread_class + "B"],
             "in"
         )
         e_s_min = quant(
-            thread_specs["external"]
+            THREAD_SPECS["external"]
             ["pitch diameter min"]
             [thread_size]
             [thread_class + "A"],
             "in"
         )
         e_n_max = quant(
-            thread_specs["internal"]
+            THREAD_SPECS["internal"]
             ["pitch diameter max"]
             [thread_size]
             [thread_class + "B"],
             "in"
         )
         d_s_min = quant(
-            thread_specs["external"]
+            THREAD_SPECS["external"]
             ["major diameter min"]
             [thread_size]
             [thread_class + "A"],
@@ -395,7 +434,7 @@ class Bolt:
             "1/in"
         )
         basic_diameter = quant(
-            thread_specs["external"]
+            THREAD_SPECS["external"]
             ["basic diameter"]
             [thread_size]
             [thread_class + "A"],
@@ -463,46 +502,7 @@ class Bolt:
         return thread
 
     @staticmethod
-    def _import_thread_specs():
-        """
-        Imports thread specifications from .csv files
-
-        Returns
-        -------
-        thread_specs : dict
-            [internal thread specs, external thread specs]. Both sets of thread
-            specifications are multi-indexed with (thread size, thread class).
-        """
-        file_directory = os.path.join(
-            os.path.dirname(
-                os.path.relpath(__file__)
-            ),
-            "lookup_data"
-        )
-        file_names = [
-            "ANSI_inch_internal_thread.csv",
-            "ANSI_inch_external_thread.csv"
-        ]
-        file_locations = [
-            os.path.relpath(
-                os.path.join(
-                    file_directory,
-                    name
-                )
-            )
-            for name in file_names
-        ]
-
-        thread_specs = {
-            key: pd.read_csv(location, index_col=(0, 1)) for location, key in
-            zip(file_locations, ["internal", "external"])
-        }
-
-        return thread_specs
-
-    @classmethod
     def get_thread_property(
-            cls,
             thread_property,
             thread_size,
             thread_class,
@@ -517,30 +517,30 @@ class Bolt:
         Parameters
         ----------
         thread_property : str
-            Property that is desired, such as 'minor diameter'
+            Property that is desired, such as ``"minor diameter"``
         thread_size : str
-            Thread size for desired property, such as '1/4-20' or '1 1/2-6'
+            Thread size for desired property, such as ``"1/4-20"`` or
+            ``"1 1/2-6"``
         thread_class : str
-            Thread class: '2B' or '3B' for internal threads, '2A' or '3A' for
-            external threads
-        unit_registry : pint unit registry
+            Thread class: ``"2B"`` or ``"3B"`` for internal threads, ``"2A"`` or
+            ``"3A"`` for external threads
+        unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
             unit registry
 
         Returns
         -------
-        pint.UnitRegistry().Quantity
+        pint.Quantity
             Property requested, as a pint quantity with units of inches
         """
         quant = unit_registry.Quantity
-        thread_specs = cls._import_thread_specs()
 
         # determine if internal or external
         if "A" in thread_class and ("2" in thread_class or "3" in thread_class):
-            thread_specs = thread_specs["external"]
+            thread_specs = THREAD_SPECS["external"]
         elif "B" in thread_class and ("2" in thread_class
                                       or "3" in thread_class):
-            thread_specs = thread_specs["internal"]
+            thread_specs = THREAD_SPECS["internal"]
         else:
             raise ValueError("\nbad thread class")
 
@@ -563,6 +563,9 @@ class Bolt:
 
 
 class DDT:
+    """
+    Methods for estimating the deflagration-to-detonation transition (DDT).
+    """
     @staticmethod
     def calculate_spiral_diameter(
             pipe_id,
@@ -574,17 +577,18 @@ class DDT:
 
         Parameters
         ----------
-        pipe_id : pint quantity
+        pipe_id : pint.Quantity
             Length scale representing the inner diameter of the pipe used for
             the detonation tube
         blockage_ratio : float
-            percentage (float between 0 and 1)
+            Ratio of blocked area to total cross-sectional area, :math:`0 < BR
+            < 1`
 
         Returns
         -------
-        spiral_diameter : pint quantity
-            Shchelkin spiral diameter inside a tube of pipe_id inner diameter
-            giving a blockage ratio of blockage_ratio %. Units are the same as
+        spiral_diameter : pint.Quantity
+            Shchelkin spiral diameter inside a tube of `pipe_id` inner diameter
+            giving a blockage ratio of `blockage_ratio`. Units are the same as
             pipe_id.
         """
         # ensure blockage ratio is a float
@@ -618,14 +622,16 @@ class DDT:
 
         Parameters
         ----------
-        tube_inner_diameter : pint quantity
-            Length scale corresponding to the ID of the detonation tube
-        blockage_diameter : pint quantity
-            Length scale corresponding to the OD of a Shchelkin spiral
+        tube_inner_diameter : pint.Quantity
+            Inner diameter of the detonation tube
+        blockage_diameter : pint.Quantity
+            Outer diameter of the blockage used to create the Shchelkin spiral
+            (i.e. a Shchelkin spiral made from 1/2" round stock would be
+            ``blockage_diameter=quant(0.5, "inch")``
 
         Returns
         -------
-        blockage_ratio : float
+        float
             Ratio of blocked to open area (between 0 and 1)
         """
 
@@ -674,7 +680,8 @@ class DDT:
         This is accomplished using equations collected by Ciccarelli and
         Dorofeev [1] for blockage ratios <= 0.75. If the desired blockage ratio
         is less than 0.3, the mixture viscosity is needed, and the
-        phase_specification option may be necessary depending on the mechanism.
+        `phase_specification` option may be necessary depending on the
+        mechanism.
 
         [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
         detonation in ducts,” Progress in Energy and Combustion Science,
@@ -683,8 +690,8 @@ class DDT:
         Parameters
         ----------
         blockage_ratio : float
-            Ratio of the cross-sectional area of the detonation tube and a
-            periodic blockage used to cause DDT
+            Ratio of blocked area to total cross-sectional area, :math:`0 < BR
+            < 1`
         tube_diameter : pint quantity
             Internal diameter of the detonation tube
         initial_temperature : pint quantity
@@ -695,20 +702,21 @@ class DDT:
             Dictionary containing the species in the mixture as keys, with total
             moles or mole fractions as values
         mechanism : str
-            Mechanism file name for Cantera
-        unit_registry : pint unit registry
+            Mechanism file name for Cantera. See ``tools.find_mechanisms()`` for
+            a list of installed mechanisms.
+        unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
             unit registry
-        phase_specification : str
-            (Optional) Phase specification within the mechanism file used to
-            evaluate thermophysical properties. If Gri30.cti is used with no
-            phase specification, viscosity calculations will fail, resulting in
+        phase_specification : str, optional
+            Phase specification within the mechanism file used to evaluate
+            thermophysical properties. If ``gri30.cti`` is used with no phase
+            specification viscosity calculations will fail, resulting in
             an error for all blockage ratios less than 0.3.
 
         Returns
         -------
-        runup_distance : pint quantity
-            Predicted DDT distance, with the same units as the tube diameter
+        pint.Quantity
+            Predicted DDT distance
         """
 
         if blockage_ratio <= 0 or blockage_ratio > 0.75:
