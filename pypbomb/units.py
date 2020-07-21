@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-A series of accessories used in the function of the detonation tube design tools
+Extra unit management tools for pint quantities
 """
 
-import os
-
-import cantera as ct
 import pint
 
 
@@ -109,37 +106,3 @@ def parse_quant_input(
         raise ValueError(
             "Bad quantity input: {0}".format(quant_input)
         )
-
-
-def find_mechanisms(
-        return_directory=False
-):
-    """
-    Figure out which mechanisms the local cantera install has access to.
-
-    Parameters
-    ----------
-    return_directory : bool, optional
-        Whether or not to return the location of the mechanism files as well
-        as its contents. Defaults to ``False``.
-
-    Returns
-    -------
-    set or tuple
-        Set of available mechanisms in the cantera data directory. If
-        `return_directory` is set to True, a tuple is returned where the first
-        item is the set of available mechanisms, and the second is the location
-        of the cantera data directory.
-    """
-    mechanism_path = os.path.join(
-        os.path.split(os.path.abspath(ct.__file__))[0],
-        "data"
-    )
-
-    available = {item for item in os.listdir(mechanism_path) if
-                 (".cti" in item) or (".xml" in item)}
-
-    if return_directory:
-        return available, mechanism_path
-    else:
-        return available

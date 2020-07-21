@@ -1,7 +1,7 @@
-pypbomb.tools
+pypbomb.units
 =============
 
-.. automodule:: pypbomb.tools
+.. automodule:: pypbomb.units
    :members:
    :undoc-members:
    :show-inheritance:

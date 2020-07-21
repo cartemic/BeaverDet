@@ -7,8 +7,8 @@ not installable via pip or conda, and not all of its functions  are needed for
 this package. Therefore, the functions needed for pypbomb's purposes are located
 here, in ``pypbomb.sd``. Some of these functions, such as
 ``Detonation.cj_speed``, have been modified to speed up the calculation process.
-If you are planning to do any sort of actual detonation calculations, it is
-recommended to use the full SDToolbox.
+If you are planning to do any sort of actual detonation work outside of tube
+design it is recommended to use the full SDToolbox.
 """
 
 import multiprocessing as mp

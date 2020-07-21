@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-PURPOSE:
-    Unit tests for thermochem.py
 
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
-"""
+import os
 
 import numpy as np
 import pint
@@ -16,13 +8,13 @@ import pytest
 
 from .. import thermochem
 
-UREG = pint.UnitRegistry()
-QUANT = UREG.Quantity
+_U = pint.UnitRegistry()
+_Q = _U.Quantity
 
 
 class TestCalculateLaminarFlameSpeed:
-    initial_temperature = QUANT(300, "K")
-    initial_pressure = QUANT(1, "atm")
+    initial_temperature = _Q(300, "K")
+    initial_pressure = _Q(1, "atm")
 
     def test_good_input(self):
         species = {
@@ -79,8 +71,8 @@ class TestGetEqSoundSpeed:
     mm = 0.0289645
     c_ideal = np.sqrt(gamma * rr * tt / mm)
 
-    temp = QUANT(20, "degC")
-    press = QUANT(1, "atm")
+    temp = _Q(20, "degC")
+    press = _Q(1, "atm")
     species = {"O2": 1, "N2": 3.76}
     mechanism = "gri30.cti"
 
@@ -101,7 +93,7 @@ class TestGetEqSoundSpeed:
             self.press,
             self.species,
             self.mechanism,
-            unit_registry=UREG
+            unit_registry=_U
         )
 
         assert abs(self.c_ideal - c_test.to("m/s").magnitude) / \
@@ -111,8 +103,8 @@ class TestGetEqSoundSpeed:
 def test_calculate_reflected_shock_state():
     # this is just a handler for some sd2 functions, and this test is to ensure
     # that it doesn't throw any errors
-    initial_temperature = QUANT(80, "degF")
-    initial_pressure = QUANT(1, "atm")
+    initial_temperature = _Q(80, "degF")
+    initial_pressure = _Q(1, "atm")
     species_dict = {"H2": 1, "O2": 0.5}
     mechanism = "gri30.cti"
     thermochem.calculate_reflected_shock_state(
@@ -120,5 +112,17 @@ def test_calculate_reflected_shock_state():
         initial_pressure,
         species_dict,
         mechanism,
-        UREG
+        _U
     )
+
+
+class TestFindMechanisms:
+    def test_mechs_only(self):
+        assert "gri30.cti" in thermochem.find_mechanisms()
+
+    def test_return_directory(self):
+        checks = [False, False]
+        mechs, path = thermochem.find_mechanisms(True)
+        checks[0] = "gri30.cti" in mechs
+        checks[1] = os.path.exists(path)
+        assert all(checks)

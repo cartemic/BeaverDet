@@ -14,7 +14,7 @@ import numpy as np
 import pint
 import pytest
 
-from .. import tools
+from .. import units
 
 
 _U = pint.UnitRegistry()
@@ -28,7 +28,7 @@ class TestCheckPintQuantity:
     def test_good_input(self):
         lengths = [6.3, -8]
         for length in lengths:
-            assert tools.check_pint_quantity(
+            assert units.check_pint_quantity(
                 self.quant(length, "inch"),
                 "length"
             )
@@ -40,7 +40,7 @@ class TestCheckPintQuantity:
                 ValueError,
                 match=error_str
         ):
-            tools.check_pint_quantity(
+            units.check_pint_quantity(
                 self.quant(3, "degC"),
                 bad_dimension_type
             )
@@ -52,17 +52,18 @@ class TestCheckPintQuantity:
                 ValueError,
                 match="Non-pint quantity"
         ):
-            tools.check_pint_quantity(
+            units.check_pint_quantity(
                 7,
                 "length"
             )
 
+    # noinspection SpellCheckingInspection
     def test_non_numeric_quantity(self):
         with pytest.raises(
                 ValueError,
                 match="Non-numeric pint quantity"
         ):
-            tools.check_pint_quantity(
+            units.check_pint_quantity(
                 self.quant("asdf", "inch"),
                 "length"
             )
@@ -72,7 +73,7 @@ class TestCheckPintQuantity:
                 ValueError,
                 match="Input value < 0"
         ):
-            tools.check_pint_quantity(
+            units.check_pint_quantity(
                 self.quant(-4, "in"),
                 "length",
                 ensure_positive=True
@@ -88,7 +89,7 @@ class TestCheckPintQuantity:
             ValueError,
             match=error_str
         ):
-            tools.check_pint_quantity(
+            units.check_pint_quantity(
                 self.quant(19.2, "degC"),
                 "length"
             )
@@ -97,23 +98,23 @@ class TestCheckPintQuantity:
 class TestParseQuantInput:
     def test_magnitude(self):
         magnitude = 700
-        units = "degree_Celsius"
-        assert tools.parse_quant_input(
-            (magnitude, units),
+        test_units = "degree_Celsius"
+        assert units.parse_quant_input(
+            (magnitude, test_units),
             _U
         ).magnitude == magnitude
 
     def test_units(self):
         magnitude = 700
-        units = "degree_Celsius"
-        assert tools.parse_quant_input(
-            (magnitude, units),
+        test_units = "degree_Celsius"
+        assert units.parse_quant_input(
+            (magnitude, test_units),
             _U
-        ).units.format_babel() == units
+        ).units.format_babel() == test_units
 
     def test_pass_quantity(self):
         good_quant = _Q(9, "degC")
-        assert tools.parse_quant_input(
+        assert units.parse_quant_input(
             good_quant,
             _U
         ) == good_quant
@@ -124,7 +125,7 @@ class TestParseQuantInput:
         msg = "Cannot operate with Quantity and Quantity of different " \
               "registries."
         with pytest.raises(ValueError, match=msg):
-            tools.parse_quant_input(
+            units.parse_quant_input(
                 good_quant,
                 new_ureg
             ) + good_quant
@@ -139,11 +140,7 @@ class TestParseQuantInput:
         for i, bad in enumerate(bad_inputs):
             msg = "Bad quantity input: {0}".format(bad)
             try:
-                tools.parse_quant_input(bad, _U)
+                units.parse_quant_input(bad, _U)
                 assert False
             except ValueError as e:
                 checks[i] = str(e) == msg
-
-
-def test_find_mechanisms():
-    assert "gri30.cti" in tools.find_mechanisms()

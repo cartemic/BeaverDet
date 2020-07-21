@@ -4,11 +4,13 @@ This module contains functions for performing thermochemical calculations using
 ``cantera`` and ``pypbomb.sd``.
 """
 
+import os
+
 import cantera as ct
 import numpy as np
 import pint
 
-from . import tools, sd
+from . import units, sd
 
 
 _U = pint.UnitRegistry()
@@ -50,12 +52,12 @@ def calculate_laminar_flame_speed(
     gas = ct.Solution(mechanism, phase_specification)
     quant = unit_registry.Quantity
 
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         initial_pressure,
         "pressure",
         ensure_positive=True
     )
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         initial_temperature,
         "temperature",
         ensure_positive=True
@@ -123,13 +125,13 @@ def get_eq_sound_speed(
     """
     quant = unit_registry.Quantity
 
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         pressure,
         "pressure",
         ensure_positive=True
     )
 
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         temperature,
         "temperature",
         ensure_positive=True
@@ -253,3 +255,37 @@ def calculate_reflected_shock_state(
             "state": cj_calcs["cj state"]
         }
     }
+
+
+def find_mechanisms(
+        return_directory=False
+):
+    """
+    Figure out which mechanisms the local cantera install has access to.
+
+    Parameters
+    ----------
+    return_directory : bool, optional
+        Whether or not to return the location of the mechanism files as well
+        as its contents. Defaults to ``False``.
+
+    Returns
+    -------
+    set or tuple
+        Set of available mechanisms in the cantera data directory. If
+        `return_directory` is set to True, a tuple is returned where the first
+        item is the set of available mechanisms, and the second is the location
+        of the cantera data directory.
+    """
+    mechanism_path = os.path.join(
+        os.path.split(os.path.abspath(ct.__file__))[0],
+        "data"
+    )
+
+    available = {item for item in os.listdir(mechanism_path) if
+                 (".cti" in item) or (".xml" in item)}
+
+    if return_directory:
+        return available, mechanism_path
+    else:
+        return available

@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Test functions in sd.py
-"""
 
 import numpy as np
 import pytest
