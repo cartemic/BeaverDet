@@ -683,9 +683,10 @@ class DDT:
         `phase_specification` option may be necessary depending on the
         mechanism.
 
-        [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
-        detonation in ducts,” Progress in Energy and Combustion Science,
+        [1] G. Ciccarelli and S. Dorofeev, *Flame acceleration and transition to
+        detonation in ducts*, Progress in Energy and Combustion Science,
         vol. 34, no. 4, pp. 499–550, Aug. 2008.
+        https://doi.org/10.1016/j.pecs.2007.11.002
 
         Parameters
         ----------
@@ -874,6 +875,9 @@ class DDT:
 
 
 class Window:
+    """
+    Methods for the design of viewing windows for optical access.
+    """
     @classmethod
     def safety_factor(
             cls,
@@ -1262,6 +1266,10 @@ class Window:
 
 
 class Tube:
+    """
+    Methods for designing and determining operational limits of a closed-end
+    detonation tube.
+    """
     available_pipe_sizes = list(PIPE_SCHEDULES.index.values)
     available_materials = list(TUBE_MATERIALS.Grade.values)
 
@@ -1277,10 +1285,21 @@ class Tube:
         Finds the maximum allowable stress of a tube material at the tube's
         initial temperature
 
+        Parameters
+        ----------
+        initial_temperature : pint.Quantity
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+        welded : bool
+            ``True`` for welded pipe; ``False`` for seamless
+        unit_registry : pint.UnitRegistry
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
+
         Returns
         -------
-        max_stress : pint quantity
-            Pint quantity of maximum allowable tube stress
+        pint.Quantity
+            Maximum allowable tube stress
         """
 
         # look up stress-temperature limits and units
@@ -1329,6 +1348,26 @@ class Tube:
             welded,
             unit_registry
     ):
+        """
+        Looks up ASME B31.1 stress limits as a function of pipe temperature
+
+        Parameters
+        ----------
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+        welded : bool
+            ``True`` for welded pipe; ``False`` for seamless
+        unit_registry : pint.UnitRegistry
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
+
+        Returns
+        -------
+        pd.Series
+            Pandas series with data consisting of tress limits (as pint
+            quantities), and indices of the corresponding temperatures (also
+            as pint quantities)
+        """
         quant = unit_registry.Quantity
         if welded:
             material_limits = MATERIAL_LIMITS["welded"][["Temp", material]]
@@ -1356,15 +1395,15 @@ class Tube:
             plus_or_minus=0.1
     ):
         """
-        This function calculates the dynamic load factor by which a detonation
-        tube's static analysis should be scaled in order to account for the
-        tube's response to pressure transients. DLF is based on the work of
+        Calculates the dynamic load factor (DLF) by which a detonation tube's
+        static analysis should be scaled in order to account for the tube's
+        response to transient pressures. DLF calculation is based on the work of
         Shepherd [1]. Since the limits of "approximately equal to" are not
-        define we assume a default value of plus or minus ten percent, thus
-        plus_or_minus=0.1.
+        defined in the paper, a default value of plus or minus ten percent
+        is assumed, thus `plus_or_minus=0.1`.
 
-        [1] Shepherd, J. E. (2009). Structural Response of Piping to
-        Internal Gas Detonation. Journal of Pressure Vessel Technology,
+        [1] Shepherd, J. E. (2009). *Structural Response of Piping to
+        Internal Gas Detonation*. Journal of Pressure Vessel Technology,
         131(3), 031204. https://doi.org/10.1115/1.3089497
 
         Parameters
@@ -1381,16 +1420,16 @@ class Tube:
             Density of tube material
         poisson_ratio : float
             Poisson ratio of tube material
-        plus_or_minus : float
+        plus_or_minus : float, optional
             Defines the band about the critical velocity which is considered
             "approximately equal to" -- the default value of 0.1 means plus
-            or minus ten percent.
+            or minus ten percent
 
         Returns
         -------
-        dynamic_load_factor : float
+        float
             Factor by which the tube's static maximum pressure should be
-            de-rated to account for transient response to detonation waves.
+            de-rated to account for transient response to detonation waves
         """
         if not (0 < plus_or_minus < 1):
             raise ValueError(
@@ -1435,8 +1474,10 @@ class Tube:
     ):
         """
         Calculates the maximum allowable pressure from the tube dimensions
-        and stress limits using the basic longitudinal joint formula
-        on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
+        and stress limits using the basic longitudinal joint formula [1].
+
+        [1] E. F. Megyesy, *Pressure vessel handbook*, Oklahoma City, OK:
+        PV Publishing, Inc., 2001, p. 14.
 
         Parameters
         ----------
@@ -1451,7 +1492,7 @@ class Tube:
 
         Returns
         -------
-        max_pressure : pint.Quantity
+        pint.Quantity
             Pressure resulting in maximum allowable stress
         """
         mean_diameter = (tube_od + tube_id) / 2.
@@ -1462,7 +1503,7 @@ class Tube:
         return max_pressure
 
     @classmethod
-    def calculate_initial_pressure(
+    def calculate_max_initial_pressure(
             cls,
             tube_id,
             tube_od,
@@ -1584,6 +1625,19 @@ class Tube:
 
     @staticmethod
     def get_available_pipe_schedules(pipe_size):
+        """
+        Gets available pipe schedules for a given nominal size
+
+        Parameters
+        ----------
+        pipe_size : str
+            Nominal pipe size (see ``Tube.available_pipe_sizes``)
+
+        Returns
+        -------
+        list
+            List of available pipe schedules
+        """
         if pipe_size not in PIPE_SCHEDULES.index:
             msg = "Invalid pipe size: %s. " \
                   "See Tube.available_pipe_sizes." % str(pipe_size)
@@ -1597,6 +1651,25 @@ class Tube:
             pipe_size,
             pipe_schedule
     ):
+        """
+
+        Parameters
+        ----------
+        pipe_size : str
+            Nominal pipe size (see ``Tube.available_pipe_sizes``)
+        pipe_schedule : str
+            Pipe schedule (see ``Tube.get_available_pipe_schedules`` for a list
+            of available schedules for `pipe_size`)
+
+        Returns
+        -------
+        dict
+            Dictionary of pipe dimensions with the keys:
+
+            * ``"inner_diameter"``
+            * ``"outer_diameter"``
+            * ``"wall_thickness"``
+        """
         # note: this also checks for valid size
         if pipe_schedule not in cls.get_available_pipe_schedules(pipe_size):
             msg = "Schedule {:s} invalid for pipe size {:s}. See " \
@@ -1655,7 +1728,7 @@ class Flange:
             Flange temperature as a quantity or tuple of
             ``(magnitude, "units")``
         material : str
-            Flange material. See ``flange.available_materials``
+            Flange material (see ``Flange.available_materials``)
         unit_registry : pint.UnitRegistry, optional
             Pint unit registry, if output within a particular registry is
             desired
@@ -1750,7 +1823,7 @@ class Flange:
         temperature : pint.Quantity
             Flange temperature
         material : str
-            Flange material. See ``flange.available_materials``
+            Flange material (see ``Flange.available_materials``)
 
         Returns
         -------
@@ -1811,7 +1884,7 @@ class Flange:
         pressure : pint.Quantity
             System pressure
         material : str
-            Flange material. See ``flange.available_materials``
+            Flange material (see ``Flange.available_materials``)
 
         Returns
         -------

@@ -625,7 +625,7 @@ class TestTube:
         # to be equal to the tube's max pressure, accounting for dynamic load
         # factor
         correct_max = 15101889.83212825  # Pa
-        calc_initial = tube.Tube.calculate_initial_pressure(
+        calc_initial = tube.Tube.calculate_max_initial_pressure(
             tube_id,
             tube_od,
             initial_temperature,
@@ -673,7 +673,7 @@ class TestTube:
         # to be equal to the tube's max pressure, accounting for dynamic load
         # factor
         correct_max = 15101889.83212825  # Pa
-        calc_initial = tube.Tube.calculate_initial_pressure(
+        calc_initial = tube.Tube.calculate_max_initial_pressure(
             tube_id,
             tube_od,
             initial_temperature,
