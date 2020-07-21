@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-PURPOSE:
-    Thermochemical calculations
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
+This module contains functions for performing thermochemical calculations using
+``cantera`` and ``pypbomb.sd``.
 """
+
+import os
 
 import cantera as ct
 import numpy as np
 import pint
 
-from . import tools, sd
+from . import units, sd
 
 
 _U = pint.UnitRegistry()
@@ -35,33 +31,33 @@ def calculate_laminar_flame_speed(
     Parameters
     ----------
     initial_temperature : pint.Quantity
-        Initial temperature of gas mixture
+        Mixture initial temperature
     initial_pressure : pint.Quantity
-        Initial pressure of gas mixture
+        Mixture initial pressure
     species_dict : dict
         Dictionary with species names (all caps) as keys and moles as values
     mechanism : str
-        String of mechanism to use (e.g. "gri30.cti")
-    phase_specification : str
+        String of mechanism to use (e.g. ``gri30.cti``)
+    phase_specification : str, optional
         Phase specification for cantera solution
-    unit_registry : pint.UnitRegistry
+    unit_registry : pint.UnitRegistry, optional
         Unit registry for managing units to prevent conflicts with parent
         unit registry
 
     Returns
     -------
     pint.Quantity
-        Laminar flame speed in m/s as a pint quantity
+        Laminar flame speed
     """
     gas = ct.Solution(mechanism, phase_specification)
     quant = unit_registry.Quantity
 
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         initial_pressure,
         "pressure",
         ensure_positive=True
     )
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         initial_temperature,
         "temperature",
         ensure_positive=True
@@ -109,33 +105,33 @@ def get_eq_sound_speed(
     Parameters
     ----------
     temperature : pint.Quantity
-        Initial mixture temperature
+        Mixture initial temperature
     pressure : pint.Quantity
-        Initial mixture pressure
+        Mixture initial pressure
     species_dict : dict
         Dictionary of mixture mole fractions
     mechanism : str
         Desired chemical mechanism
-    phase_specification : str
+    phase_specification : str, optional
         Phase specification for cantera solution
-    unit_registry : pint.UnitRegistry
+    unit_registry : pint.UnitRegistry, optional
         Unit registry for managing units to prevent conflicts with parent
         unit registry
 
     Returns
     -------
     sound_speed : pint.Quantity
-        local speed of sound in m/s
+        local speed of sound
     """
     quant = unit_registry.Quantity
 
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         pressure,
         "pressure",
         ensure_positive=True
     )
 
-    tools.check_pint_quantity(
+    units.check_pint_quantity(
         temperature,
         "temperature",
         ensure_positive=True
@@ -183,24 +179,24 @@ def calculate_reflected_shock_state(
     Parameters
     ----------
     initial_temperature : pint.Quantity
-        Pint quantity of mixture initial temperature
+        Mixture initial temperature
     initial_pressure : pint.Quantity
-        Pint quantity of mixture initial pressure
+        Mixture initial pressure
     species_dict : dict
         Dictionary of initial reactant mixture
     mechanism : str
-        Mechanism to use for chemical calculations, e.g. "gri30.cti"
-    unit_registry : pint.UnitRegistry
+        Mechanism to use for chemical calculations, e.g. ``gri30.cti``
+    unit_registry : pint.UnitRegistry, optional
         Pint unit registry
-    use_multiprocessing : bool
+    use_multiprocessing : bool, optional
         True to use multiprocessing for CJ state calculation, which is faster
-        but requires the function to be run from __main__
+        but requires the function to be run from ``__main__``
 
     Returns
     -------
     dict
-        Dictionary containing keys "reflected" and "cj". Each of these
-        contains "speed", indicating the related wave speed, and "state",
+        Dictionary containing keys ``reflected`` and ``cj``. Each of these
+        contains speed``, indicating the related wave speed, and ``state``,
         which is a Cantera gas object at the specified state.
     """
     quant = unit_registry.Quantity
@@ -261,301 +257,35 @@ def calculate_reflected_shock_state(
     }
 
 
-class Mixture:
-    def __init__(
-            self,
-            initial_pressure,
-            initial_temperature,
-            fuel,
-            oxidizer,
-            diluent=None,
-            equivalence=1,
-            diluent_mole_fraction=0,
-            mechanism="gri30.cti",
-            unit_registry=_U
-    ):
-        """ TODO: docstring updates
-
-        Parameters
-        ----------
-        initial_pressure
-        initial_temperature
-        fuel
-        oxidizer
-        diluent
-        equivalence
-        diluent_mole_fraction
-        mechanism
-        unit_registry
-        """
-        self._quant = unit_registry.Quantity
-
-        tools.check_pint_quantity(
-            initial_pressure,
-            "pressure",
-            ensure_positive=True
-        )
-
-        tools.check_pint_quantity(
-            initial_temperature,
-            "temperature",
-            ensure_positive=True
-        )
-
-        self.fuel = fuel
-        self.oxidizer = oxidizer
-        self.diluent = diluent
-
-        # initialize diluted and undiluted gas solution in Cantera
-        self.undiluted = ct.Solution(mechanism)
-        self.undiluted.TP = (
-            initial_temperature.to("degK").magnitude,
-            initial_pressure.to("Pa").magnitude
-        )
-
-        # define givens
-        self.mechanism = mechanism
-        self.initial_pressure = self._quant(
-            initial_pressure.magnitude,
-            initial_pressure.units.format_babel()
-        ).to_base_units()
-        self.initial_temperature = self._quant(
-            initial_temperature.magnitude,
-            initial_temperature.units.format_babel()
-        ).to_base_units()
-        self.diluent_mol_fraction = diluent_mole_fraction
-
-        # set equivalence ratio
-        self.equivalence = None
-        self.set_equivalence(equivalence)
-
-        # initialize diluted gas solution if diluent and mass fraction are
-        # defined
-        if diluent and diluent_mole_fraction:
-            self.diluted = ct.Solution(mechanism)
-            self.diluted.TP = (
-                self.initial_temperature.to("degK").magnitude,
-                self.initial_pressure.to("Pa").magnitude
-            )
-        else:
-            self.diluted = None
-
-    def set_equivalence(
-            self,
-            equivalence_ratio
-    ):
-        """
-        Sets the equivalence ratio of both the undiluted and diluted mixtures
-        using Cantera and Mixture.add_diluent
-
-        Parameters
-        ----------
-        equivalence_ratio : float
-            New mixture equivalence ratio
-
-        Returns
-        -------
-        None
-        """
-        equivalence_ratio = float(equivalence_ratio)
-
-        # set the equivalence ratio
-        self.undiluted.set_equivalence_ratio(equivalence_ratio,
-                                             self.fuel,
-                                             self.oxidizer)
-        if self.diluent and self.diluent_mol_fraction:
-            self.add_diluent(self.diluent, self.diluent_mol_fraction)
-
-        self.equivalence = equivalence_ratio
-
-    def add_diluent(
-            self,
-            diluent,
-            mole_fraction
-    ):
-        """ TODO: docstring updates
-        Adds a diluent to an undiluted mixture, keeping the same equivalence
-        ratio.
-        """
-        self.diluent = diluent
-        self.diluent_mol_fraction = mole_fraction
-
-        # collect undiluted mole fractions
-        mole_fractions = self.undiluted.mole_fraction_dict()
-
-        # create cantera solution if one doesn't exist
-        self.diluted = ct.Solution(self.mechanism)
-        new_species = _diluted_species_dict(
-                mole_fractions,
-                diluent,
-                mole_fraction
-            )
-        self.diluted.TPX = (
-            self.initial_temperature.to("degK").magnitude,
-            self.initial_pressure.to("Pa").magnitude,
-            new_species
-        )
-
-    def get_masses(
-            self,
-            tube_volume,
-            diluted=False
-    ):
-        """
-        The cantera concentration function is used to collect
-        species concentrations, in kmol/m^3, which are then multiplied by
-        the molecular weights in kg/kmol to get the density in kg/m^3. This
-        is then multiplied by the tube volume to get the total mass of each
-        component.
-
-        Parameters
-        ----------
-        tube_volume : pint.Quantity
-            Total volume of the reactant mixture
-        diluted : bool
-            True to use the diluted mixture, False to use the undiluted mixture
-
-        Returns
-        -------
-        dict
-            Dictionary of component masses within the reactant mixture
-        """
-        tools.check_pint_quantity(
-            tube_volume,
-            "volume",
-            ensure_positive=True
-        )
-
-        tube_volume = self._quant(
-            tube_volume.magnitude,
-            tube_volume.units.format_babel()
-        )
-
-        if diluted and self.diluted is None:
-            raise ValueError("Mixture has not been diluted")
-        elif diluted:
-            cantera_solution = self.diluted
-        else:
-            cantera_solution = self.undiluted
-        mixture_list = []
-        for i, species in enumerate(cantera_solution.species_names):
-            if cantera_solution.X[i] > 0:
-                r_specific = self._quant(
-                    8314 / cantera_solution.molecular_weights[i],
-                    "J/(kg*K)"
-                )
-                pressure = self.initial_pressure * cantera_solution.X[i]
-                rho = pressure / (r_specific * self.initial_temperature)
-                mixture_list.append((species, (rho * tube_volume).to("kg")))
-
-        return dict(mixture_list)
-
-    def get_pressures(
-            self,
-            diluted=False
-    ):
-        """ TODO: docstring updates
-        Cantera is used to get the mole fractions of each species, which are
-        then multiplied by the initial pressure to get each partial pressure.
-        """
-        if diluted and self.diluted is None:
-            raise ValueError("Mixture has not been diluted")
-        elif diluted:
-            cantera_solution = self.diluted
-        else:
-            cantera_solution = self.undiluted
-        mixture_list = []
-        for i, species in enumerate(cantera_solution.species_names):
-            if cantera_solution.X[i] > 0:
-                mixture_list.append((species,
-                                    self.initial_pressure *
-                                    cantera_solution.X[i]))
-        return dict(mixture_list)
-
-
-def _check_compound_component(
-        component,
-        species_names
+def find_mechanisms(
+        return_directory=False
 ):
     """
-    Check to make sure each constituent part of a compound component (e.g.
-    "O2:1 N2:3.76" for air) is within a given mechanism
+    Figure out which mechanisms the local cantera install has access to.
 
     Parameters
     ----------
-    component : str
-        Compound component string (e.g. "O2:1 N2:3.76")
-    species_names : List[String]
-        List of species within the desired mechanism to check against
+    return_directory : bool, optional
+        Whether or not to return the location of the mechanism files as well
+        as its contents. Defaults to ``False``.
 
     Returns
     -------
-    None
+    set or tuple
+        Set of available mechanisms in the cantera data directory. If
+        `return_directory` is set to True, a tuple is returned where the first
+        item is the set of available mechanisms, and the second is the location
+        of the cantera data directory.
     """
-    species = component.split(" ")
-    for s in species:
-        s = s.split(":")[0]
-        if s not in species_names:
-            raise ValueError("{:s} not a valid species".format(s))
+    mechanism_path = os.path.join(
+        os.path.split(os.path.abspath(ct.__file__))[0],
+        "data"
+    )
 
+    available = {item for item in os.listdir(mechanism_path) if
+                 (".cti" in item) or (".xml" in item)}
 
-def _diluted_species_dict(
-        spec,
-        diluent,
-        diluent_mol_frac
-):
-    """
-    Creates a dictionary of mole fractions diluted by a given amount with a
-    given gas mixture
-
-    Parameters
-    ----------
-    spec : dict
-        Mole fraction dictionary (gas.mole_fraction_dict() from undiluted)
-    diluent : str
-        String of diluents using cantera's format, e.g. "CO2" or "N2:1 NO:0.01"
-    diluent_mol_frac : float
-        mole fraction of diluent to add
-
-    Returns
-    -------
-    dict
-        new mole_fraction_dict to be inserted into the cantera solution object
-    """
-    if diluent_mol_frac >= 1. or diluent_mol_frac < 0:
-        msg = "Bad mole fraction: %f. Must be in 0<=mf<1." % diluent_mol_frac
-        raise ValueError(msg)
-    # collect total diluent moles
-    moles_dil = 0.
-    diluent_dict = dict()
-    split_diluents = diluent.split(" ")
-    for d in split_diluents:
-        try:
-            key, value = d.split(":")
-        except ValueError:
-            key = d
-            value = 1
-        value = float(value)
-        if key in diluent_dict.keys():
-            # todo: test for duplicate key check
-            raise ValueError("duplicate component: %s" % key)
-        elif key in spec.keys():
-            raise ValueError("%s already in undiluted mixture" % key)
-        else:
-            diluent_dict[key] = value
-        moles_dil += value
-
-    for key in diluent_dict.keys():
-        diluent_dict[key] /= moles_dil
-
-    for key, value in diluent_dict.items():
-        if key not in spec.keys():
-            spec[key] = 0
-
-        if diluent_mol_frac != 0:
-            spec[key] += diluent_dict[key] / (1 / diluent_mol_frac - 1)
-
-    new_total_moles = sum(spec.values())
-    for s in spec.keys():
-        spec[s] /= new_total_moles
-    return spec
+    if return_directory:
+        return available, mechanism_path
+    else:
+        return available

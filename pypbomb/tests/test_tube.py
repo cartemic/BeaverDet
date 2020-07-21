@@ -1,14 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-PURPOSE:
-    Unit tests for tools.py
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
-"""
 
 import os
 from math import sqrt
@@ -96,24 +86,6 @@ class TestBolt:
             )
 
     @staticmethod
-    def test_import_thread_specs():
-        # good input
-        test_size = "0-80"
-        test_type = ["external", "internal"]
-        test_property = "pitch diameter max"
-        test_classes = [["2A", "3A"], ["2B", "3B"]]
-        good_result = [[0.0514, 0.0519], [0.0542, 0.0536]]
-        specifications = tube.Bolt._import_thread_specs()
-        for thread, classes, expected in zip(test_type, test_classes,
-                                             good_result):
-            # check for correct output
-            current_frame = specifications[thread]
-            for thread_class, result in zip(classes, expected):
-                test_result = current_frame[test_property][test_size][
-                    thread_class]
-                assert abs(test_result - result) < 1e-7
-
-    @staticmethod
     def test_get_thread_property():
         # good input
         good_args = [
@@ -141,14 +113,13 @@ class TestBolt:
 
     @staticmethod
     def test_get_thread_property_not_in_dataframe():
-        dataframes = tube.Bolt._import_thread_specs()
         # property not in dataframe
         bad_property = "jello"
         bad_message = (
                 "Thread property \'" +
                 bad_property +
                 "\' not found. Available specs: " +
-                "'" + "', '".join(dataframes["internal"].keys()) + "'"
+                "'" + "', '".join(tube.THREAD_SPECS["internal"].keys()) + "'"
         )
         with pytest.raises(
                 KeyError,
@@ -427,7 +398,7 @@ class TestWindow:
                     ValueError,
                     match="Incorrect number of arguments sent to solver"
             ):
-                tube.Window.solver(**argument_dict)
+                tube.Window._solve(**argument_dict)
 
     @staticmethod
     def test_solver_bad_kwarg():
@@ -442,7 +413,7 @@ class TestWindow:
                 ValueError,
                 match="Bad keyword argument:\npulled_pork"
         ):
-            tube.Window.solver(**kwargs)
+            tube.Window._solve(**kwargs)
 
     @staticmethod
     def test_solver_imaginary_result():
@@ -457,7 +428,7 @@ class TestWindow:
                 Warning,
                 match="Window inputs resulted in imaginary solution."
         ):
-            test_nan = tube.Window.solver(**kwargs)
+            test_nan = tube.Window._solve(**kwargs)
 
         assert test_nan is np.nan
 
@@ -481,7 +452,7 @@ class TestWindow:
         ]
         good_solutions = [1.2, 4.]
         for index in range(len(args)):
-            test_output = tube.Window.solver(**args[index])
+            test_output = tube.Window._solve(**args[index])
             assert abs(test_output - good_solutions[index]) < 0.1
 
     @staticmethod
@@ -500,7 +471,7 @@ class TestWindow:
             "plate": 7.969517321,
         }
 
-        test_values = tube.Window.calculate_bolt_sfs(
+        test_values = tube.Window.bolt_safety_factors(
             max_pressure,
             window_area,
             num_bolts,
@@ -644,7 +615,7 @@ class TestTube:
         # to be equal to the tube's max pressure, accounting for dynamic load
         # factor
         correct_max = 15101889.83212825  # Pa
-        calc_initial = tube.Tube.calculate_initial_pressure(
+        calc_initial = tube.Tube.calculate_max_initial_pressure(
             tube_id,
             tube_od,
             initial_temperature,
@@ -692,7 +663,7 @@ class TestTube:
         # to be equal to the tube's max pressure, accounting for dynamic load
         # factor
         correct_max = 15101889.83212825  # Pa
-        calc_initial = tube.Tube.calculate_initial_pressure(
+        calc_initial = tube.Tube.calculate_max_initial_pressure(
             tube_id,
             tube_od,
             initial_temperature,
@@ -736,6 +707,7 @@ class TestTube:
     def test_get_available_pipe_schedules_bad_size(self):
         msg = "Invalid pipe size: 2.222. See Tube.available_pipe_sizes."
         with pytest.raises(ValueError, match=msg):
+            # noinspection PyTypeChecker
             tube.Tube.get_available_pipe_schedules(2.222)
 
     def test_get_dimensions(self):
@@ -1161,6 +1133,52 @@ class TestFlange:
                     material
             )
 
+    def test_get_max_pressure_good(self):
+        temps = [
+            tube._Q(200, "degC"),
+            (225, "degC")
+        ]
+        test_class = "150"
+        material = "304"
+        good = [13.2, 12.65]  # bar
+
+        results = np.zeros(2)
+        for i, t in enumerate(temps):
+            p_test = tube.Flange.get_max_pressure(test_class, t, material)
+            results[i] = p_test.to("bar").magnitude
+
+        assert np.allclose(results, good)
+
+    def test_get_max_pressure_bad_temperature(self):
+        with pytest.raises(
+            ValueError,
+            match="Temperature out of range"
+        ):
+            tube.Flange.get_max_pressure("150", tube._Q(10000, "degC"), "316")
+
+    def test_get_max_temperature_good(self):
+        pressures = [
+            tube._Q(14.8, "bar"),
+            (14.25, "bar")
+        ]
+        test_class = "150"
+        material = "316"
+        good = [150, 175]  # degC
+
+        results = np.zeros(2)
+        for i, p in enumerate(pressures):
+            p_test = tube.Flange.get_max_temperature(test_class, p, material)
+            results[i] = p_test.to("degC").magnitude
+
+        assert np.allclose(results, good)
+
+    def test_get_max_temperature_bad_pressure(self):
+        with pytest.raises(
+            ValueError,
+            match="Pressure out of range"
+        ):
+            tube.Flange.get_max_temperature("150", tube._Q(19.1, "bar"), "316")
+
 
 class TestCheckMaterialList:
     fake_material_groups = {"thing0": "group0", "thing1": "group1"}
@@ -1289,3 +1307,20 @@ class TestCheckMaterialList:
                 except ValueError as err:
                     tube.TUBE_MATERIALS = old_materials
                     assert str(err) == error_string
+
+
+def test_import_thread_specs():
+    # good input
+    test_size = "0-80"
+    test_type = ["external", "internal"]
+    test_property = "pitch diameter max"
+    test_classes = [["2A", "3A"], ["2B", "3B"]]
+    good_result = [[0.0514, 0.0519], [0.0542, 0.0536]]
+    for thread, classes, expected in zip(test_type, test_classes,
+                                         good_result):
+        # check for correct output
+        current_frame = tube.THREAD_SPECS[thread]
+        for thread_class, result in zip(classes, expected):
+            test_result = current_frame[test_property][test_size][
+                thread_class]
+            assert abs(test_result - result) < 1e-7

@@ -1,20 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-PURPOSE:
-    A series of accessories used in the function of the detonation design
-    tools
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
+Extra unit management tools for pint quantities
 """
 
-import os
-import warnings
-
-import cantera as ct
 import pint
 
 
@@ -24,20 +12,19 @@ def check_pint_quantity(
         ensure_positive=False
 ):
     """
-    This function checks to make sure that a quantity is an instance of a pint
-    quantity, and that it has the correct units.
+    Checks to make sure that a quantity is an instance of a pint quantity, and
+    that it has the correct units. Currently supported dimension types:
 
-    Currently supported dimension types:
-        length
-        area
-        volume
-        temperature
-        pressure
-        velocity
+        * length
+        * area
+        * volume
+        * temperature
+        * pressure
+        * velocity
 
     Parameters
     ----------
-    quantity : pint quantity
+    quantity : pint.Quantity
         Pint quantity which is to be checked for dimensionality
     dimension_type : str
         Dimensionality that quantity should have
@@ -47,8 +34,8 @@ def check_pint_quantity(
 
     Returns
     -------
-    True if no errors are raised
-
+    bool
+        True if no errors are raised
     """
 
     ureg = pint.UnitRegistry()
@@ -93,12 +80,12 @@ def parse_quant_input(
         unit_registry
 ):
     """
-    Converts an iterable of (magnitude, 'units') to a pint quantity or
+    Converts a tuple of ``(magnitude, "units")`` to a pint quantity or
     converts a pint quantity to the local registry.
 
     Parameters
     ----------
-    quant_input : Union[Tuple, List, pint.Quantity]
+    quant_input : pint.Quantity or tuple
         Iterable or quantity to be parsed
     unit_registry : pint.UnitRegistry
         Unit registry to be used for pint quantities
@@ -106,7 +93,7 @@ def parse_quant_input(
     Returns
     -------
     pint.Quantity
-        input as a pint quantity
+        Input as a pint quantity
     """
     if hasattr(quant_input, "magnitude"):
         return unit_registry.Quantity(
@@ -119,37 +106,3 @@ def parse_quant_input(
         raise ValueError(
             "Bad quantity input: {0}".format(quant_input)
         )
-
-
-def add_dataframe_row(
-        dataframe,
-        row
-):
-    """
-    Adds a row to a pandas dataframe
-
-    https://stackoverflow.com/questions/10715965/
-    add-one-row-in-a-pandas-dataframe
-
-    Parameters
-    ----------
-    dataframe : pd.DataFrame
-    row : list or tuple or np.ndarray
-
-    Returns
-    -------
-
-    """
-    dataframe.loc[len(dataframe.index)] = row
-
-
-def find_mechanisms():
-    mechanism_path = os.path.join(
-        os.path.split(os.path.abspath(ct.__file__))[0],
-        "data"
-    )
-
-    available = {item for item in os.listdir(mechanism_path) if
-                 (".cti" in item) or (".xml" in item)}
-
-    return available

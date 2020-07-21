@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PURPOSE:
-    A series of tools to aid in the design of a detonation tube.
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
+Tools for designing and determining operational parameters of a closed-end
+detonation tube with optical access.
 """
 
 import os
@@ -21,7 +15,7 @@ import pint
 import sympy as sp
 
 from . import thermochem
-from . import tools
+from . import units
 from .thermochem import _U
 
 
@@ -280,10 +274,53 @@ def _get_flange_limits_from_csv():
 FLANGE_LIMITS = _get_flange_limits_from_csv()
 
 
+def _import_thread_specs():
+    """
+    Imports thread specifications from .csv files
+
+    Returns
+    -------
+    thread_specs : dict
+        [internal thread specs, external thread specs]. Both sets of thread
+        specifications are multi-indexed with (thread size, thread class).
+    """
+    file_directory = os.path.join(
+        os.path.dirname(
+            os.path.relpath(__file__)
+        ),
+        "lookup_data"
+    )
+    file_names = [
+        "ANSI_inch_internal_thread.csv",
+        "ANSI_inch_external_thread.csv"
+    ]
+    file_locations = [
+        os.path.relpath(
+            os.path.join(
+                file_directory,
+                name
+            )
+        )
+        for name in file_names
+    ]
+
+    thread_specs = {
+        key: pd.read_csv(location, index_col=(0, 1)) for location, key in
+        zip(file_locations, ["internal", "external"])
+    }
+
+    return thread_specs
+
+
+THREAD_SPECS = _import_thread_specs()
+
+
 class Bolt:
-    @classmethod
+    """
+    Methods relating to bolt calculations and property lookup.
+    """
+    @staticmethod
     def calculate_stress_areas(
-            cls,
             thread_size,
             thread_class,
             bolt_max_tensile,
@@ -298,43 +335,44 @@ class Bolt:
         Parameters
         ----------
         thread_size : str
-            Size of threads to be evaluated, e.g. '1/4-20' or '1 1/2-6'
+            Size of threads to be evaluated, e.g. ``"1/4-20"`` or ``"1 1/2-6"``
         thread_class : str
-            Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
-            automatically appended for internal/external threads
-        bolt_max_tensile : pint quantity
-            Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint quantity
-            Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint quantity
+            Class of threads to be evaluated, ``"2"`` or ``"3"``. (``"A"`` or
+            ``"B"`` are automatically appended for internal/external threads)
+        bolt_max_tensile : pint.Quantity
+            Pint quantity of bolt (external thread) tensile failure stress
+        plate_max_tensile : pint.Quantity
+            Pint quantity of plate (internal thread) tensile failure stress
+        engagement_length : pint.Quantity
             Pint quantity of total thread engagement length
-        unit_registry : pint unit registry
+        unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
             unit registry
 
         Returns
         -------
-        thread : dict
-            Dictionary with the following key/value pairs:
-            'plate area': stress area of internal threads within the plate
-            'screw area': stress area of external threads on the screw
-            'minimum engagement': minimum engagement length causing screw to
-                fail in tension rather than shear, thus preventing the plate
-                from stripping.
+        dict
+            Dictionary with the following keys:
+
+            * ``"plate area"``: Stress area of internal threads within the plate
+            * ``"screw area"``: Stress area of external threads on the screw
+            * ``"minimum engagement"``: Minimum engagement length causing screw
+              to fail in tension rather than shear, thus preventing the plate
+              from stripping.
         """
         quant = unit_registry.Quantity
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             bolt_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             plate_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             engagement_length,
             "length",
             ensure_positive=True
@@ -357,30 +395,29 @@ class Bolt:
         thread = dict()
 
         # look up thread specs for stress area calculations
-        thread_specs = cls._import_thread_specs()
         k_n_max = quant(
-            thread_specs["internal"]
+            THREAD_SPECS["internal"]
             ["minor diameter max"]
             [thread_size]
             [thread_class + "B"],
             "in"
         )
         e_s_min = quant(
-            thread_specs["external"]
+            THREAD_SPECS["external"]
             ["pitch diameter min"]
             [thread_size]
             [thread_class + "A"],
             "in"
         )
         e_n_max = quant(
-            thread_specs["internal"]
+            THREAD_SPECS["internal"]
             ["pitch diameter max"]
             [thread_size]
             [thread_class + "B"],
             "in"
         )
         d_s_min = quant(
-            thread_specs["external"]
+            THREAD_SPECS["external"]
             ["major diameter min"]
             [thread_size]
             [thread_class + "A"],
@@ -391,7 +428,7 @@ class Bolt:
             "1/in"
         )
         basic_diameter = quant(
-            thread_specs["external"]
+            THREAD_SPECS["external"]
             ["basic diameter"]
             [thread_size]
             [thread_class + "A"],
@@ -459,46 +496,7 @@ class Bolt:
         return thread
 
     @staticmethod
-    def _import_thread_specs():
-        """
-        Imports thread specifications from .csv files
-
-        Returns
-        -------
-        thread_specs : dict
-            [internal thread specs, external thread specs]. Both sets of thread
-            specifications are multi-indexed with (thread size, thread class).
-        """
-        file_directory = os.path.join(
-            os.path.dirname(
-                os.path.relpath(__file__)
-            ),
-            "lookup_data"
-        )
-        file_names = [
-            "ANSI_inch_internal_thread.csv",
-            "ANSI_inch_external_thread.csv"
-        ]
-        file_locations = [
-            os.path.relpath(
-                os.path.join(
-                    file_directory,
-                    name
-                )
-            )
-            for name in file_names
-        ]
-
-        thread_specs = {
-            key: pd.read_csv(location, index_col=(0, 1)) for location, key in
-            zip(file_locations, ["internal", "external"])
-        }
-
-        return thread_specs
-
-    @classmethod
     def get_thread_property(
-            cls,
             thread_property,
             thread_size,
             thread_class,
@@ -513,30 +511,30 @@ class Bolt:
         Parameters
         ----------
         thread_property : str
-            Property that is desired, such as 'minor diameter'
+            Property that is desired, such as ``"minor diameter"``
         thread_size : str
-            Thread size for desired property, such as '1/4-20' or '1 1/2-6'
+            Thread size for desired property, such as ``"1/4-20"`` or
+            ``"1 1/2-6"``
         thread_class : str
-            Thread class: '2B' or '3B' for internal threads, '2A' or '3A' for
-            external threads
-        unit_registry : pint unit registry
+            Thread class: ``"2B"`` or ``"3B"`` for internal threads, ``"2A"`` or
+            ``"3A"`` for external threads
+        unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
             unit registry
 
         Returns
         -------
-        pint.UnitRegistry().Quantity
+        pint.Quantity
             Property requested, as a pint quantity with units of inches
         """
         quant = unit_registry.Quantity
-        thread_specs = cls._import_thread_specs()
 
         # determine if internal or external
         if "A" in thread_class and ("2" in thread_class or "3" in thread_class):
-            thread_specs = thread_specs["external"]
+            thread_specs = THREAD_SPECS["external"]
         elif "B" in thread_class and ("2" in thread_class
                                       or "3" in thread_class):
-            thread_specs = thread_specs["internal"]
+            thread_specs = THREAD_SPECS["internal"]
         else:
             raise ValueError("\nbad thread class")
 
@@ -559,6 +557,9 @@ class Bolt:
 
 
 class DDT:
+    """
+    Methods for estimating the deflagration-to-detonation transition (DDT).
+    """
     @staticmethod
     def calculate_spiral_diameter(
             pipe_id,
@@ -570,17 +571,18 @@ class DDT:
 
         Parameters
         ----------
-        pipe_id : pint quantity
+        pipe_id : pint.Quantity
             Length scale representing the inner diameter of the pipe used for
             the detonation tube
         blockage_ratio : float
-            percentage (float between 0 and 1)
+            Ratio of blocked area to total cross-sectional area, :math:`0 < BR
+            < 1`
 
         Returns
         -------
-        spiral_diameter : pint quantity
-            Shchelkin spiral diameter inside a tube of pipe_id inner diameter
-            giving a blockage ratio of blockage_ratio %. Units are the same as
+        spiral_diameter : pint.Quantity
+            Shchelkin spiral diameter inside a tube of `pipe_id` inner diameter
+            giving a blockage ratio of `blockage_ratio`. Units are the same as
             pipe_id.
         """
         # ensure blockage ratio is a float
@@ -593,7 +595,7 @@ class DDT:
         if not 0 < blockage_ratio < 1:
             raise ValueError("\nBlockage ratio outside of 0<BR<1")
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             pipe_id,
             "length",
             ensure_positive=True
@@ -614,24 +616,26 @@ class DDT:
 
         Parameters
         ----------
-        tube_inner_diameter : pint quantity
-            Length scale corresponding to the ID of the detonation tube
-        blockage_diameter : pint quantity
-            Length scale corresponding to the OD of a Shchelkin spiral
+        tube_inner_diameter : pint.Quantity
+            Inner diameter of the detonation tube
+        blockage_diameter : pint.Quantity
+            Outer diameter of the blockage used to create the Shchelkin spiral
+            (i.e. a Shchelkin spiral made from 1/2" round stock would be
+            ``blockage_diameter=quant(0.5, "inch")``
 
         Returns
         -------
-        blockage_ratio : float
+        float
             Ratio of blocked to open area (between 0 and 1)
         """
 
         # check dimensionality and >=0
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             tube_inner_diameter,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             blockage_diameter,
             "length",
             ensure_positive=True
@@ -670,17 +674,19 @@ class DDT:
         This is accomplished using equations collected by Ciccarelli and
         Dorofeev [1] for blockage ratios <= 0.75. If the desired blockage ratio
         is less than 0.3, the mixture viscosity is needed, and the
-        phase_specification option may be necessary depending on the mechanism.
+        `phase_specification` option may be necessary depending on the
+        mechanism.
 
-        [1] G. Ciccarelli and S. Dorofeev, “Flame acceleration and transition to
-        detonation in ducts,” Progress in Energy and Combustion Science,
+        [1] G. Ciccarelli and S. Dorofeev, *Flame acceleration and transition to
+        detonation in ducts*, Progress in Energy and Combustion Science,
         vol. 34, no. 4, pp. 499–550, Aug. 2008.
+        https://doi.org/10.1016/j.pecs.2007.11.002
 
         Parameters
         ----------
         blockage_ratio : float
-            Ratio of the cross-sectional area of the detonation tube and a
-            periodic blockage used to cause DDT
+            Ratio of blocked area to total cross-sectional area, :math:`0 < BR
+            < 1`
         tube_diameter : pint quantity
             Internal diameter of the detonation tube
         initial_temperature : pint quantity
@@ -691,38 +697,39 @@ class DDT:
             Dictionary containing the species in the mixture as keys, with total
             moles or mole fractions as values
         mechanism : str
-            Mechanism file name for Cantera
-        unit_registry : pint unit registry
+            Mechanism file name for Cantera. See ``tools.find_mechanisms()`` for
+            a list of installed mechanisms.
+        unit_registry : pint.UnitRegistry
             Unit registry for managing units to prevent conflicts with parent
             unit registry
-        phase_specification : str
-            (Optional) Phase specification within the mechanism file used to
-            evaluate thermophysical properties. If Gri30.cti is used with no
-            phase specification, viscosity calculations will fail, resulting in
+        phase_specification : str, optional
+            Phase specification within the mechanism file used to evaluate
+            thermophysical properties. If ``gri30.cti`` is used with no phase
+            specification viscosity calculations will fail, resulting in
             an error for all blockage ratios less than 0.3.
 
         Returns
         -------
-        runup_distance : pint quantity
-            Predicted DDT distance, with the same units as the tube diameter
+        pint.Quantity
+            Predicted DDT distance
         """
 
         if blockage_ratio <= 0 or blockage_ratio > 0.75:
             raise ValueError("\nBlockage ratio outside of correlation range")
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             tube_diameter,
             "length",
             ensure_positive=True
         )
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             initial_temperature,
             "temperature",
             ensure_positive=True
         )
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             initial_pressure,
             "pressure",
             ensure_positive=True
@@ -862,6 +869,9 @@ class DDT:
 
 
 class Window:
+    """
+    Methods for the design of viewing windows for optical access.
+    """
     @classmethod
     def safety_factor(
             cls,
@@ -872,58 +882,58 @@ class Window:
             rupture_modulus
     ):
         """
-        This function calculates the safety factor of a clamped rectangular
+        Calculates the safety factor of a clamped rectangular
         window given window dimensions, design pressure, and material rupture
         modulus
 
         Parameters
         ----------
-        length : pint quantity with length units
+        length : pint.Quantity
             Window unsupported (viewing) length
-        width : pint quantity with length units
+        width : pint.Quantity
             Window unsupported (viewing) width
-        thickness : pint quantity with length units
+        thickness : pint.Quantity
             Window thickness
-        pressure : pint quantity with pressure units
+        pressure : pint.Quantity
             Design pressure differential across window at which factor of
             safety is to be calculated
-        rupture_modulus : pint quantity with pressure units
-            Rupture modulus of desired window material.
+        rupture_modulus : pint.Quantity
+            Rupture modulus of desired window material
 
         Returns
         -------
-        safety_factor : float
+        float
             Window factor of safety
         """
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             length,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             width,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             thickness,
             "length",
             ensure_positive=True
         )
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             pressure,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             rupture_modulus,
             "pressure",
             ensure_positive=True
         )
 
-        safety_factor = cls.solver(
+        safety_factor = cls._solve(
             length=length.to_base_units().magnitude,
             width=width.to_base_units().magnitude,
             thickness=thickness.to_base_units().magnitude,
@@ -944,48 +954,48 @@ class Window:
             unit_registry
     ):
         """
-        This function calculates the thickness of a clamped rectangular window
-        which gives the desired safety factor.
+        Calculates the thickness of a clamped rectangular window which gives
+        the desired safety factor
 
         Parameters
         ----------
-        length : pint quantity with length units
+        length : pint.Quantity
             Window unsupported (viewing) length
-        width : pint quantity with length units
+        width : pint.Quantity
             Window unsupported (viewing) width
         safety_factor : float
             Safety factor
-        pressure : pint quantity with pressure units
+        pressure : pint.Quantity
             Design pressure differential across window at which factor of
             safety is to be calculated
-        rupture_modulus : pint quantity with pressure units
-            Rupture modulus of desired window material.
-        unit_registry : pint unit registry
+        rupture_modulus : pint.Quantity
+            Rupture modulus of desired window material
+        unit_registry : pint.UnitRegistry
             Keeps output consistent with parent registry, avoiding conflicts
 
         Returns
         -------
-        thickness : pint quantity
+        pint.Quantity
             Window thickness
         """
         quant = unit_registry.Quantity
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             length,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             width,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             pressure,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             rupture_modulus,
             "pressure",
             ensure_positive=True
@@ -998,7 +1008,7 @@ class Window:
         except TypeError:
             raise TypeError("\nNon-numeric window safety factor")
 
-        thickness = cls.solver(
+        thickness = cls._solve(
             length=length.to_base_units().magnitude,
             width=width.to_base_units().magnitude,
             safety_factor=safety_factor,
@@ -1011,25 +1021,26 @@ class Window:
             width.to_base_units().units).to(width.units.format_babel())
 
     @staticmethod
-    def solver(
+    def _solve(
             **kwargs
     ):
         """
         This function uses sympy to solve for a missing window measurement.
-        Inputs are five keyword arguments, with the following possible values:
-            length
-            width
-            thickness
-            pressure
-            rupture_modulus
-            safety_factor
+        Inputs are five keyword arguments, with the following possible names:
+
+        * `length`
+        * `width`
+        * `thickness`
+        * `pressure`
+        * `rupture_modulus`
+        * `safety_factor`
+
         All of these arguments should be floats, and dimensions should be
         consistent (handling should be done in other functions, such as
         calculate_window_sf().
 
         Equation from:
-        https://www.crystran.co.uk/userfiles/files/
-        design-of-pressure-windows.pdf
+        https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
 
         Parameters
         ----------
@@ -1037,7 +1048,9 @@ class Window:
 
         Returns
         -------
-        missing value as a float, or NaN if the result is imaginary
+        missing dimension : float or np.NaN
+            Missing dimension is returned as a float upon successful calculation
+            or NaN if the result is imaginary
         """
 
         # Ensure that 5 keyword arguments were given
@@ -1114,7 +1127,7 @@ class Window:
             return np.NaN
 
     @staticmethod
-    def calculate_bolt_sfs(
+    def bolt_safety_factors(
             max_pressure,
             window_area,
             num_bolts,
@@ -1130,55 +1143,59 @@ class Window:
 
         Parameters
         ----------
-        max_pressure : pint quantity
-            Pint quantity of tube maximum pressure (absolute)
-        window_area : pint quantity
-            Pint quantity of window area exposed to high pressure environment
+        max_pressure : pint.Quantity
+            Tube maximum pressure
+        window_area : pint.Quantity
+            Window area exposed to high pressure environment
         num_bolts : int
             Number of bolts used to secure each viewing window
         thread_size : str
-            Size of threads to be evaluated, e.g. '1/4-20' or '1 1/2-6'
+            Size of threads to be evaluated, e.g. ``1/4-20`` or ``1 1/2-6``
         thread_class : str
-            Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
-            automatically appended for internal/external threads
-        bolt_max_tensile : pint quantity
+            Class of threads to be evaluated, ``"2"`` or ``"3"``. (``"A"`` or
+            ``"B"`` are automatically appended for internal/external threads)
+        bolt_max_tensile : pint.Quantity
             Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint quantity
+        plate_max_tensile : pint.Quantity
             Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint quantity
+        engagement_length : pint.Quantity
             Pint quantity of total thread engagement length
-        unit_registry : pint unit registry
+        unit_registry : pint.UnitRegistry
             Keeps output consistent with parent registry, avoiding conflicts
 
         Returns
         -------
-        safety_factors : dict
-            Dictionary with keys of 'bolt' and 'plate', giving factors of safety
-            for window bolts and the plate that they are screwed into.
+        dict
+            Dictionary giving factors of safety for window bolts and the plate
+
+            that they are screwed into. Keys:
+
+            * ``"bolt"``
+            * ``"plate"``
         """
         quant = unit_registry.Quantity
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             max_pressure,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             window_area,
             "area",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             bolt_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             plate_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             engagement_length,
             "length",
             ensure_positive=True
@@ -1243,6 +1260,10 @@ class Window:
 
 
 class Tube:
+    """
+    Methods for designing and determining operational limits of a closed-end
+    detonation tube.
+    """
     available_pipe_sizes = list(PIPE_SCHEDULES.index.values)
     available_materials = list(TUBE_MATERIALS.Grade.values)
 
@@ -1258,10 +1279,21 @@ class Tube:
         Finds the maximum allowable stress of a tube material at the tube's
         initial temperature
 
+        Parameters
+        ----------
+        initial_temperature : pint.Quantity
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+        welded : bool
+            ``True`` for welded pipe; ``False`` for seamless
+        unit_registry : pint.UnitRegistry
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
+
         Returns
         -------
-        max_stress : pint quantity
-            Pint quantity of maximum allowable tube stress
+        pint.Quantity
+            Maximum allowable tube stress
         """
 
         # look up stress-temperature limits and units
@@ -1310,6 +1342,26 @@ class Tube:
             welded,
             unit_registry
     ):
+        """
+        Looks up ASME B31.1 stress limits as a function of pipe temperature
+
+        Parameters
+        ----------
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+        welded : bool
+            ``True`` for welded pipe; ``False`` for seamless
+        unit_registry : pint.UnitRegistry
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
+
+        Returns
+        -------
+        pd.Series
+            Pandas series with data consisting of tress limits (as pint
+            quantities), and indices of the corresponding temperatures (also
+            as pint quantities)
+        """
         quant = unit_registry.Quantity
         if welded:
             material_limits = MATERIAL_LIMITS["welded"][["Temp", material]]
@@ -1337,15 +1389,15 @@ class Tube:
             plus_or_minus=0.1
     ):
         """
-        This function calculates the dynamic load factor by which a detonation
-        tube's static analysis should be scaled in order to account for the
-        tube's response to pressure transients. DLF is based on the work of
+        Calculates the dynamic load factor (DLF) by which a detonation tube's
+        static analysis should be scaled in order to account for the tube's
+        response to transient pressures. DLF calculation is based on the work of
         Shepherd [1]. Since the limits of "approximately equal to" are not
-        define we assume a default value of plus or minus ten percent, thus
-        plus_or_minus=0.1.
+        defined in the paper, a default value of plus or minus ten percent
+        is assumed, thus `plus_or_minus=0.1`.
 
-        [1] Shepherd, J. E. (2009). Structural Response of Piping to
-        Internal Gas Detonation. Journal of Pressure Vessel Technology,
+        [1] Shepherd, J. E. (2009). *Structural Response of Piping to
+        Internal Gas Detonation*. Journal of Pressure Vessel Technology,
         131(3), 031204. https://doi.org/10.1115/1.3089497
 
         Parameters
@@ -1362,16 +1414,16 @@ class Tube:
             Density of tube material
         poisson_ratio : float
             Poisson ratio of tube material
-        plus_or_minus : float
+        plus_or_minus : float, optional
             Defines the band about the critical velocity which is considered
             "approximately equal to" -- the default value of 0.1 means plus
-            or minus ten percent.
+            or minus ten percent
 
         Returns
         -------
-        dynamic_load_factor : float
+        float
             Factor by which the tube's static maximum pressure should be
-            de-rated to account for transient response to detonation waves.
+            de-rated to account for transient response to detonation waves
         """
         if not (0 < plus_or_minus < 1):
             raise ValueError(
@@ -1416,8 +1468,10 @@ class Tube:
     ):
         """
         Calculates the maximum allowable pressure from the tube dimensions
-        and stress limits using the basic longitudinal joint formula
-        on page 14 of Megyesy's Pressure Vessel Handbook, 8th ed.
+        and stress limits using the basic longitudinal joint formula [1].
+
+        [1] E. F. Megyesy, *Pressure vessel handbook*, Oklahoma City, OK:
+        PV Publishing, Inc., 2001, p. 14.
 
         Parameters
         ----------
@@ -1432,7 +1486,7 @@ class Tube:
 
         Returns
         -------
-        max_pressure : pint.Quantity
+        pint.Quantity
             Pressure resulting in maximum allowable stress
         """
         mean_diameter = (tube_od + tube_id) / 2.
@@ -1443,7 +1497,7 @@ class Tube:
         return max_pressure
 
     @classmethod
-    def calculate_initial_pressure(
+    def calculate_max_initial_pressure(
             cls,
             tube_id,
             tube_od,
@@ -1565,6 +1619,19 @@ class Tube:
 
     @staticmethod
     def get_available_pipe_schedules(pipe_size):
+        """
+        Gets available pipe schedules for a given nominal size
+
+        Parameters
+        ----------
+        pipe_size : str
+            Nominal pipe size (see ``Tube.available_pipe_sizes``)
+
+        Returns
+        -------
+        list
+            List of available pipe schedules
+        """
         if pipe_size not in PIPE_SCHEDULES.index:
             msg = "Invalid pipe size: %s. " \
                   "See Tube.available_pipe_sizes." % str(pipe_size)
@@ -1578,6 +1645,25 @@ class Tube:
             pipe_size,
             pipe_schedule
     ):
+        """
+
+        Parameters
+        ----------
+        pipe_size : str
+            Nominal pipe size (see ``Tube.available_pipe_sizes``)
+        pipe_schedule : str
+            Pipe schedule (see ``Tube.get_available_pipe_schedules`` for a list
+            of available schedules for `pipe_size`)
+
+        Returns
+        -------
+        dict
+            Dictionary of pipe dimensions with the keys:
+
+            * ``"inner_diameter"``
+            * ``"outer_diameter"``
+            * ``"wall_thickness"``
+        """
         # note: this also checks for valid size
         if pipe_schedule not in cls.get_available_pipe_schedules(pipe_size):
             msg = "Schedule {:s} invalid for pipe size {:s}. See " \
@@ -1599,9 +1685,12 @@ class Tube:
 
 
 class Flange:
-    available_materials = TUBE_MATERIALS.Grade[
+    """
+    Methods pertaining to flange class and max pressure calculations
+    """
+    available_materials = list(TUBE_MATERIALS.Grade[
         pd.notna(TUBE_MATERIALS.Group)
-    ].values
+    ].values)
 
     @staticmethod
     def _check_flange_class(flange_class, group):
@@ -1621,37 +1710,51 @@ class Flange:
             unit_registry=_U
     ):
         """
-        Finds the minimum allowable flange class per ASME B16.5 for a give
+        Finds the minimum allowable flange class per ASME B16.5 for a given
         flange temperature and tube pressure.
+
+        Parameters
+        ----------
+        max_pressure : pint.Quantity or tuple
+            Maximum pressure within the system as a quantity or tuple of
+            ``(magnitude, "units")``
+        temperature : pint.Quantity or tuple
+            Flange temperature as a quantity or tuple of
+            ``(magnitude, "units")``
+        material : str
+            Flange material (see ``Flange.available_materials``)
+        unit_registry : pint.UnitRegistry, optional
+            Pint unit registry, if output within a particular registry is
+            desired
 
         Returns
         -------
-        flange_class: str
-            String representing the minimum allowable flange class
+        str
+            Minimum allowable flange class
         """
-        max_pressure = tools.parse_quant_input(
+        max_pressure = units.parse_quant_input(
             max_pressure,
             unit_registry
         )
-        temperature = tools.parse_quant_input(
+        temperature = units.parse_quant_input(
             temperature,
             unit_registry
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             max_pressure,
             "pressure",
             True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             temperature,
             "temperature",
             True
         )
-        max_pressure = tools.parse_quant_input(
+        max_pressure = units.parse_quant_input(
             max_pressure,
             _U
         )
-        temperature = tools.parse_quant_input(
+        temperature = units.parse_quant_input(
             temperature,
             _U
         )
@@ -1672,7 +1775,7 @@ class Flange:
 
         # ensure pressure is within bounds
         if max_pressure > max_ok_pressure:
-            raise ValueError("\nPressure out of range.")
+            raise ValueError("Pressure out of range.")
 
         # ensure temperature is within bounds
         if (
@@ -1680,7 +1783,7 @@ class Flange:
         ) or (
                 temperature > df_limits["Temperature"].max()
         ):
-            raise ValueError("\nTemperature out of range.")
+            raise ValueError("Temperature out of range.")
 
         df_limits = df_limits.applymap(
             lambda x: x.to_base_units().magnitude
@@ -1694,7 +1797,7 @@ class Flange:
             df_interp.interpolate(method="slinear", inplace=True)
         ser_result = df_interp.iloc[-1]
         return ser_result.keys()[
-            ser_result > max_pressure.to_base_units().magnitude
+            ser_result >= max_pressure.to_base_units().magnitude
         ][0]
 
     @staticmethod
@@ -1703,6 +1806,24 @@ class Flange:
             temperature,
             material
     ):
+        """
+        Finds the max allowable pressure for a flange of a given material and
+        class at the desired temperature.
+
+        Parameters
+        ----------
+        flange_class : str
+            Class of the flange to evaluate, e.g. ``"900"``
+        temperature : pint.Quantity
+            Flange temperature
+        material : str
+            Flange material (see ``Flange.available_materials``)
+
+        Returns
+        -------
+        pint.Quantity
+            Maximum allowable pressure
+        """
         _check_material(material)
         group = str(TUBE_MATERIALS.Group[
             TUBE_MATERIALS.Grade == material
@@ -1715,7 +1836,7 @@ class Flange:
         else:
             ureg_out = _U
 
-        temperature = tools.parse_quant_input(temperature, _U)
+        temperature = units.parse_quant_input(temperature, _U)
 
         df_limits = FLANGE_LIMITS[group]
         # ensure temperature is in range
@@ -1724,7 +1845,7 @@ class Flange:
         ) or (
                 temperature > df_limits["Temperature"].max()
         ):
-            raise ValueError("\nTemperature out of range.")
+            raise ValueError("Temperature out of range.")
 
         df_limits = df_limits.applymap(
             lambda x: x.to_base_units().magnitude
@@ -1746,6 +1867,24 @@ class Flange:
             pressure,
             material
     ):
+        """
+        Finds the max allowable temperature for a flange of a given material and
+        class at the desired pressure.
+
+        Parameters
+        ----------
+        flange_class : str
+            Class of the flange to evaluate, e.g. ``"900"``
+        pressure : pint.Quantity
+            System pressure
+        material : str
+            Flange material (see ``Flange.available_materials``)
+
+        Returns
+        -------
+        pint.Quantity
+            Max allowable flange temperature
+        """
         _check_material(material)
         group = str(TUBE_MATERIALS.Group[
             TUBE_MATERIALS.Grade == material
@@ -1758,7 +1897,7 @@ class Flange:
         else:
             ureg_out = _U
 
-        pressure = tools.parse_quant_input(pressure, _U)
+        pressure = units.parse_quant_input(pressure, _U)
 
         df_limits = FLANGE_LIMITS[group]
         # ensure pressure is in range
@@ -1767,7 +1906,7 @@ class Flange:
         ) or (
                 pressure > df_limits[flange_class].max()
         ):
-            raise ValueError("\nPressure out of range.")
+            raise ValueError("Pressure out of range.")
 
         df_limits = df_limits.applymap(
             lambda x: x.to_base_units().magnitude
