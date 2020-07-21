@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-PURPOSE:
-    A series of tools to aid in the design of a detonation tube.
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
+Tools for designing and determining operational parameters of a closed-end
+detonation tube with optical access.
 """
 
 import os
@@ -21,7 +15,7 @@ import pint
 import sympy as sp
 
 from . import thermochem
-from . import tools
+from . import units
 from .thermochem import _U
 
 
@@ -368,17 +362,17 @@ class Bolt:
         """
         quant = unit_registry.Quantity
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             bolt_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             plate_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             engagement_length,
             "length",
             ensure_positive=True
@@ -601,7 +595,7 @@ class DDT:
         if not 0 < blockage_ratio < 1:
             raise ValueError("\nBlockage ratio outside of 0<BR<1")
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             pipe_id,
             "length",
             ensure_positive=True
@@ -636,12 +630,12 @@ class DDT:
         """
 
         # check dimensionality and >=0
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             tube_inner_diameter,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             blockage_diameter,
             "length",
             ensure_positive=True
@@ -723,19 +717,19 @@ class DDT:
         if blockage_ratio <= 0 or blockage_ratio > 0.75:
             raise ValueError("\nBlockage ratio outside of correlation range")
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             tube_diameter,
             "length",
             ensure_positive=True
         )
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             initial_temperature,
             "temperature",
             ensure_positive=True
         )
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             initial_pressure,
             "pressure",
             ensure_positive=True
@@ -912,28 +906,28 @@ class Window:
             Window factor of safety
         """
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             length,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             width,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             thickness,
             "length",
             ensure_positive=True
         )
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             pressure,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             rupture_modulus,
             "pressure",
             ensure_positive=True
@@ -986,22 +980,22 @@ class Window:
         """
         quant = unit_registry.Quantity
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             length,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             width,
             "length",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             pressure,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             rupture_modulus,
             "pressure",
             ensure_positive=True
@@ -1181,27 +1175,27 @@ class Window:
         """
         quant = unit_registry.Quantity
 
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             max_pressure,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             window_area,
             "area",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             bolt_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             plate_max_tensile,
             "pressure",
             ensure_positive=True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             engagement_length,
             "length",
             ensure_positive=True
@@ -1738,29 +1732,29 @@ class Flange:
         str
             Minimum allowable flange class
         """
-        max_pressure = tools.parse_quant_input(
+        max_pressure = units.parse_quant_input(
             max_pressure,
             unit_registry
         )
-        temperature = tools.parse_quant_input(
+        temperature = units.parse_quant_input(
             temperature,
             unit_registry
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             max_pressure,
             "pressure",
             True
         )
-        tools.check_pint_quantity(
+        units.check_pint_quantity(
             temperature,
             "temperature",
             True
         )
-        max_pressure = tools.parse_quant_input(
+        max_pressure = units.parse_quant_input(
             max_pressure,
             _U
         )
-        temperature = tools.parse_quant_input(
+        temperature = units.parse_quant_input(
             temperature,
             _U
         )
@@ -1781,7 +1775,7 @@ class Flange:
 
         # ensure pressure is within bounds
         if max_pressure > max_ok_pressure:
-            raise ValueError("\nPressure out of range.")
+            raise ValueError("Pressure out of range.")
 
         # ensure temperature is within bounds
         if (
@@ -1789,7 +1783,7 @@ class Flange:
         ) or (
                 temperature > df_limits["Temperature"].max()
         ):
-            raise ValueError("\nTemperature out of range.")
+            raise ValueError("Temperature out of range.")
 
         df_limits = df_limits.applymap(
             lambda x: x.to_base_units().magnitude
@@ -1842,7 +1836,7 @@ class Flange:
         else:
             ureg_out = _U
 
-        temperature = tools.parse_quant_input(temperature, _U)
+        temperature = units.parse_quant_input(temperature, _U)
 
         df_limits = FLANGE_LIMITS[group]
         # ensure temperature is in range
@@ -1851,7 +1845,7 @@ class Flange:
         ) or (
                 temperature > df_limits["Temperature"].max()
         ):
-            raise ValueError("\nTemperature out of range.")
+            raise ValueError("Temperature out of range.")
 
         df_limits = df_limits.applymap(
             lambda x: x.to_base_units().magnitude
@@ -1903,7 +1897,7 @@ class Flange:
         else:
             ureg_out = _U
 
-        pressure = tools.parse_quant_input(pressure, _U)
+        pressure = units.parse_quant_input(pressure, _U)
 
         df_limits = FLANGE_LIMITS[group]
         # ensure pressure is in range
@@ -1912,7 +1906,7 @@ class Flange:
         ) or (
                 pressure > df_limits[flange_class].max()
         ):
-            raise ValueError("\nPressure out of range.")
+            raise ValueError("Pressure out of range.")
 
         df_limits = df_limits.applymap(
             lambda x: x.to_base_units().magnitude

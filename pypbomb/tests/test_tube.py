@@ -1,14 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-PURPOSE:
-    Unit tests for tools.py
-
-CREATED BY:
-    Mick Carter
-    Oregon State University
-    CIRE and Propulsion Lab
-    cartemic@oregonstate.edu
-"""
 
 import os
 from math import sqrt
@@ -717,6 +707,7 @@ class TestTube:
     def test_get_available_pipe_schedules_bad_size(self):
         msg = "Invalid pipe size: 2.222. See Tube.available_pipe_sizes."
         with pytest.raises(ValueError, match=msg):
+            # noinspection PyTypeChecker
             tube.Tube.get_available_pipe_schedules(2.222)
 
     def test_get_dimensions(self):
@@ -1141,6 +1132,52 @@ class TestFlange:
                     temperature,
                     material
             )
+
+    def test_get_max_pressure_good(self):
+        temps = [
+            tube._Q(200, "degC"),
+            (225, "degC")
+        ]
+        test_class = "150"
+        material = "304"
+        good = [13.2, 12.65]  # bar
+
+        results = np.zeros(2)
+        for i, t in enumerate(temps):
+            p_test = tube.Flange.get_max_pressure(test_class, t, material)
+            results[i] = p_test.to("bar").magnitude
+
+        assert np.allclose(results, good)
+
+    def test_get_max_pressure_bad_temperature(self):
+        with pytest.raises(
+            ValueError,
+            match="Temperature out of range"
+        ):
+            tube.Flange.get_max_pressure("150", tube._Q(10000, "degC"), "316")
+
+    def test_get_max_temperature_good(self):
+        pressures = [
+            tube._Q(14.8, "bar"),
+            (14.25, "bar")
+        ]
+        test_class = "150"
+        material = "316"
+        good = [150, 175]  # degC
+
+        results = np.zeros(2)
+        for i, p in enumerate(pressures):
+            p_test = tube.Flange.get_max_temperature(test_class, p, material)
+            results[i] = p_test.to("degC").magnitude
+
+        assert np.allclose(results, good)
+
+    def test_get_max_temperature_bad_pressure(self):
+        with pytest.raises(
+            ValueError,
+            match="Pressure out of range"
+        ):
+            tube.Flange.get_max_temperature("150", tube._Q(19.1, "bar"), "316")
 
 
 class TestCheckMaterialList:
