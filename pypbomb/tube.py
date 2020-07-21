@@ -343,8 +343,8 @@ class Bolt:
         thread_size : str
             Size of threads to be evaluated, e.g. ``"1/4-20"`` or ``"1 1/2-6"``
         thread_class : str
-            Class of threads to be evaluated, ``"2"`` or ``"3"``. ``"A"`` or
-            ``"B"`` are automatically appended for internal/external threads
+            Class of threads to be evaluated, ``"2"`` or ``"3"``. (``"A"`` or
+            ``"B"`` are automatically appended for internal/external threads)
         bolt_max_tensile : pint.Quantity
             Pint quantity of bolt (external thread) tensile failure stress
         plate_max_tensile : pint.Quantity
@@ -884,27 +884,27 @@ class Window:
             rupture_modulus
     ):
         """
-        This function calculates the safety factor of a clamped rectangular
+        Calculates the safety factor of a clamped rectangular
         window given window dimensions, design pressure, and material rupture
         modulus
 
         Parameters
         ----------
-        length : pint quantity with length units
+        length : pint.Quantity
             Window unsupported (viewing) length
-        width : pint quantity with length units
+        width : pint.Quantity
             Window unsupported (viewing) width
-        thickness : pint quantity with length units
+        thickness : pint.Quantity
             Window thickness
-        pressure : pint quantity with pressure units
+        pressure : pint.Quantity
             Design pressure differential across window at which factor of
             safety is to be calculated
-        rupture_modulus : pint quantity with pressure units
-            Rupture modulus of desired window material.
+        rupture_modulus : pint.Quantity
+            Rupture modulus of desired window material
 
         Returns
         -------
-        safety_factor : float
+        float
             Window factor of safety
         """
 
@@ -935,7 +935,7 @@ class Window:
             ensure_positive=True
         )
 
-        safety_factor = cls.solver(
+        safety_factor = cls._solve(
             length=length.to_base_units().magnitude,
             width=width.to_base_units().magnitude,
             thickness=thickness.to_base_units().magnitude,
@@ -956,28 +956,28 @@ class Window:
             unit_registry
     ):
         """
-        This function calculates the thickness of a clamped rectangular window
-        which gives the desired safety factor.
+        Calculates the thickness of a clamped rectangular window which gives
+        the desired safety factor
 
         Parameters
         ----------
-        length : pint quantity with length units
+        length : pint.Quantity
             Window unsupported (viewing) length
-        width : pint quantity with length units
+        width : pint.Quantity
             Window unsupported (viewing) width
         safety_factor : float
             Safety factor
-        pressure : pint quantity with pressure units
+        pressure : pint.Quantity
             Design pressure differential across window at which factor of
             safety is to be calculated
-        rupture_modulus : pint quantity with pressure units
-            Rupture modulus of desired window material.
-        unit_registry : pint unit registry
+        rupture_modulus : pint.Quantity
+            Rupture modulus of desired window material
+        unit_registry : pint.UnitRegistry
             Keeps output consistent with parent registry, avoiding conflicts
 
         Returns
         -------
-        thickness : pint quantity
+        pint.Quantity
             Window thickness
         """
         quant = unit_registry.Quantity
@@ -1010,7 +1010,7 @@ class Window:
         except TypeError:
             raise TypeError("\nNon-numeric window safety factor")
 
-        thickness = cls.solver(
+        thickness = cls._solve(
             length=length.to_base_units().magnitude,
             width=width.to_base_units().magnitude,
             safety_factor=safety_factor,
@@ -1023,22 +1023,26 @@ class Window:
             width.to_base_units().units).to(width.units.format_babel())
 
     @staticmethod
-    def solver(
+    def _solve(
             **kwargs
     ):
         """
         This function uses sympy to solve for a missing window measurement.
-        Inputs are five keyword arguments, with the following possible values:
+        Inputs are five keyword arguments, with the following possible names:
 
-        length, width, thickness, pressure, rupture_modulus, safety_factor
+        * `length`
+        * `width`
+        * `thickness`
+        * `pressure`
+        * `rupture_modulus`
+        * `safety_factor`
 
         All of these arguments should be floats, and dimensions should be
         consistent (handling should be done in other functions, such as
         calculate_window_sf().
 
         Equation from:
-        https://www.crystran.co.uk/userfiles/files/
-        design-of-pressure-windows.pdf
+        https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
 
         Parameters
         ----------
@@ -1125,7 +1129,7 @@ class Window:
             return np.NaN
 
     @staticmethod
-    def calculate_bolt_sfs(
+    def bolt_safety_factors(
             max_pressure,
             window_area,
             num_bolts,
@@ -1141,31 +1145,35 @@ class Window:
 
         Parameters
         ----------
-        max_pressure : pint quantity
-            Pint quantity of tube maximum pressure (absolute)
-        window_area : pint quantity
-            Pint quantity of window area exposed to high pressure environment
+        max_pressure : pint.Quantity
+            Tube maximum pressure
+        window_area : pint.Quantity
+            Window area exposed to high pressure environment
         num_bolts : int
             Number of bolts used to secure each viewing window
         thread_size : str
-            Size of threads to be evaluated, e.g. '1/4-20' or '1 1/2-6'
+            Size of threads to be evaluated, e.g. ``1/4-20`` or ``1 1/2-6``
         thread_class : str
-            Class of threads to be evaluated, '2' or '3'. 'A' or 'B' are
-            automatically appended for internal/external threads
-        bolt_max_tensile : pint quantity
+            Class of threads to be evaluated, ``"2"`` or ``"3"``. (``"A"`` or
+            ``"B"`` are automatically appended for internal/external threads)
+        bolt_max_tensile : pint.Quantity
             Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint quantity
+        plate_max_tensile : pint.Quantity
             Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint quantity
+        engagement_length : pint.Quantity
             Pint quantity of total thread engagement length
-        unit_registry : pint unit registry
+        unit_registry : pint.UnitRegistry
             Keeps output consistent with parent registry, avoiding conflicts
 
         Returns
         -------
-        safety_factors : dict
-            Dictionary with keys of 'bolt' and 'plate', giving factors of safety
-            for window bolts and the plate that they are screwed into.
+        dict
+            Dictionary giving factors of safety for window bolts and the plate
+
+            that they are screwed into. Keys:
+
+            * ``"bolt"``
+            * ``"plate"``
         """
         quant = unit_registry.Quantity
 

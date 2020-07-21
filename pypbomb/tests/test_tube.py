@@ -408,7 +408,7 @@ class TestWindow:
                     ValueError,
                     match="Incorrect number of arguments sent to solver"
             ):
-                tube.Window.solver(**argument_dict)
+                tube.Window._solve(**argument_dict)
 
     @staticmethod
     def test_solver_bad_kwarg():
@@ -423,7 +423,7 @@ class TestWindow:
                 ValueError,
                 match="Bad keyword argument:\npulled_pork"
         ):
-            tube.Window.solver(**kwargs)
+            tube.Window._solve(**kwargs)
 
     @staticmethod
     def test_solver_imaginary_result():
@@ -438,7 +438,7 @@ class TestWindow:
                 Warning,
                 match="Window inputs resulted in imaginary solution."
         ):
-            test_nan = tube.Window.solver(**kwargs)
+            test_nan = tube.Window._solve(**kwargs)
 
         assert test_nan is np.nan
 
@@ -462,7 +462,7 @@ class TestWindow:
         ]
         good_solutions = [1.2, 4.]
         for index in range(len(args)):
-            test_output = tube.Window.solver(**args[index])
+            test_output = tube.Window._solve(**args[index])
             assert abs(test_output - good_solutions[index]) < 0.1
 
     @staticmethod
@@ -481,7 +481,7 @@ class TestWindow:
             "plate": 7.969517321,
         }
 
-        test_values = tube.Window.calculate_bolt_sfs(
+        test_values = tube.Window.bolt_safety_factors(
             max_pressure,
             window_area,
             num_bolts,
