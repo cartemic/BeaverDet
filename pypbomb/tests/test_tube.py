@@ -838,6 +838,33 @@ class TestTube:
                     tube._U
                 )
 
+    def test_get_elastic_modulus(self):
+        ureg = thermochem._U
+        test = tube.Tube.get_elastic_modulus("316L", ureg)
+        assert test == ureg.Quantity(200, "GPa")
+
+    def test_get_density(self):
+        ureg = thermochem._U
+        test = tube.Tube.get_density("316L", ureg)
+        assert test == ureg.Quantity(7.9, "g/cm^3")
+
+    def test_get_poisson(self):
+        test = tube.Tube.get_poisson("316L")
+        assert test == 0.28
+
+    def test__check_material_good(self):
+        test = tube.Tube._check_material("304L")
+        assert test is None
+
+    def test__check_material_bad(self):
+        bad_material = "unobtainium"
+        msg = "Material %s not found" % bad_material
+        with pytest.raises(
+            ValueError,
+            match=msg
+        ):
+            tube.Tube._check_material(bad_material)
+
 
 class TestCollectTubeMaterials:
     def test_good_output(self):

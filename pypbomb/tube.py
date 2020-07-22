@@ -580,7 +580,7 @@ class DDT:
 
         Returns
         -------
-        spiral_diameter : pint.Quantity
+        pint.Quantity
             Shchelkin spiral diameter inside a tube of `pipe_id` inner diameter
             giving a blockage ratio of `blockage_ratio`. Units are the same as
             pipe_id.
@@ -687,11 +687,11 @@ class DDT:
         blockage_ratio : float
             Ratio of blocked area to total cross-sectional area, :math:`0 < BR
             < 1`
-        tube_diameter : pint quantity
+        tube_diameter : pint.Quantity
             Internal diameter of the detonation tube
-        initial_temperature : pint quantity
+        initial_temperature : pint.Quantity
             Mixture initial temperature
-        initial_pressure : pint quantity
+        initial_pressure : pint.Quantity
             Mixture initial pressure
         species_dict : dict
             Dictionary containing the species in the mixture as keys, with total
@@ -1048,7 +1048,7 @@ class Window:
 
         Returns
         -------
-        missing dimension : float or np.NaN
+        float or np.NaN
             Missing dimension is returned as a float upon successful calculation
             or NaN if the result is imaginary
         """
@@ -1295,6 +1295,10 @@ class Tube:
         pint.Quantity
             Maximum allowable tube stress
         """
+        initial_temperature = units.parse_quant_input(
+            initial_temperature,
+            unit_registry
+        )
 
         # look up stress-temperature limits and units
         stress_limits = cls.get_pipe_stress_limits(
@@ -1340,7 +1344,7 @@ class Tube:
     def get_pipe_stress_limits(
             material,
             welded,
-            unit_registry
+            unit_registry=_U
     ):
         """
         Looks up ASME B31.1 stress limits as a function of pipe temperature
@@ -1351,7 +1355,7 @@ class Tube:
             Pipe material (see ``Tube.available_materials``)
         welded : bool
             ``True`` for welded pipe; ``False`` for seamless
-        unit_registry : pint.UnitRegistry
+        unit_registry : pint.UnitRegistry, optional
             Unit registry for managing units to prevent conflicts with parent
             unit registry
 
@@ -1425,6 +1429,12 @@ class Tube:
             Factor by which the tube's static maximum pressure should be
             de-rated to account for transient response to detonation waves
         """
+        units.check_pint_quantity(tube_id, "length", True)
+        units.check_pint_quantity(tube_od, "length", True)
+        units.check_pint_quantity(cj_velocity, "velocity")
+        units.check_pint_quantity(elastic_modulus, "pressure", True)
+        units.check_pint_quantity(density, "density", True)
+
         if not (0 < plus_or_minus < 1):
             raise ValueError(
                 "\nplus_or_minus factor not between 0 and 1"
@@ -1446,9 +1456,10 @@ class Tube:
 
         # set limits for "approximately Vcrit"
         bounds = [
-            crit_velocity * (1. + plus_or_minus),
-            crit_velocity * (1. - plus_or_minus)
+            (crit_velocity * (1. + plus_or_minus)).to("m/s").magnitude,
+            (crit_velocity * (1. - plus_or_minus)).to("m/s").magnitude
         ]
+        cj_velocity = cj_velocity.to("m/s").magnitude
 
         if cj_velocity < bounds[1]:
             dynamic_load_factor = 1
@@ -1464,7 +1475,7 @@ class Tube:
             tube_id,
             tube_od,
             max_stress,
-            safety_factor
+            safety_factor=1
     ):
         """
         Calculates the maximum allowable pressure from the tube dimensions
@@ -1481,7 +1492,7 @@ class Tube:
             Outer diameter of tube
         max_stress : pint.Quantity
             Maximum allowable stress in tube material (e.g. from ASME B31.1)
-        safety_factor : float
+        safety_factor : float, optional
             Desired safety factor
 
         Returns
@@ -1522,14 +1533,14 @@ class Tube:
         tube_od : pint.Quantity
             Outer diameter of tube
             Internal diameter of the detonation tube
-        initial_temperature : pint quantity
+        initial_temperature : pint.Quantity
             Mixture initial temperature
         species_dict : dict
             Dictionary containing the species in the mixture as keys, with total
             moles or mole fractions as values
         mechanism : str
             Mechanism file name for Cantera
-        max_pressure : pint quantity
+        max_pressure : pint.Quantity
             Maximum allowable pressure within the tube
         elastic_modulus : pint.Quantity
             Elastic modulus of tube material
@@ -1554,7 +1565,7 @@ class Tube:
 
         Returns
         -------
-        initial_pressure : pint quantity
+        pint.Quantity
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
         """
@@ -1643,7 +1654,8 @@ class Tube:
     def get_dimensions(
             cls,
             pipe_size,
-            pipe_schedule
+            pipe_schedule,
+            unit_registry=_U
     ):
         """
 
@@ -1654,6 +1666,9 @@ class Tube:
         pipe_schedule : str
             Pipe schedule (see ``Tube.get_available_pipe_schedules`` for a list
             of available schedules for `pipe_size`)
+        unit_registry : pint.UnitRegistry, optional
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
 
         Returns
         -------
@@ -1678,10 +1693,115 @@ class Tube:
         inner_diameter = outer_diameter - 2 * wall_thickness
 
         return dict(
-            inner_diameter=_Q(inner_diameter, "in"),
-            outer_diameter=_Q(outer_diameter, "in"),
-            wall_thickness=_Q(wall_thickness, "in"),
+            inner_diameter=unit_registry.Quantity(inner_diameter, "in"),
+            outer_diameter=unit_registry.Quantity(outer_diameter, "in"),
+            wall_thickness=unit_registry.Quantity(wall_thickness, "in"),
         )
+
+    @classmethod
+    def get_elastic_modulus(
+            cls,
+            material,
+            unit_registry=_U
+    ):
+        """
+        Gets the elastic modulus for a valid tube material. For valid materials
+        see ``Tube.available_materials``.
+
+        Parameters
+        ----------
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+        unit_registry : pint.UnitRegistry, optional
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
+
+        Returns
+        -------
+        pint.Quantity
+            Elastic modulus
+        """
+        cls._check_material(material)
+        return units.parse_quant_input(
+            TUBE_MATERIALS[
+                TUBE_MATERIALS["Grade"] == material
+            ]["ElasticModulus"].values[0],
+            unit_registry
+        )
+
+    @classmethod
+    def get_density(
+            cls,
+            material,
+            unit_registry=_U
+    ):
+        """
+        Gets the density for a valid tube material. For valid materials see
+        ``Tube.available_materials``.
+
+        Parameters
+        ----------
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+        unit_registry : pint.UnitRegistry, optional
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
+
+        Returns
+        -------
+        pint.Quantity
+            Density
+        """
+        cls._check_material(material)
+        return units.parse_quant_input(
+            TUBE_MATERIALS[
+                TUBE_MATERIALS["Grade"] == material
+            ]["Density"].values[0],
+            unit_registry
+        )
+
+    @classmethod
+    def get_poisson(
+            cls,
+            material
+    ):
+        """
+        Gets the Poisson ratio for a valid tube material. For valid materials
+        see ``Tube.available_materials``.
+
+        Parameters
+        ----------
+        material : str
+            Pipe material (see ``Tube.available_materials``)
+
+        Returns
+        -------
+        float
+            Poisson ratio (unitless)
+        """
+        cls._check_material(material)
+        return TUBE_MATERIALS[
+            TUBE_MATERIALS["Grade"] == material
+        ]["Poisson"].values[0]
+
+    @classmethod
+    def _check_material(
+            cls,
+            material
+    ):
+        """
+        Checks a material to make sure it is in ``Tube.available_materials``.
+
+        Parameters
+        ----------
+        material
+
+        Returns
+        -------
+        """
+        material = str(material)
+        if material not in cls.available_materials:
+            raise ValueError("Material %s not found" % material)
 
 
 class Flange:
