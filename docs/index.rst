@@ -8,7 +8,7 @@ Pypbomb
 For when you want the detonations to stay on the inside
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Tube: the useful one
 
    tube

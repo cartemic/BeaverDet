@@ -4,7 +4,7 @@ pypbomb.tube
 Tools for designing and determining operational parameters of a closed-end
 detonation tube with optical access.
 
-.. currentmodule:: pypbomb.tube
+.. py:module:: pypbomb.tube
 
 
 Bolt
