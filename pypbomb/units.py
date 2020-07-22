@@ -15,12 +15,13 @@ def check_pint_quantity(
     Checks to make sure that a quantity is an instance of a pint quantity, and
     that it has the correct units. Currently supported dimension types:
 
-        * length
-        * area
-        * volume
-        * temperature
-        * pressure
-        * velocity
+        * ``"length"``
+        * ``"area"``
+        * ``"volume"``
+        * ``"temperature"``
+        * ``"pressure"``
+        * ``"velocity"``
+        * ``"density"``
 
     Parameters
     ----------
@@ -40,36 +41,37 @@ def check_pint_quantity(
 
     ureg = pint.UnitRegistry()
     units = {
-        'length': ureg.meter.dimensionality.__str__(),
-        'area': (ureg.meter**2).dimensionality.__str__(),
-        'volume': (ureg.meter**3).dimensionality.__str__(),
-        'temperature': ureg.degC.dimensionality.__str__(),
-        'pressure': ureg.psi.dimensionality.__str__(),
-        'velocity': (ureg.meter/ureg.second).dimensionality.__str__()
+        "length": ureg.meter.dimensionality.__str__(),
+        "area": (ureg.meter**2).dimensionality.__str__(),
+        "volume": (ureg.meter**3).dimensionality.__str__(),
+        "temperature": ureg.degC.dimensionality.__str__(),
+        "pressure": ureg.psi.dimensionality.__str__(),
+        "velocity": (ureg.meter/ureg.second).dimensionality.__str__(),
+        "density": (ureg.kg/ureg.meter**3).dimensionality.__str__(),
     }
 
     if dimension_type not in units:
-        raise ValueError(dimension_type + ' not a supported dimension type')
+        raise ValueError(dimension_type + " not a supported dimension type")
 
     try:
         actual_dimension_type = quantity.dimensionality.__str__()
     except AttributeError:
-        raise ValueError('Non-pint quantity')
+        raise ValueError("Non-pint quantity")
 
     try:
         float(quantity.magnitude)
     except ValueError:
-        raise ValueError('Non-numeric pint quantity')
+        raise ValueError("Non-numeric pint quantity")
 
     if ensure_positive:
         if quantity.to_base_units().magnitude < 0:
-            raise ValueError('Input value < 0')
+            raise ValueError("Input value < 0")
 
     if units[dimension_type] != actual_dimension_type:
         raise ValueError(
-            actual_dimension_type.replace('[', '').replace(']', '') +
-            ' is not '
-            + units[dimension_type].replace('[', '').replace(']', '')
+            actual_dimension_type.replace("[", "").replace("]", "") +
+            " is not "
+            + units[dimension_type].replace("[", "").replace("]", "")
         )
 
     return True
