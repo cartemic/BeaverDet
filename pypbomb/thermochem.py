@@ -195,9 +195,15 @@ def calculate_reflected_shock_state(
     Returns
     -------
     dict
-        Dictionary containing keys ``reflected`` and ``cj``. Each of these
-        contains speed``, indicating the related wave speed, and ``state``,
-        which is a Cantera gas object at the specified state.
+        Dictionary containing keys
+
+        * ``reflected`` and
+        * ``cj``.
+
+        Each of these keys corresponds to a dictionary containing the keys
+
+        * ``speed``, indicating the related wave speed, and
+        * ``state``, which is a Cantera gas object at the specified state.
     """
     quant = unit_registry.Quantity
 
