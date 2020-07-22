@@ -112,6 +112,16 @@ class TestParseQuantInput:
             _U
         ).units.format_babel() == test_units
 
+    def test_unit_registry(self):
+        magnitude = 700
+        test_units = "degree_Celsius"
+        new_ureg = pint.UnitRegistry()
+        test = units.parse_quant_input(
+            (magnitude, test_units),
+            new_ureg
+        )
+        assert id(test._REGISTRY) == id(new_ureg)
+
     def test_pass_quantity(self):
         good_quant = _Q(9, "degC")
         assert units.parse_quant_input(
