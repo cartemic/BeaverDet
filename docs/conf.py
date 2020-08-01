@@ -33,7 +33,8 @@ release = '0.1.0'
 extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
-    "sphinx_rtd_theme"
+    "sphinx_rtd_theme",
+    "nbsphinx"
 ]
 
 autosummary_generate = True
