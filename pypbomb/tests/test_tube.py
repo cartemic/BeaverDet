@@ -650,14 +650,14 @@ class TestTube:
         #     material = "316L"
         #     schedule = "80"
         #     nominal_size = "6"
-        initial_temperature = quant(300, "K")
         tube_id = quant(5.761, "in")
         tube_od = quant(6.625, "in")
+        initial_temperature = quant(300, "K")
+        reactant_mixture = dict(H2=2/3, O2=1/3)
+        mechanism = "gri30.cti"
         elastic_modulus = quant(200, "GPa")
         density = quant(7.9, "g/cm**3")
         poisson_ratio = 0.28
-        reactant_mixture = dict(H2=1/3, O2=2/3)
-        mechanism = "gri30.cti"
 
         # the initial pressure should cause the reflected detonation pressure
         # to be equal to the tube's max pressure, accounting for dynamic load
