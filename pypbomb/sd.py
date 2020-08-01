@@ -329,10 +329,10 @@ class Detonation:
         dict
             Dictionary with the following keys:
 
-            * ``"cj_speed"``: Chapman-Jouguet wave speed (`float`)
+            * ``"cj speed"``: Chapman-Jouguet wave speed (`float`)
             * ``"R^2"``:  R-squared value of the CJ speed vs. density ratio fit
               (`float`). Only exists if `return_r_squared` is set to ``True``.
-            * ``"cj_state"``: Cantera solution object describing the CJ state
+            * ``"cj state"``: Cantera solution object describing the CJ state
               (`ct.Solution`). Only exists if `return_state` is set to ``True``.
 
 
