@@ -21,7 +21,7 @@ def compare(manual, tested):
         except AttributeError:
             test_value = tested[key]
 
-        assert abs(test_value - value) / value < 1e-4
+        assert np.all(np.abs(test_value - value) / value < 1e-4)
 
 
 # noinspection SpellCheckingInspection
@@ -31,6 +31,64 @@ class TestBolt:
     plate_max_tensile = tube._Q(30, "ksi")
     engagement_length = tube._Q(0.5, "in")
     bolt_max_tensile = tube._Q(80, "ksi")
+
+    def test_calculate_sf(self):
+        max_pressure = tube._Q(1631.7, "psi")
+        window_area = tube._Q(5.75 * 2.5, "in^2")
+        num_bolts = 20
+        thread_size = "1/4-28"
+        thread_class = "2"
+        bolt_max_tensile = tube._Q(120, "ksi")
+        plate_max_tensile = (30, "ksi")  # parse check
+        engagement_length = tube._Q(0.5, "in")
+
+        hand_calc = {
+            "bolt": 3.606968028,
+            "plate": 7.969517321,
+        }
+
+        test_values = tube.Bolt.calculate_safety_factors(
+            max_pressure,
+            window_area,
+            num_bolts,
+            thread_size,
+            thread_class,
+            bolt_max_tensile,
+            plate_max_tensile,
+            engagement_length,
+            tube._U
+        )
+
+        compare(hand_calc, test_values)
+
+    def test_calculate_sf_vectorized(self):
+        max_pressure = tube._Q(1631.7, "psi")
+        window_area = tube._Q(5.75 * 2.5, "in^2")
+        num_bolts = 20 * np.ones(12)
+        thread_size = "1/4-28"
+        thread_class = "2"
+        bolt_max_tensile = tube._Q(120, "ksi")
+        plate_max_tensile = tube._Q(30, "ksi")
+        engagement_length = tube._Q(0.5, "in")
+
+        hand_calc = {
+            "bolt": 3.606968028,
+            "plate": 7.969517321,
+        }
+
+        test_values = tube.Bolt.calculate_safety_factors(
+            max_pressure,
+            window_area,
+            num_bolts,
+            thread_size,
+            thread_class,
+            bolt_max_tensile,
+            plate_max_tensile,
+            engagement_length,
+            tube._U
+        )
+
+        compare(hand_calc, test_values)
 
     def test_calculate_stress_areas_over_100ksi(self):
         # test bolt > 100ksi
@@ -328,6 +386,19 @@ class TestWindow:
 
         assert abs(test_sf - desired_safety_factor) / test_sf < 0.01
 
+    def test_safety_factor_vectorized(self):
+        desired_safety_factor = 4
+
+        test_sf = tube.Window.safety_factor(
+            self.length,
+            (self.width.magnitude, self.width.units.format_babel()),  # parse
+            self.thickness,
+            self.pressure,
+            self.rupture_modulus * np.ones(7)  # vectorization check
+        )
+
+        assert np.all(np.abs(test_sf - desired_safety_factor) / test_sf < 0.01)
+
     def test_minimum_thickness_sf_less_than_1(self):
         # safety factor < 1
         safety_factor = [0.25, -7]
@@ -375,35 +446,21 @@ class TestWindow:
         desired_thickness = self.thickness.magnitude
         assert abs(test_thickness - desired_thickness) / test_thickness < 0.01
 
-    @staticmethod
-    def test_calculate_window_bolt_sf():
-        max_pressure = tube._Q(1631.7, "psi")
-        window_area = tube._Q(5.75 * 2.5, "in^2")
-        num_bolts = 20
-        thread_size = "1/4-28"
-        thread_class = "2"
-        bolt_max_tensile = tube._Q(120, "ksi")
-        plate_max_tensile = tube._Q(30, "ksi")
-        engagement_length = tube._Q(0.5, "in")
-
-        hand_calc = {
-            "bolt": 3.606968028,
-            "plate": 7.969517321,
-        }
-
-        test_values = tube.Window.bolt_safety_factors(
-            max_pressure,
-            window_area,
-            num_bolts,
-            thread_size,
-            thread_class,
-            bolt_max_tensile,
-            plate_max_tensile,
-            engagement_length,
+    def test_minimum_thickness_vectorized(self):
+        safety_factor = 4
+        test_thickness = tube.Window.minimum_thickness(
+            self.length * np.ones(9),  # vectorization check
+            (self.width.magnitude, self.width.units.format_babel()),  # parse
+            safety_factor,
+            self.pressure,
+            self.rupture_modulus,
             tube._U
         )
-
-        compare(hand_calc, test_values)
+        test_thickness = test_thickness.to(self.thickness.units).magnitude
+        desired_thickness = self.thickness.magnitude
+        assert np.all(
+            np.abs(test_thickness - desired_thickness) / test_thickness < 0.01
+        )
 
 
 class TestTube:

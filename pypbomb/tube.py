@@ -318,6 +318,138 @@ class Bolt:
     """
     Methods relating to bolt calculations and property lookup.
     """
+    @classmethod
+    def calculate_safety_factors(
+            cls,
+            max_pressure,
+            window_area,
+            num_bolts,
+            thread_size,
+            thread_class,
+            bolt_max_tensile,
+            plate_max_tensile,
+            engagement_length,
+            unit_registry=_U
+    ):
+        """
+        Calculates bolt and plate safety factors for viewing window bolts
+
+        Parameters
+        ----------
+        max_pressure : pint.Quantity
+            Tube maximum pressure
+        window_area : pint.Quantity
+            Window area exposed to high pressure environment
+        num_bolts : int
+            Number of bolts used to secure each viewing window
+        thread_size : str
+            Size of threads to be evaluated, e.g. ``1/4-20`` or ``1 1/2-6``
+        thread_class : str
+            Class of threads to be evaluated, ``"2"`` or ``"3"``. (``"A"`` or
+            ``"B"`` are automatically appended for internal/external threads)
+        bolt_max_tensile : pint.Quantity
+            Pint quantity of bolt (ext. thread) tensile failure stress
+        plate_max_tensile : pint.Quantity
+            Pint quantity of plate (int. thread) tensile failure stress
+        engagement_length : pint.Quantity
+            Pint quantity of total thread engagement length
+        unit_registry : pint.UnitRegistry
+            Keeps output consistent with parent registry, avoiding conflicts
+
+        Returns
+        -------
+        dict
+            Dictionary giving factors of safety for window bolts and the plate
+
+            that they are screwed into. Keys:
+
+            * ``"bolt"``
+            * ``"plate"``
+        """
+        quant = unit_registry.Quantity
+
+        max_pressure = units.parse_quant_input(
+            max_pressure,
+            unit_registry
+        )
+        window_area = units.parse_quant_input(
+            window_area,
+            unit_registry
+        )
+        bolt_max_tensile = units.parse_quant_input(
+            bolt_max_tensile,
+            unit_registry
+        )
+        plate_max_tensile = units.parse_quant_input(
+            plate_max_tensile,
+            unit_registry
+        )
+        engagement_length = units.parse_quant_input(
+            engagement_length,
+            unit_registry
+        )
+
+        units.check_pint_quantity(
+            max_pressure,
+            "pressure",
+            ensure_positive=True
+        )
+        units.check_pint_quantity(
+            window_area,
+            "area",
+            ensure_positive=True
+        )
+        units.check_pint_quantity(
+            bolt_max_tensile,
+            "pressure",
+            ensure_positive=True
+        )
+        units.check_pint_quantity(
+            plate_max_tensile,
+            "pressure",
+            ensure_positive=True
+        )
+        units.check_pint_quantity(
+            engagement_length,
+            "length",
+            ensure_positive=True
+        )
+
+        # get total force per bolt
+        window_force = (
+                (max_pressure - quant(1, "atm")) * window_area / num_bolts
+        )
+
+        # get stress areas
+        thread = cls.calculate_stress_areas(
+            thread_size,
+            thread_class,
+            bolt_max_tensile,
+            plate_max_tensile,
+            engagement_length,
+            unit_registry
+        )
+        screw_area = thread["screw area"]
+        screw_area = quant(
+            screw_area.magnitude,
+            screw_area.units.format_babel()
+        )
+        plate_area = thread["plate area"]
+        plate_area = quant(
+            plate_area.magnitude,
+            plate_area.units.format_babel()
+        )
+
+        # calculate safety factors
+        safety_factors = dict()
+        safety_factors["bolt"] = (
+                bolt_max_tensile / (window_force / screw_area)
+        ).to("").magnitude
+        safety_factors["plate"] = (
+                plate_max_tensile / (window_force / plate_area)
+        ).to("").magnitude
+        return safety_factors
+
     @staticmethod
     def calculate_stress_areas(
             thread_size,
@@ -1055,138 +1187,6 @@ class Window:
         ).to(width.units.format_babel())
 
         return thickness
-
-    @staticmethod
-    def bolt_safety_factors(
-            max_pressure,
-            window_area,
-            num_bolts,
-            thread_size,
-            thread_class,
-            bolt_max_tensile,
-            plate_max_tensile,
-            engagement_length,
-            unit_registry
-    ):
-        """
-        Calculates bolt and plate safety factors for viewing window bolts
-
-        Parameters
-        ----------
-        max_pressure : pint.Quantity
-            Tube maximum pressure
-        window_area : pint.Quantity
-            Window area exposed to high pressure environment
-        num_bolts : int
-            Number of bolts used to secure each viewing window
-        thread_size : str
-            Size of threads to be evaluated, e.g. ``1/4-20`` or ``1 1/2-6``
-        thread_class : str
-            Class of threads to be evaluated, ``"2"`` or ``"3"``. (``"A"`` or
-            ``"B"`` are automatically appended for internal/external threads)
-        bolt_max_tensile : pint.Quantity
-            Pint quantity of bolt (ext. thread) tensile failure stress
-        plate_max_tensile : pint.Quantity
-            Pint quantity of plate (int. thread) tensile failure stress
-        engagement_length : pint.Quantity
-            Pint quantity of total thread engagement length
-        unit_registry : pint.UnitRegistry
-            Keeps output consistent with parent registry, avoiding conflicts
-
-        Returns
-        -------
-        dict
-            Dictionary giving factors of safety for window bolts and the plate
-
-            that they are screwed into. Keys:
-
-            * ``"bolt"``
-            * ``"plate"``
-        """
-        quant = unit_registry.Quantity
-
-        units.check_pint_quantity(
-            max_pressure,
-            "pressure",
-            ensure_positive=True
-        )
-        units.check_pint_quantity(
-            window_area,
-            "area",
-            ensure_positive=True
-        )
-        units.check_pint_quantity(
-            bolt_max_tensile,
-            "pressure",
-            ensure_positive=True
-        )
-        units.check_pint_quantity(
-            plate_max_tensile,
-            "pressure",
-            ensure_positive=True
-        )
-        units.check_pint_quantity(
-            engagement_length,
-            "length",
-            ensure_positive=True
-        )
-
-        # convert all quantities to local unit registry
-        max_pressure = quant(
-            max_pressure.magnitude,
-            max_pressure.units.format_babel()
-        )
-        window_area = quant(
-            window_area.magnitude,
-            window_area.units.format_babel()
-        )
-        bolt_max_tensile = quant(
-            bolt_max_tensile.magnitude,
-            bolt_max_tensile.units.format_babel()
-        )
-        plate_max_tensile = quant(
-            plate_max_tensile.magnitude,
-            plate_max_tensile.units.format_babel()
-        )
-        engagement_length = quant(
-            engagement_length.magnitude,
-            engagement_length.units.format_babel()
-        )
-
-        # get total force per bolt
-        window_force = (
-                (max_pressure - quant(1, "atm")) * window_area / num_bolts
-        )
-
-        # get stress areas
-        thread = Bolt.calculate_stress_areas(
-            thread_size,
-            thread_class,
-            bolt_max_tensile,
-            plate_max_tensile,
-            engagement_length,
-            unit_registry
-        )
-        screw_area = thread["screw area"]
-        screw_area = quant(
-            screw_area.magnitude,
-            screw_area.units.format_babel()
-        )
-        plate_area = thread["plate area"]
-        plate_area = quant(
-            plate_area.magnitude,
-            plate_area.units.format_babel()
-        )
-
-        # calculate safety factors
-        safety_factors = dict()
-        safety_factors["bolt"] = (
-                bolt_max_tensile / (window_force / screw_area)
-        ).to_base_units()
-        safety_factors["plate"] = (
-                plate_max_tensile / (window_force / plate_area)
-        ).to_base_units()
-        return safety_factors
 
 
 class Tube:
