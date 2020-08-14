@@ -12,7 +12,6 @@ import cantera as ct
 import numpy as np
 import pandas as pd
 import pint
-import sympy as sp
 
 from . import thermochem
 from . import units
@@ -1056,112 +1055,6 @@ class Window:
         ).to(width.units.format_babel())
 
         return thickness
-
-    @staticmethod
-    def _solve(
-            **kwargs
-    ):
-        """
-        This function uses sympy to solve for a missing window measurement.
-        Inputs are five keyword arguments, with the following possible names:
-
-        * `length`
-        * `width`
-        * `thickness`
-        * `pressure`
-        * `rupture_modulus`
-        * `safety_factor`
-
-        All of these arguments should be floats, and dimensions should be
-        consistent (handling should be done in other functions, such as
-        calculate_window_sf().
-
-        Equation from:
-        https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
-
-        Parameters
-        ----------
-        kwargs
-
-        Returns
-        -------
-        float or np.NaN
-            Missing dimension is returned as a float upon successful calculation
-            or NaN if the result is imaginary
-        """
-
-        # Ensure that 5 keyword arguments were given
-        if kwargs.__len__() != 5:
-            raise ValueError("\nIncorrect number of arguments sent to solver")
-
-        # Ensure all keyword arguments are correct
-        good_arguments = [
-            "length",
-            "width",
-            "thickness",
-            "pressure",
-            "rupture_modulus",
-            "safety_factor"
-        ]
-        bad_args = []
-        for arg in kwargs:
-            if arg not in good_arguments:
-                bad_args.append(arg)
-
-        if len(bad_args) > 0:
-            error_string = "\nBad keyword argument:"
-            for arg in bad_args:
-                error_string += "\n" + arg
-
-            raise ValueError(error_string)
-
-        # Define equation to be solved
-        k_factor = 0.75  # clamped window factor
-        argument_symbols = {
-            "length": "var_l",
-            "width": "var_w",
-            "thickness": "var_t",
-            "pressure": "var_p",
-            "rupture_modulus": "var_m",
-            "safety_factor": "var_sf"
-        }
-        var_l = sp.Symbol("var_l")
-        var_w = sp.Symbol("var_w")
-        var_t = sp.Symbol("var_t")
-        var_p = sp.Symbol("var_p")
-        var_m = sp.Symbol("var_m")
-        var_sf = sp.Symbol("var_sf")
-        expr = (
-                var_l *
-                var_w *
-                sp.sqrt(
-                    (
-                            var_p *
-                            k_factor *
-                            var_sf /
-                            (
-                                    2 *
-                                    var_m *
-                                    (
-                                            var_l ** 2 +
-                                            var_w ** 2
-                                    )
-                            )
-                    )
-                ) - var_t
-        )
-
-        # Solve equation
-        for arg in kwargs:
-            expr = expr.subs(argument_symbols[arg], kwargs[arg])
-
-        solution = sp.solve(expr)[0]
-
-        if solution.is_real:
-            return float(solution)
-        else:
-            warnings.warn("Window inputs resulted in imaginary solution.")
-            return np.NaN
 
     @staticmethod
     def bolt_safety_factors(
