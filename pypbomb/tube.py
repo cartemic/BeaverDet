@@ -951,7 +951,7 @@ class Window:
             safety_factor,
             pressure,
             rupture_modulus,
-            unit_registry
+            unit_registry=_U
     ):
         """
         Calculates the thickness of a clamped rectangular window which gives
@@ -978,8 +978,22 @@ class Window:
         pint.Quantity
             Window thickness
         """
-        quant = unit_registry.Quantity
-
+        length = units.parse_quant_input(
+            length,
+            unit_registry
+        ).to_base_units()
+        width = units.parse_quant_input(
+            width,
+            unit_registry
+        ).to_base_units()
+        pressure = units.parse_quant_input(
+            pressure,
+            unit_registry
+        ).to_base_units()
+        rupture_modulus = units.parse_quant_input(
+            rupture_modulus,
+            unit_registry
+        ).to_base_units()
         units.check_pint_quantity(
             length,
             "length",
@@ -1008,17 +1022,16 @@ class Window:
         except TypeError:
             raise TypeError("\nNon-numeric window safety factor")
 
-        thickness = cls._solve(
-            length=length.to_base_units().magnitude,
-            width=width.to_base_units().magnitude,
-            safety_factor=safety_factor,
-            pressure=pressure.to_base_units().magnitude,
-            rupture_modulus=rupture_modulus.to_base_units().magnitude
-        )
+        # https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
+        k = 0.75  # clamped
+        r = length / width
+        thickness = (
+                length *
+                np.sqrt(safety_factor * k / 2) *
+                np.sqrt(pressure / (rupture_modulus * (1 + r**2)))
+        ).to(width.units.format_babel())
 
-        return quant(
-            thickness,
-            width.to_base_units().units).to(width.units.format_babel())
+        return thickness
 
     @staticmethod
     def _solve(
