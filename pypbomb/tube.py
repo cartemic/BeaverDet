@@ -1261,8 +1261,8 @@ class Window:
 
 class Tube:
     """
-    Methods for designing and determining operational limits of a closed-end
-    detonation tube.
+    Methods for designing and determining operational limits of a detonation
+    tube.
     """
     available_pipe_sizes = list(PIPE_SCHEDULES.index.values)
     available_materials = list(TUBE_MATERIALS.Grade.values)
@@ -1520,10 +1520,12 @@ class Tube:
             density,
             poisson_ratio,
             plus_or_minus=0.1,
+            use_dynamic_load_factor=True,
             unit_registry=pint.UnitRegistry(),
             error_tol=1e-4,
             max_iterations=500,
-            use_multiprocessing=False
+            use_multiprocessing=False,
+            max_pressure_state="reflected",
     ):
         """
         Parameters
@@ -1549,9 +1551,12 @@ class Tube:
         poisson_ratio : float
             Poisson ratio of tube material
         plus_or_minus : float
-            Defines the band about the critical velocity which is considered
-            "approximately equal to" -- the default value of 0.1 means plus
+            For dynamic load factor calculation, ``plus_or_minus`` defines
+            the band about the critical velocity which is considered
+            "approximately equal to." The default value of 0.1 means plus
             or minus ten percent.
+        use_dynamic_load_factor : bool
+            ``True`` to use dynamic load factor, ``False`` to ignore it.
         unit_registry : pint unit registry
             Unit registry for managing units to prevent conflicts with parent
             unit registry
@@ -1561,7 +1566,10 @@ class Tube:
         max_iterations : int
             Maximum number of loop iterations before exit, defaults to 500
         use_multiprocessing : bool
-            True to use multiprocessing. Defaults to False.
+            ``True`` to use multiprocessing. Defaults to ``False``.
+        max_pressure_state : str
+            Which state to use as the tube's maximum pressure. Must be either
+            ``"reflected"`` (closed tube) or ``"cj"`` (open tube).
 
         Returns
         -------
@@ -1569,6 +1577,9 @@ class Tube:
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
         """
+        if max_pressure_state not in ("reflected", "cj"):
+            raise ValueError("`max_pressure_state` must be 'reflected' or 'cj'")
+
         quant = unit_registry.Quantity
 
         # get a rough estimate of the initial pressure
@@ -1613,17 +1624,20 @@ class Tube:
                 use_multiprocessing
             )
 
-            # calculate new error, accounting for dynamic load factor
-            dlf = cls.dynamic_load_factor(
-                tube_id,
-                tube_od,
-                state["cj"]["speed"],
-                elastic_modulus,
-                density,
-                poisson_ratio,
-                plus_or_minus
-            )
-            error = (state["reflected"]["state"].P * dlf -
+            if use_dynamic_load_factor:
+                dlf = cls.dynamic_load_factor(
+                    tube_id,
+                    tube_od,
+                    state["cj"]["speed"],
+                    elastic_modulus,
+                    density,
+                    poisson_ratio,
+                    plus_or_minus
+                )
+            else:
+                dlf = 1.
+
+            error = (state[max_pressure_state]["state"].P * dlf -
                      max_pressure.magnitude) / max_pressure.magnitude
 
         return initial_pressure
