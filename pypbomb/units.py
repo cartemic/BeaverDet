@@ -4,6 +4,7 @@ Extra unit management tools for pint quantities
 """
 
 import pint
+from numpy import ndarray
 
 
 def check_pint_quantity(
@@ -38,6 +39,9 @@ def check_pint_quantity(
     bool
         True if no errors are raised
     """
+    if hasattr(quantity, "magnitude") and \
+            isinstance(quantity.magnitude, ndarray):
+        quantity = quantity[0]
 
     ureg = pint.UnitRegistry()
     units = {
@@ -103,7 +107,7 @@ def parse_quant_input(
             quant_input.units.format_babel()
         )
     elif hasattr(quant_input, "__iter__") and len(quant_input) == 2:
-        return unit_registry.Quantity(float(quant_input[0]), quant_input[1])
+        return unit_registry.Quantity(quant_input[0], quant_input[1])
     else:
         raise ValueError(
             "Bad quantity input: {0}".format(quant_input)
