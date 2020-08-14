@@ -879,7 +879,8 @@ class Window:
             width,
             thickness,
             pressure,
-            rupture_modulus
+            rupture_modulus,
+            unit_registry=_U
     ):
         """
         Calculates the safety factor of a clamped rectangular
@@ -899,12 +900,34 @@ class Window:
             safety is to be calculated
         rupture_modulus : pint.Quantity
             Rupture modulus of desired window material
+        unit_registry : pint.UnitRegistry
+            Keeps output consistent with parent registry, avoiding conflicts
 
         Returns
         -------
         float
             Window factor of safety
         """
+        length = units.parse_quant_input(
+            length,
+            unit_registry
+        ).to_base_units()
+        width = units.parse_quant_input(
+            width,
+            unit_registry
+        ).to_base_units()
+        thickness = units.parse_quant_input(
+            thickness,
+            unit_registry
+        ).to_base_units()
+        pressure = units.parse_quant_input(
+            pressure,
+            unit_registry
+        ).to_base_units()
+        rupture_modulus = units.parse_quant_input(
+            rupture_modulus,
+            unit_registry
+        ).to_base_units()
 
         units.check_pint_quantity(
             length,
@@ -933,14 +956,14 @@ class Window:
             ensure_positive=True
         )
 
-        safety_factor = cls._solve(
-            length=length.to_base_units().magnitude,
-            width=width.to_base_units().magnitude,
-            thickness=thickness.to_base_units().magnitude,
-            pressure=pressure.to_base_units().magnitude,
-            rupture_modulus=rupture_modulus.to_base_units().magnitude
-        )
-
+        # https://www.crystran.co.uk/userfiles/files/design-of-pressure-windows.pdf
+        k = 0.75
+        r = length / width
+        safety_factor = (
+                (thickness / length) ** 2 *
+                (2 * rupture_modulus * (1 + r**2)) /
+                (k * pressure)
+        ).to("").magnitude
         return safety_factor
 
     @classmethod
@@ -994,6 +1017,7 @@ class Window:
             rupture_modulus,
             unit_registry
         ).to_base_units()
+
         units.check_pint_quantity(
             length,
             "length",
