@@ -22,6 +22,9 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    # nbsphinx needs pandoc
+    - uses: r-lib/actions/setup-pandoc@v1
+
     - name: Conda setup
       run: |
         wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -38,9 +41,11 @@ jobs:
         conda info --envs
         pip install wheel setuptools
         pip install -r docs/requirements.txt
+        cd docs/
+        rm -rf _build/
+        make html
+        cd ../
 
-    # nbsphinx needs pandoc
-    - uses: r-lib/actions/setup-pandoc@v1
 
     #    - name: Build docs
     #      run: |
@@ -50,11 +55,11 @@ jobs:
     #        make html -e
     #        cd ../
 
-    - uses: ammaraskar/sphinx-action@master
-      with:
-        pre-build-command: "source activate /home/runner/miniconda/envs/test-environment"
-        build-command: "sphinx-build -b html . _build"
-        docs-folder: "docs/"
+    #    - uses: ammaraskar/sphinx-action@master
+    #      with:
+    #        pre-build-command: "source activate /home/runner/miniconda/envs/test-environment"
+    #        build-command: "sphinx-build -b html . _build"
+    #        docs-folder: "docs/"
         
     - name: Commit docs to gh-pages
       run: |
