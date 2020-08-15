@@ -6,6 +6,7 @@ branches:
   only:
     - master
     - develop
+    - ppf_sphinx
 
 install:
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
