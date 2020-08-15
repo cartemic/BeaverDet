@@ -32,12 +32,12 @@ jobs:
         conda update -q conda
         conda update -q --all
         conda config --append channels conda-forge
-        conda env create -n test-environment -qf test-environment.yaml;
+        conda env create -qf test-environment.yaml;
 
     - name: Pip setup
       run: |
         conda info --envs
-        source activate test-environment
+        source activate /home/runner/miniconda/envs/test-environment
         pip3 install wheel setuptools
         pip3 install -r docs/requirements.txt
 
@@ -54,7 +54,7 @@ jobs:
 
     - uses: ammaraskar/sphinx-action@master
       with:
-        pre-build-command: "source activate test-environment"
+        pre-build-command: "source activate /home/runner/miniconda/envs/test-environment"
         build-command: "sphinx-build -b html . _build"
         docs-folder: "docs/"
         
