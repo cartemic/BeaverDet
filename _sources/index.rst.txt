@@ -5,6 +5,9 @@
 
 Pypbomb
 ================================================================
+.. image:: https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master
+   :alt: Travis build badge
+
 For when you want the detonations to stay on the inside
 
 .. toctree::
