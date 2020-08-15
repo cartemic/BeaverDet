@@ -22,9 +22,7 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
-    - name: Install pandoc
-      run: |
-        sudo apt-get install pandoc
+    - uses: r-lib/actions/setup-pandoc@vi
 
     # Build gh-pages
     # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
