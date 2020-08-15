@@ -26,6 +26,7 @@ jobs:
 
     - name: Build docs
       run: |
+        apt-get install python3-sphinx
         cd docs/
         make clean html
         cd ../
