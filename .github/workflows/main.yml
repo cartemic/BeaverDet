@@ -30,13 +30,17 @@ jobs:
     # nbsphinx needs pandoc
     - uses: r-lib/actions/setup-pandoc@v1
 
-    - name: Build docs
-      run: |
-        cd docs/
-        ls
-        rm -rf _build/
-        make html -e
-        cd ../
+    #    - name: Build docs
+    #      run: |
+    #        cd docs/
+    #        ls
+    #        rm -rf _build/
+    #        make html -e
+    #        cd ../
+
+    - uses: ammaraskar/sphinx-action@master
+      with:
+        path: docs/_build/html
         
     - name: Commit docs to gh-pages
       run: |
