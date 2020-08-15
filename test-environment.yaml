@@ -13,3 +13,4 @@ dependencies:
   - cantera
   - mock
   - codecov
+  - scipy
