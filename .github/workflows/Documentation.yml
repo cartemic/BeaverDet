@@ -25,6 +25,11 @@ jobs:
     # nbsphinx needs pandoc
     - uses: r-lib/actions/setup-pandoc@v1
 
+    # I hacked this together. If you separate the conda stuff into a different
+    # step it does stupid, stupid things with your conda envs. Don't do it. No.
+    # Unfortunately sphinx-action doesn't seem to like nbsphinx, so I'm striking
+    # out on my own here. I am a noob. If any of this looks dumb, that's likely
+    # why.
     - name: Run, Ronnie, Run
       run: |
         wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -44,7 +49,12 @@ jobs:
         cd docs/
         make clean html
         cd ../
-        
+
+    # With the exception of the .nojekyll bit this block is from
+    # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
+    # Thanks, Ammar. You rock. I added the .nojekyll bit (It's in sphinx-action,
+    # which I was unfortunately unable to use here). Github pages hates dirs
+    # that starts with underscores otherwise.
     - name: Commit docs to gh-pages
       run: |
         git clone https://github.com/cartemic/pypbomb.git --branch gh-pages --single-branch gh-pages
