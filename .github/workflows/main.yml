@@ -22,6 +22,19 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: Conda setup
+      run: |
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        bash miniconda.sh -b -p $HOME/miniconda
+        rm miniconda.sh
+        source $HOME/miniconda/etc/profile.d/conda.sh && conda activate
+        conda config --set always_yes yes --set changeps1 no
+        conda update -q conda
+        conda update -q --all
+        conda config --append channels conda-forge
+        conda env create -qf test-environment.yaml;
+        source activate test-environment;
+
     - name: Pip setup
       run: |
         pip3 install wheel setuptools
