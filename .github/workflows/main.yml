@@ -27,6 +27,8 @@ jobs:
         pip3 install wheel setuptools
         pip3 install -r docs/requirements.txt
 
+    - run: sudo apt-get install sphinx-doc
+
     # nbsphinx needs pandoc
     - uses: r-lib/actions/setup-pandoc@v1
 
