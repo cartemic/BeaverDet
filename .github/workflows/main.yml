@@ -31,7 +31,6 @@ jobs:
         cd docs/
         pip3 install -r requirements.txt
         rm -rf _build/
-        cat /usr/bin/sphinx-build
         make html -e
         cd ../
         
