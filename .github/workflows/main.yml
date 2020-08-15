@@ -23,8 +23,8 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install pandoc
-        run: |
-          docker pull pandoc/core
+      run: |
+        docker pull pandoc/core
 
     # Build gh-pages
     # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
