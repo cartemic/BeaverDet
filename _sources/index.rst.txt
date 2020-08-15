@@ -15,7 +15,7 @@ Pypbomb
 
 .. image:: https://github.com/cartemic/pypbomb/workflows/Documentation/badge.svg
    :alt: Documentation badge
-   :target: https://github.com/cartemic/pypbomb
+   :target: https://cartemic.github.io/pypbomb/
 
 For when you want the detonations to stay on the inside
 
