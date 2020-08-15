@@ -21,6 +21,12 @@ For when you want the detonations to stay on the inside
    sd
    thermochem
    units
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: Example
+   
+   example
 
 
 

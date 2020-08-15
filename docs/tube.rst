@@ -12,7 +12,6 @@ Bolt
 
 .. autoclass:: Bolt
    :members:
-   :undoc-members:
    
 
 DDT
@@ -20,7 +19,6 @@ DDT
 
 .. autoclass:: DDT
    :members:
-   :undoc-members:
 
 
 Flange
@@ -28,7 +26,6 @@ Flange
 
 .. autoclass:: Flange
    :members:
-   :undoc-members:
 
 
 Tube
@@ -36,12 +33,10 @@ Tube
 
 .. autoclass:: Tube
    :members:
-   :undoc-members:
 
 Window
 ------
 
 .. autoclass:: Window
    :members:
-   :undoc-members:
    
