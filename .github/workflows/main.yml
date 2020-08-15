@@ -36,6 +36,7 @@ jobs:
 
     - name: Pip setup
       run: |
+        conda info --envs
         source activate test-environment
         pip3 install wheel setuptools
         pip3 install -r docs/requirements.txt
