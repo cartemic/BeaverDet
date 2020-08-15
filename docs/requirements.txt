@@ -1,3 +1,4 @@
 wheel
+setuptools
 sphinx-rtd-theme
 nbsphinx
