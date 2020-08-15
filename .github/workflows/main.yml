@@ -31,7 +31,8 @@ jobs:
         sudo apt-get install python3-setuptools
         cd docs/
         pip3 install -r requirements.txt
-        make clean html
+        make clean
+        make html
         cd ../
         
     - name: Commit docs to gh-pages
