@@ -25,10 +25,10 @@ jobs:
     - uses: r-lib/actions/setup-pandoc@v1
 
     - name: Build docs
-        run: |
-          cd docs/
-          make clean html
-          cd ../
+      run: |
+        cd docs/
+        make clean html
+        cd ../
 
 #    # Build gh-pages
 #    # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
