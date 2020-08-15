@@ -35,8 +35,9 @@ jobs:
     - name: Build docs
       run: |
         cd docs/
+        ls
         rm -rf _build/
-        make html
+        make html -e
         cd ../
         
     - name: Commit docs to gh-pages
