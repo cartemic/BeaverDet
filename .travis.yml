@@ -23,8 +23,9 @@ install:
     - conda config --append channels conda-forge
     - conda env create -qf test-environment.yaml;
     - source activate test-environment;
+
 script:
     - pytest -vv --cov=./;
-    - coverage run -m unittest discover
+
 after_success:
     - bash <(curl -s https://codecov.io/bash)
