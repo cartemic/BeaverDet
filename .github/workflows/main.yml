@@ -32,7 +32,7 @@ jobs:
         cd docs/
         pip3 install -r requirements.txt
         rm -rf _build/
-        make html
+        make html -e
         cd ../
         
     - name: Commit docs to gh-pages
