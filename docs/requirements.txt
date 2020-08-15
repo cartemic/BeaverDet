@@ -1,4 +1,3 @@
 wheel
--U sphinx
 sphinx-rtd-theme
 nbsphinx

@@ -29,6 +29,7 @@ jobs:
       run: |
         sudo apt-get install python3-setuptools
         cd docs/
+        pip install -U sphinx
         pip3 install -r requirements.txt
         rm -rf _build/
         make html -e
