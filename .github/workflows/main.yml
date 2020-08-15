@@ -24,13 +24,19 @@ jobs:
 
     - uses: r-lib/actions/setup-pandoc@v1
 
-    # Build gh-pages
-    # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
-    - name: Sphinx build
-      uses: ammaraskar/sphinx-action@0.4
-      with:
-        build-command: "make clean html"
-        docs-folder: "docs/"
+    - name: Build docs
+        run: |
+          cd docs/
+          make clean html
+          cd ../
+
+#    # Build gh-pages
+#    # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
+#    - name: Sphinx build
+#      uses: ammaraskar/sphinx-action@0.4
+#      with:
+#        build-command: "make clean html"
+#        docs-folder: "docs/"
         
     - name: Commit docs to gh-pages
       run: |
