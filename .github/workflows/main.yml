@@ -21,11 +21,12 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
+    - uses: docker://pandoc/core:2.9
 
     # Build gh-pages
     # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
     - name: Sphinx build
-      uses: ammaraskar/sphinx-action@0.4, docker://pandoc/core:2.9
+      uses: ammaraskar/sphinx-action@0.4
       with:
         build-command: "make clean html"
         docs-folder: "docs/"
