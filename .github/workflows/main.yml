@@ -33,6 +33,9 @@ jobs:
         conda update -q --all
         conda config --append channels conda-forge
         conda env create -qf test-environment.yaml
+        conda info --envs
+        source activate test-environment
+        conda info --envs
 
     - name: Pip setup
       run: |
