@@ -24,7 +24,7 @@ jobs:
 
     - name: Install pandoc
       run: |
-        docker pull pandoc/core
+        sudo apt-get install pandoc
 
     # Build gh-pages
     # https://github.com/ammaraskar/sphinx-action-test/blob/master/.github/workflows/default.yml
