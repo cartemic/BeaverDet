@@ -40,7 +40,8 @@ jobs:
 
     - uses: ammaraskar/sphinx-action@master
       with:
-        path: docs/_build/html
+        build-command: "sphinx-build -b html . _build"
+        docs-folder: "docs/"
         
     - name: Commit docs to gh-pages
       run: |
