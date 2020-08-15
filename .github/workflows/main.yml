@@ -29,7 +29,7 @@ jobs:
       run: |
         sudo apt-get install python3-sphinx
         cd docs/
-        pip install -r requirements.txt
+        pip3 install -r requirements.txt
         make clean html
         cd ../
         
