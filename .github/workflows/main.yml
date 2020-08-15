@@ -33,7 +33,6 @@ jobs:
         sudo apt-get install python3-setuptools
         cd docs/
         pip3 install -r requirements.txt
-        cat /usr/bin/python3/bin/sphinx-build
         rm -rf _build/
         make html -e
         cd ../
