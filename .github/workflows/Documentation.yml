@@ -42,8 +42,7 @@ jobs:
         pip install wheel setuptools
         pip install -r docs/requirements.txt
         cd docs/
-        rm -rf _build/
-        make html
+        make clean html
         cd ../
         
     - name: Commit docs to gh-pages
