@@ -1,0 +1,1188 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using pypbomb &mdash; pypbomb 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/tweaks.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="pypbomb.units" href="units.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> pypbomb
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Tube: the useful one</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tube.html">pypbomb.tube</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Helper functions</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sd.html">pypbomb.sd</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermochem.html">pypbomb.thermochem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">pypbomb.units</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Example</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Determine-tube-size-and-operating-limits">Determine tube size and operating limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Select-proper-flanges">Select proper flanges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Main-section">Main section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Mixing-section">Mixing section</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Determine-window-dimensions-and-bolt-pattern">Determine window dimensions and bolt pattern</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Window-Dimensions">Window Dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Bolt-pattern">Bolt pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Estimate-DDT-length">Estimate DDT length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Find-safe-operation-limits-for-a-new-mixture">Find safe operation limits for a new mixture</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pypbomb</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/example.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Using-pypbomb">
+<h1>Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code><a class="headerlink" href="#Using-pypbomb" title="Permalink to this headline">¶</a></h1>
+<p>Let’s go over some quick examples of how you might use <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code> to design a detonation tube for your research.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>from itertools import product
+import warnings
+
+import cantera as ct
+import numpy as np
+import pandas as pd
+import pint
+import seaborn as sns
+from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
+from pypbomb import tube
+
+ureg = pint.UnitRegistry()
+quant = ureg.Quantity
+</pre></div>
+</div>
+</div>
+<div class="section" id="Determine-tube-size-and-operating-limits">
+<h2>Determine tube size and operating limits<a class="headerlink" href="#Determine-tube-size-and-operating-limits" title="Permalink to this headline">¶</a></h2>
+<p>First we will pick a mixture of stoichiometric propane/air. For this example we will use <code class="docutils literal notranslate"><span class="pre">gri30.cti</span></code> as the mechanism of choice for our Cantera calculations.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>fuel = &quot;C3H8&quot;
+oxidizer = &quot;O2:1 N2:3.76&quot;
+material = &quot;316L&quot;
+mechanism = &quot;gri30.cti&quot;
+gas = ct.Solution(mechanism)
+gas.set_equivalence_ratio(1, fuel, oxidizer)
+</pre></div>
+</div>
+</div>
+<p>Next, let’s consider 316L since it’s a commonly used stainless steel.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>material = &quot;316L&quot;
+</pre></div>
+</div>
+</div>
+<p>At this point we should probably out which schedules are available across all of the potential pipe sizes that we’d like to consider.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>potential_sizes = [&quot;1&quot;, &quot;4&quot;, &quot;6&quot;, &quot;8&quot;]
+common_sizes = set(tube.Tube.get_available_pipe_schedules(potential_sizes[0]))
+for size in potential_sizes[1:]:
+    common_sizes.intersection_update(
+        set(tube.Tube.get_available_pipe_schedules(size))
+    )
+common_sizes
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;10&#39;, &#39;10s&#39;, &#39;160&#39;, &#39;40&#39;, &#39;40s&#39;, &#39;5&#39;, &#39;5s&#39;, &#39;80&#39;, &#39;80s&#39;, &#39;XXH&#39;}
+</pre></div></div>
+</div>
+<p>Given these options, let’s choose schedules 40, 80, 120, and XXH for consideration.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>potential_schedules = [&quot;40&quot;, &quot;80&quot;, &quot;XXH&quot;]
+</pre></div>
+</div>
+</div>
+<p>Let’s also look at a couple of different operating temperatures. Room temperature is always a good place to start. We will also look at 100 degrees Celsius; perhaps we want to use a hot water jacket to investigate detonations at elevated initial temperatures, so let’s use 100 degrees as well.</p>
+<p>rewrite this to suck less</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>initial_temperatures = quant(
+    np.linspace(20, 400, 6),
+    &quot;degC&quot;
+)
+</pre></div>
+</div>
+</div>
+<p>Now let’s figure out what we can do with each combination of pipe size, pipe schedule, and initial temperature. The steps we will use for each combination are:</p>
+<ol class="arabic simple">
+<li><p>look up the tube dimensions,</p></li>
+<li><p>look up the maximum allowable stress,</p></li>
+<li><p>calculate the corresponding maximum pressure,</p></li>
+<li><p>look up the elastic modulus, density, and Poisson ratio of our tube material, and</p></li>
+<li><p>calculate the maximum safe initial pressure that we can test at.</p></li>
+</ol>
+<p>Note that we are setting <code class="docutils literal notranslate"><span class="pre">multiprocessing=False</span></code>, since multiprocessing can cause unexpected misbehavior when run from within a jupyter notebook.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>calculate_results = False
+results_file = &quot;tube_size_results.h5&quot;
+
+combinations = list(
+    product(
+        potential_schedules,
+        potential_sizes,
+        initial_temperatures
+    )
+)
+if calculate_results:
+    results = pd.DataFrame(
+        columns=[
+            &quot;schedule&quot;,
+            &quot;size&quot;,
+            &quot;max initial pressure (psi)&quot;,
+            &quot;initial temperature (F)&quot;,
+            &quot;tube_temp&quot;,
+            &quot;max_pressure&quot;,
+        ]
+    )
+    for i, (schedule, size, initial_temperature) in enumerate(combinations):
+        dims = tube.Tube.get_dimensions(
+            size,
+            schedule,
+            unit_registry=ureg
+        )
+        max_stress = tube.Tube.calculate_max_stress(
+            initial_temperature,
+            material,
+            welded=False,
+            unit_registry=ureg
+        )
+        max_pressure = tube.Tube.calculate_max_pressure(
+            dims[&quot;inner_diameter&quot;],
+            dims[&quot;outer_diameter&quot;],
+            max_stress
+        )
+        elastic_modulus = tube.Tube.get_elastic_modulus(material, ureg)
+        density = tube.Tube.get_density(material, ureg)
+        poisson = tube.Tube.get_poisson(material)
+        initial_pressure = tube.Tube.calculate_max_initial_pressure(
+            dims[&quot;inner_diameter&quot;],
+            dims[&quot;outer_diameter&quot;],
+            initial_temperature,
+            gas.mole_fraction_dict(),
+            mechanism,
+            max_pressure.to(&quot;Pa&quot;),
+            elastic_modulus,
+            density,
+            poisson,
+            use_multiprocessing=False
+        )
+
+        current_results = pd.Series(dtype=&quot;object&quot;)
+        current_results[&quot;schedule&quot;] = schedule
+        current_results[&quot;size&quot;] = size
+        current_results[&quot;max initial pressure (psi)&quot;] = \
+        initial_pressure.to(&quot;psi&quot;).magnitude
+        current_results[&quot;initial temperature (F)&quot;] = \
+            initial_temperature.to(&quot;degF&quot;).magnitude
+        current_results[&quot;tube_temp&quot;] = initial_temperature
+        current_results[&quot;max_pressure&quot;] = max_pressure
+        current_results[&quot;inner_diameter&quot;] = dims[&quot;inner_diameter&quot;]
+        results = pd.concat(
+            (results, current_results.to_frame().T),
+            ignore_index=True
+        )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter(&quot;ignore&quot;)
+        with pd.HDFStore(results_file, &quot;w&quot;) as store:
+            store.put(&quot;data&quot;, results)
+
+else:
+    with pd.HDFStore(results_file, &quot;r&quot;) as store:
+        results = store.data
+</pre></div>
+</div>
+</div>
+<p>o wow do the plot thign cool</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>sns.set_context(&quot;notebook&quot;)
+sns.set_style(&quot;white&quot;)
+g = sns.FacetGrid(
+    col=&quot;size&quot;,
+    hue=&quot;schedule&quot;,
+    data=results,
+    height=4,
+    aspect=0.75,
+    palette=&quot;colorblind&quot;,
+    hue_kws=dict(linestyle=[&quot;--&quot;, &quot;-.&quot;, &quot;:&quot;])
+)
+g.map(
+    plt.plot,
+    &quot;initial temperature (F)&quot;,
+    &quot;max initial pressure (psi)&quot;,
+    alpha=0.75,
+    marker=&quot;.&quot;
+).add_legend()
+plt.suptitle(&quot;$P_{0,max}$ vs. tube temperature for various pipe sizes&quot;)
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+sns.despine()
+
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_17_0.png" src="_images/example_17_0.png" />
+</div>
+</div>
+<p>o wow say neat things and investigate DLF to show that it’s why thigns collapse as size goes up</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>results_main = results[
+    (results[&quot;size&quot;] == &quot;6&quot;) &amp;
+    (results[&quot;schedule&quot;] == &quot;80&quot;)
+].drop(
+    [&quot;max initial pressure (psi)&quot;,
+     &quot;initial temperature (F)&quot;],
+    axis=1
+)
+results_main
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>schedule</th>
+      <th>size</th>
+      <th>tube_temp</th>
+      <th>max_pressure</th>
+      <th>inner_diameter</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>36</th>
+      <td>80</td>
+      <td>6</td>
+      <td>20.0 degree_Celsius</td>
+      <td>2.1903439367027286 kip_per_square_inch</td>
+      <td>5.761 inch</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>80</td>
+      <td>6</td>
+      <td>96.0 degree_Celsius</td>
+      <td>1.846139060229291 kip_per_square_inch</td>
+      <td>5.761 inch</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>80</td>
+      <td>6</td>
+      <td>172.0 degree_Celsius</td>
+      <td>1.5963561440335863 kip_per_square_inch</td>
+      <td>5.761 inch</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>80</td>
+      <td>6</td>
+      <td>248.0 degree_Celsius</td>
+      <td>1.4192312611012432 kip_per_square_inch</td>
+      <td>5.761 inch</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>80</td>
+      <td>6</td>
+      <td>324.0 degree_Celsius</td>
+      <td>1.3029337639270142 kip_per_square_inch</td>
+      <td>5.761 inch</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>80</td>
+      <td>6</td>
+      <td>400.0 degree_Celsius</td>
+      <td>1.2265926045535283 kip_per_square_inch</td>
+      <td>5.761 inch</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>mixing section</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>results_mix = results[
+    (results[&quot;size&quot;] == &quot;1&quot;) &amp;
+    (results[&quot;schedule&quot;] == &quot;40&quot;)
+].drop(
+    [&quot;max initial pressure (psi)&quot;,
+     &quot;initial temperature (F)&quot;,
+     &quot;inner_diameter&quot;],
+    axis=1
+)
+results_mix[&quot;max_main_pressure&quot;] = results_main[&quot;max_pressure&quot;].values
+results_mix[&quot;safe&quot;] = (results_mix[&quot;max_pressure&quot;] &gt;
+                       results_mix[&quot;max_main_pressure&quot;])
+if all(results_mix[&quot;safe&quot;]):
+    print(&quot;Mix tube is safe :)&quot;)
+else:
+    print(&quot;Mix tube is unsafe :(&quot;)
+results_mix
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Mix tube is safe :)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>schedule</th>
+      <th>size</th>
+      <th>tube_temp</th>
+      <th>max_pressure</th>
+      <th>max_main_pressure</th>
+      <th>safe</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>40</td>
+      <td>1</td>
+      <td>20.0 degree_Celsius</td>
+      <td>3.5331641285956006 kip_per_square_inch</td>
+      <td>2.1903439367027286 kip_per_square_inch</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>40</td>
+      <td>1</td>
+      <td>96.0 degree_Celsius</td>
+      <td>2.9779397631133677 kip_per_square_inch</td>
+      <td>1.846139060229291 kip_per_square_inch</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>40</td>
+      <td>1</td>
+      <td>172.0 degree_Celsius</td>
+      <td>2.5750240270727587 kip_per_square_inch</td>
+      <td>1.5963561440335863 kip_per_square_inch</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>40</td>
+      <td>1</td>
+      <td>248.0 degree_Celsius</td>
+      <td>2.289310321489002 kip_per_square_inch</td>
+      <td>1.4192312611012432 kip_per_square_inch</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>40</td>
+      <td>1</td>
+      <td>324.0 degree_Celsius</td>
+      <td>2.1017150592216587 kip_per_square_inch</td>
+      <td>1.3029337639270142 kip_per_square_inch</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>40</td>
+      <td>1</td>
+      <td>400.0 degree_Celsius</td>
+      <td>1.9785719120135372 kip_per_square_inch</td>
+      <td>1.2265926045535283 kip_per_square_inch</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Select-proper-flanges">
+<h2>Select proper flanges<a class="headerlink" href="#Select-proper-flanges" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Main-section">
+<h3>Main section<a class="headerlink" href="#Main-section" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>results_main[&quot;flange class&quot;] = results_main.apply(
+    lambda x: tube.Flange.get_class(
+        x[&quot;max_pressure&quot;],
+        x[&quot;tube_temp&quot;],
+        material,
+        ureg
+    ),
+    axis=1
+)
+results_main[&quot;flange class&quot;].max()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;1500&#39;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Mixing-section">
+<h3>Mixing section<a class="headerlink" href="#Mixing-section" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>results_mix[&quot;flange class&quot;] = results_mix.apply(
+    lambda x: tube.Flange.get_class(
+        x[&quot;max_main_pressure&quot;],
+        x[&quot;tube_temp&quot;],
+        material,
+        ureg
+    ),
+    axis=1
+)
+results_mix[&quot;flange class&quot;].max()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;1500&#39;
+</pre></div></div>
+</div>
+</div>
+</div>
+<div class="section" id="Determine-window-dimensions-and-bolt-pattern">
+<h2>Determine window dimensions and bolt pattern<a class="headerlink" href="#Determine-window-dimensions-and-bolt-pattern" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Window-Dimensions">
+<h3>Window Dimensions<a class="headerlink" href="#Window-Dimensions" title="Permalink to this headline">¶</a></h3>
+<p>blah blah viewing window unclamped height = 5.75 inches blah blah</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>window_height = quant(5.75, &quot;in&quot;)
+window_lengths = np.linspace(0.25, 7, 100)
+window_thicknesses = tube.Window.minimum_thickness(
+    length=window_height,
+    width=quant(window_lengths, &quot;in&quot;),
+    safety_factor=4,
+    pressure=results_main[&quot;max_pressure&quot;].max(),
+    rupture_modulus=(197.9, &quot;MPa&quot;),
+    unit_registry=ureg
+).to(&quot;in&quot;).magnitude
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>max_desired_thickness = 1  # inch
+plt.plot(window_lengths, window_thicknesses, &quot;k&quot;)
+plt.fill_between(
+    window_lengths[window_thicknesses &lt;= max_desired_thickness],
+    window_thicknesses[window_thicknesses &lt;= max_desired_thickness],
+    0,
+    color=&quot;g&quot;,
+    alpha=0.25,
+    zorder=-1
+)
+plt.xlim([window_lengths.min(), window_lengths.max()])
+plt.ylim([0, plt.ylim()[1]])
+plt.xlabel(&quot;Window length (in)&quot;)
+plt.ylabel(&quot;Window thickness (in)&quot;)
+plt.title(
+    &quot;Window minimum thickness vs. length\n&quot;
+    &quot;Max length {:3.2f} in at {:3.2f} in. thick&quot;.format(
+        window_lengths[window_thicknesses &lt;= max_desired_thickness].max(),
+        max_desired_thickness
+    )
+)
+sns.despine()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_31_0.png" src="_images/example_31_0.png" />
+</div>
+</div>
+<p>let’s go with a 2.25 inch window (due to camera limitations), and 1 inch thick. what’s the safety factor?</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>window_length = quant(2.25, &quot;in&quot;)
+tube.Window.safety_factor(
+    window_length,
+    window_height,
+    quant(1, &quot;in&quot;),
+    pressure=results_main[&quot;max_pressure&quot;].max(),
+    rupture_modulus=quant(197.9, &quot;MPa&quot;),
+)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+7.95962038236468
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Bolt-pattern">
+<h3>Bolt pattern<a class="headerlink" href="#Bolt-pattern" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>num_bolts = np.array(range(1, 25))
+bolt_safety_factors = tube.Bolt.calculate_safety_factors(
+    max_pressure=results_main[&quot;max_pressure&quot;].max(),
+    window_area = window_length * window_height,
+    num_bolts=num_bolts,
+    thread_size=&quot;1/4-28&quot;,
+    thread_class=&quot;2&quot;,
+    bolt_max_tensile=(150, &quot;kpsi&quot;),  # grade 8
+    plate_max_tensile=(485, &quot;MPa&quot;),  # 316L,
+    engagement_length=(0.5, &quot;in&quot;),
+    unit_registry=ureg
+)
+
+fig, ax = plt.subplots()
+ax.plot(
+    num_bolts,
+    bolt_safety_factors[&quot;bolt&quot;],
+    &quot;k--&quot;,
+    label=&quot;bolt&quot;
+)
+ax.plot(
+    num_bolts,
+    bolt_safety_factors[&quot;plate&quot;],
+    &quot;k-.&quot;,
+    label=&quot;plate&quot;
+)
+
+ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+ax.legend()
+ax.set_ylim([0, ax.get_ylim()[1]])
+ax.set_xlim([num_bolts.min()-1, num_bolts.max()+1])
+ax.set_xlabel(&quot;Number of bolts&quot;)
+ax.set_ylabel(&quot;Safety factor&quot;)
+ax.set_title(&quot;Bolt and plate safety factors vs. number of bolts&quot;)
+ax.fill_between(
+    ax.get_xlim(),
+    2,
+    zorder=-1,
+    color=&quot;r&quot;,
+    alpha=0.25,
+)
+sns.despine()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_35_0.png" src="_images/example_35_0.png" />
+</div>
+</div>
+<p>important: bolt safety factor &lt; plate safety factor</p>
+</div>
+</div>
+<div class="section" id="Estimate-DDT-length">
+<h2>Estimate DDT length<a class="headerlink" href="#Estimate-DDT-length" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>tube.DDT.
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Find-safe-operation-limits-for-a-new-mixture">
+<h2>Find safe operation limits for a new mixture<a class="headerlink" href="#Find-safe-operation-limits-for-a-new-mixture" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="units.html" class="btn btn-neutral float-left" title="pypbomb.units" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Mick Carter
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

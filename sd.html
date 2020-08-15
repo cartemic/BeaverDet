@@ -1,0 +1,523 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pypbomb.sd &mdash; pypbomb 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/tweaks.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pypbomb.thermochem" href="thermochem.html" />
+    <link rel="prev" title="pypbomb.tube" href="tube.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> pypbomb
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Tube: the useful one</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tube.html">pypbomb.tube</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Helper functions</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pypbomb.sd</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermochem.html">pypbomb.thermochem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">pypbomb.units</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Example</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code></a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pypbomb</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pypbomb.sd</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/sd.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-pypbomb.sd">
+<span id="pypbomb-sd"></span><h1>pypbomb.sd<a class="headerlink" href="#module-pypbomb.sd" title="Permalink to this headline">¶</a></h1>
+<p>Pypbomb requires the use of some functionality from the shock and detonation
+toolbox from the Explosion Dynamics Laboratory at Cal Tech:
+<a class="reference external" href="https://shepherd.caltech.edu/EDL/PublicResources/sdt/">https://shepherd.caltech.edu/EDL/PublicResources/sdt/</a>. SDToolbox is, as yet,
+not installable via pip or conda, and not all of its functions  are needed for
+this package. Therefore, the functions needed for pypbomb’s purposes are located
+here, in <code class="docutils literal notranslate"><span class="pre">pypbomb.sd</span></code>. Some of these functions, such as
+<code class="docutils literal notranslate"><span class="pre">Detonation.cj_speed</span></code>, have been modified to speed up the calculation process.
+If you are planning to do any sort of actual detonation work outside of tube
+design it is recommended to use the full SDToolbox.</p>
+<dl class="py class">
+<dt id="pypbomb.sd.Detonation">
+<em class="property">class </em><code class="sig-prename descclassname">pypbomb.sd.</code><code class="sig-name descname">Detonation</code><a class="headerlink" href="#pypbomb.sd.Detonation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Methods specifically relating to Chapman-Jouguet speed and state calculation</p>
+<dl class="py method">
+<dt id="pypbomb.sd.Detonation.cj_speed">
+<em class="property">classmethod </em><code class="sig-name descname">cj_speed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">initial_pressure</span></em>, <em class="sig-param"><span class="n">initial_temperature</span></em>, <em class="sig-param"><span class="n">species_mole_fractions</span></em>, <em class="sig-param"><span class="n">mechanism</span></em>, <em class="sig-param"><span class="n">use_multiprocessing</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_r_squared</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_state</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.Detonation.cj_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the Chapman-Jouguet detonation velocity of a gaseous mixture.</p>
+<p>This is a modified version of <code class="docutils literal notranslate"><span class="pre">sdtoolbox.PostShock.CJspeed</span></code>.
+Specifically, it has been changed to allow for CJ state output, and
+to allow the use of multiprocessing to speed up the curve fit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initial_pressure</strong> (<em>float</em>) – Initial pressure in Pascals</p></li>
+<li><p><strong>initial_temperature</strong> (<em>float</em>) – Initial temperature in Kelvin</p></li>
+<li><p><strong>species_mole_fractions</strong> (<em>str</em><em> or </em><em>dict</em>) – Reactant species mole fractions</p></li>
+<li><p><strong>mechanism</strong> (<em>str</em>) – Cti file containing mechanism data (e.g. <code class="docutils literal notranslate"><span class="pre">gri30.cti</span></code>)</p></li>
+<li><p><strong>use_multiprocessing</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use multiprocessing to speed up CJ speed calculation</p></li>
+<li><p><strong>return_r_squared</strong> (<em>bool</em><em>, </em><em>optional</em>) – Return the <span class="math notranslate nohighlight">\(R^2\)</span> value of the CJ speed vs. density ratio fit</p></li>
+<li><p><strong>return_state</strong> (<em>bool</em><em>, </em><em>optional</em>) – Return the CJ state corresponding to the calculated velocity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>Dictionary with the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;cj</span> <span class="pre">speed&quot;</span></code>: Chapman-Jouguet wave speed (<cite>float</cite>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;R^2&quot;</span></code>:  R-squared value of the CJ speed vs. density ratio fit
+(<cite>float</cite>). Only exists if <cite>return_r_squared</cite> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;cj</span> <span class="pre">state&quot;</span></code>: Cantera solution object describing the CJ state
+(<cite>ct.Solution</cite>). Only exists if <cite>return_state</cite> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pypbomb.sd.Detonation.cj_state">
+<em class="property">classmethod </em><code class="sig-name descname">cj_state</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">working_gas</span></em>, <em class="sig-param"><span class="n">initial_state_gas</span></em>, <em class="sig-param"><span class="n">error_tol_temperature</span></em>, <em class="sig-param"><span class="n">error_tol_velocity</span></em>, <em class="sig-param"><span class="n">density_ratio</span></em>, <em class="sig-param"><span class="n">max_iterations</span><span class="o">=</span><span class="default_value">500</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.Detonation.cj_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the Chapman-Jouguet state and wave speed using Reynolds’
+iterative method.</p>
+<p>This function corresponds to <code class="docutils literal notranslate"><span class="pre">sdtoolbox.PostShock.CJ_calc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>working_gas</strong> (<em>cantera.Solution</em>) – Working gas mixture used for calculations.</p></li>
+<li><p><strong>initial_state_gas</strong> (<em>ct.Solution</em>) – Working gas mixture in its initial, undetonated state.</p></li>
+<li><p><strong>error_tol_temperature</strong> (<em>float</em>) – Temperature error tolerance for iteration, in Kelvin.</p></li>
+<li><p><strong>error_tol_velocity</strong> (<em>float</em>) – Velocity error tolerance for iteration, in m/s.</p></li>
+<li><p><strong>density_ratio</strong> (<em>float</em>) – Density ratio.</p></li>
+<li><p><strong>max_iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of loop iterations used to calculate output. Default
+is 500.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A tuple containing:</p>
+<ul class="simple">
+<li><p>Gas mixture at equilibrium state (<cite>ct.Solution</cite>)</p></li>
+<li><p>Initial velocity resulting in the input density ratio, in m/s
+(<cite>float</cite>)</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple(<cite>ct.Solution</cite>, <cite>float</cite>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pypbomb.sd.GetError">
+<em class="property">class </em><code class="sig-prename descclassname">pypbomb.sd.</code><code class="sig-name descname">GetError</code><a class="headerlink" href="#pypbomb.sd.GetError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Methods for calculating error in enthalpy and pressure from a given
+velocity.</p>
+<dl class="py method">
+<dt id="pypbomb.sd.GetError.equilibrium">
+<em class="property">static </em><code class="sig-name descname">equilibrium</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">working_gas</span></em>, <em class="sig-param"><span class="n">initial_state_gas</span></em>, <em class="sig-param"><span class="n">initial_velocity_guess</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.GetError.equilibrium" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function uses the momentum and energy conservation equations to
+calculate error in current pressure and enthalpy guesses. In this case,
+working state is in equilibrium.</p>
+<p>Original function: <code class="docutils literal notranslate"><span class="pre">FHFP_CJ</span> <span class="pre">in</span> <span class="pre">PostShock.py</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>working_gas</strong> (<em>ct.Solution</em>) – Working gas mixture used for calculations.</p></li>
+<li><p><strong>initial_state_gas</strong> (<em>ct.Solution</em>) – Working gas mixture in its initial, undetonated state.</p></li>
+<li><p><strong>initial_velocity_guess</strong> (<em>float</em>) – A guess for the initial velocity in m/s</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A tuple containing:</p>
+<ul class="simple">
+<li><p>Enthalpy error (<cite>float</cite>)</p></li>
+<li><p>Pressure error (<cite>float</cite>)</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple (<cite>float</cite>, <cite>float</cite>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pypbomb.sd.GetError.reflected_shock_frozen">
+<em class="property">static </em><code class="sig-name descname">reflected_shock_frozen</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shock_speed</span></em>, <em class="sig-param"><span class="n">working_gas</span></em>, <em class="sig-param"><span class="n">post_shock_gas</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.GetError.reflected_shock_frozen" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function uses the momentum and energy conservation equations to
+calculate error in current pressure and enthalpy guesses during
+reflected shock calculations. In this case, working state is frozen.</p>
+<p>Original function: <code class="docutils literal notranslate"><span class="pre">sdtoolbox.reflections.FHFP_reflected_fr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shock_speed</strong> (<em>float</em>) – Current post-incident-shock lab frame particle speed</p></li>
+<li><p><strong>working_gas</strong> (<em>ct.Solution</em>) – Working gas mixture used for calculations.</p></li>
+<li><p><strong>post_shock_gas</strong> (<em>ct.Solution</em>) – Working gas mixture in its post-incident-shock state.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A tuple containing:</p>
+<ul class="simple">
+<li><p>Enthalpy error (<cite>float</cite>)</p></li>
+<li><p>Pressure error (<cite>float</cite>)</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple (<cite>float</cite>, <cite>float</cite>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pypbomb.sd.Properties">
+<em class="property">class </em><code class="sig-prename descclassname">pypbomb.sd.</code><code class="sig-name descname">Properties</code><a class="headerlink" href="#pypbomb.sd.Properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="pypbomb.sd.Properties.equilibrium">
+<em class="property">static </em><code class="sig-name descname">equilibrium</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">gas</span></em>, <em class="sig-param"><span class="n">density</span></em>, <em class="sig-param"><span class="n">temperature</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.Properties.equilibrium" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculates the equilibrium pressure and enthalpy given
+temperature and density.</p>
+<p>Original function: <code class="docutils literal notranslate"><span class="pre">sdtoolbox.Thermo.eq_state</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gas</strong> (<em>ct.Solution</em>) – Working gas object.</p></li>
+<li><p><strong>density</strong> (<em>float</em>) – Mixture density in kg/m^3.</p></li>
+<li><p><strong>temperature</strong> (<em>float</em>) – Mixture temperature in K.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>Dictionary containing pressure and temperature values. Keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;pressure&quot;</span></code> (<cite>float</cite>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;enthalpy&quot;</span></code> (<cite>float</cite>)</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pypbomb.sd.Reflection">
+<em class="property">class </em><code class="sig-prename descclassname">pypbomb.sd.</code><code class="sig-name descname">Reflection</code><a class="headerlink" href="#pypbomb.sd.Reflection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="pypbomb.sd.Reflection.get_eq_state">
+<em class="property">static </em><code class="sig-name descname">get_eq_state</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">particle_speed</span></em>, <em class="sig-param"><span class="n">post_shock_gas</span></em>, <em class="sig-param"><span class="n">working_gas</span></em>, <em class="sig-param"><span class="n">error_tol_temperature</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">error_tol_specific_volume</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">max_iterations</span><span class="o">=</span><span class="default_value">500</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.Reflection.get_eq_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculates equilibrium post-reflected-shock state for a
+specified shock velocity</p>
+<p>Original function: <code class="docutils literal notranslate"><span class="pre">sdtoolbox.reflections.PostReflectedShock_eq</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>particle_speed</strong> (<em>float</em>) – current post-incident-shock lab frame particle speed</p></li>
+<li><p><strong>post_shock_gas</strong> (<em>ct.Solution</em>) – Working gas mixture in its post-incident-shock state.</p></li>
+<li><p><strong>working_gas</strong> (<em>ct.Solution</em>) – Working gas mixture used for calculations.</p></li>
+<li><p><strong>error_tol_temperature</strong> (<em>float</em><em>, </em><em>optional</em>) – Temperature error tolerance for iteration.</p></li>
+<li><p><strong>error_tol_specific_volume</strong> (<em>float</em><em>, </em><em>optional</em>) – Specific volume error tolerance for iteration.</p></li>
+<li><p><strong>max_iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of loop iterations</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>working_gas</strong> – gas object at equilibrium post-reflected-shock state</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ct.Solution</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pypbomb.sd.Reflection.reflect">
+<em class="property">classmethod </em><code class="sig-name descname">reflect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">initial_state_gas</span></em>, <em class="sig-param"><span class="n">post_shock_gas</span></em>, <em class="sig-param"><span class="n">working_gas</span></em>, <em class="sig-param"><span class="n">incident_shock_speed</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.Reflection.reflect" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculates equilibrium post-reflected-shock state assuming
+u1 = 0.</p>
+<p>Original function: <code class="docutils literal notranslate"><span class="pre">sdtoolbox.reflections.reflected_eq</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initial_state_gas</strong> (<em>ct.Solution</em>) – Working gas mixture in its initial, undetonated state.</p></li>
+<li><p><strong>post_shock_gas</strong> (<em>ct.Solution</em>) – Working gas mixture in its post-incident-shock state.</p></li>
+<li><p><strong>working_gas</strong> (<em>ct.Solution</em>) – Working gas mixture used for calculations.</p></li>
+<li><p><strong>incident_shock_speed</strong> (<em>float</em>) – Incident shock speed in m/s.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A tuple containing:</p>
+<ul class="simple">
+<li><p>post-reflected-shock pressure in Pascals (<cite>float</cite>),</p></li>
+<li><p>reflected shock speed in m/s (<cite>float</cite>),</p></li>
+<li><p>Gas object at equilibrium post-reflected-shock state
+(<cite>ct.Solution</cite>)</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple of (<cite>float</cite>, <cite>float</cite>, ct.Solution)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pypbomb.sd.cj_curve_fit">
+<code class="sig-prename descclassname">pypbomb.sd.</code><code class="sig-name descname">cj_curve_fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.sd.cj_curve_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines least squares fit of parabolic data. This is a vectorized
+version of <code class="docutils literal notranslate"><span class="pre">sdtoolbox.PostShock.LSQ_CJspeed</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – Independent data points for curve fitting</p></li>
+<li><p><strong>y</strong> (<em>np.array</em>) – Dependent data points for curve fitting</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple containing <code class="docutils literal notranslate"><span class="pre">(a,</span> <span class="pre">b,</span> <span class="pre">c,</span> <span class="pre">r_squared)</span></code> where <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">c</span></code> are the coefficients of quadratic function
+<span class="math notranslate nohighlight">\(ax^2 + bx + c = 0\)</span> and <code class="docutils literal notranslate"><span class="pre">r_squared</span></code> is the <span class="math notranslate nohighlight">\(R^2\)</span> value
+of the curve fit.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="thermochem.html" class="btn btn-neutral float-right" title="pypbomb.thermochem" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tube.html" class="btn btn-neutral float-left" title="pypbomb.tube" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Mick Carter
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
