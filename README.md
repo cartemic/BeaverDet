@@ -1,8 +1,10 @@
 # pypbomb
 ---
-![Travis build badge](https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master)
+[![Travis build badge](https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master)](https://travis-ci.org/github/cartemic/pypbomb)
+[![Codecov badge](https://codecov.io/gh/cartemic/pypbomb/branch/master/graph/badge.svg)](https://codecov.io/gh/cartemic/pypbomb)
+[![Documentation badge](https://github.com/cartemic/pypbomb/workflows/Documentation/badge.svg)](https://github.com/cartemic/pypbomb)
 ---
 
-For when you want the detonation to stay on the *inside*.
+For when you want the detonation to stay on the inside.
 
 This package was made to help with the design of a closed-end detonation tube, and was written as part of my PhD research in the [propulsion lab](http://research.engr.oregonstate.edu/blunckgroup/propulsion-laboratory) at Oregon Sate University.

@@ -7,6 +7,15 @@ Pypbomb
 ================================================================
 .. image:: https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master
    :alt: Travis build badge
+   :target: https://travis-ci.org/github/cartemic/pypbomb
+
+.. image:: https://codecov.io/gh/cartemic/pypbomb/branch/master/graph/badge.svg
+   :alt: Codecov badge
+   :target: https://codecov.io/gh/cartemic/pypbomb
+
+.. image:: https://github.com/cartemic/pypbomb/workflows/Documentation/badge.svg
+   :alt: Documentation badge
+   :target: https://github.com/cartemic/pypbomb
 
 For when you want the detonations to stay on the inside
 

@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Documentation
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -45,21 +45,6 @@ jobs:
         rm -rf _build/
         make html
         cd ../
-
-
-    #    - name: Build docs
-    #      run: |
-    #        cd docs/
-    #        ls
-    #        rm -rf _build/
-    #        make html -e
-    #        cd ../
-
-    #    - uses: ammaraskar/sphinx-action@master
-    #      with:
-    #        pre-build-command: "source activate /home/runner/miniconda/envs/test-environment"
-    #        build-command: "sphinx-build -b html . _build"
-    #        docs-folder: "docs/"
         
     - name: Commit docs to gh-pages
       run: |
