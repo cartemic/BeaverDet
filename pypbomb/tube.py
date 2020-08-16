@@ -692,9 +692,10 @@ class DDT:
     Methods for estimating the deflagration-to-detonation transition (DDT).
     """
     @staticmethod
-    def calculate_spiral_diameter(
+    def calculate_blockage_diameter(
             pipe_id,
-            blockage_ratio
+            blockage_ratio,
+            unit_registry=_U
     ):
         """
         Calculates the diameter of a Shchelkin spiral corresponding to a given
@@ -708,6 +709,9 @@ class DDT:
         blockage_ratio : float
             Ratio of blocked area to total cross-sectional area, :math:`0 < BR
             < 1`
+        unit_registry : pint.UnitRegistry
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
 
         Returns
         -------
@@ -726,6 +730,7 @@ class DDT:
         if not 0 < blockage_ratio < 1:
             raise ValueError("\nBlockage ratio outside of 0<BR<1")
 
+        pipe_id = units.parse_quant_input(pipe_id, unit_registry)
         units.check_pint_quantity(
             pipe_id,
             "length",
@@ -739,7 +744,8 @@ class DDT:
     @staticmethod
     def calculate_blockage_ratio(
             tube_inner_diameter,
-            blockage_diameter
+            blockage_diameter,
+            unit_registry=_U
     ):
         """
         Calculates the blockage ratio of a Shchelkin spiral within a detonation
@@ -753,6 +759,9 @@ class DDT:
             Outer diameter of the blockage used to create the Shchelkin spiral
             (i.e. a Shchelkin spiral made from 1/2" round stock would be
             ``blockage_diameter=quant(0.5, "inch")``
+        unit_registry : pint.UnitRegistry
+            Unit registry for managing units to prevent conflicts with parent
+            unit registry
 
         Returns
         -------
@@ -760,7 +769,14 @@ class DDT:
             Ratio of blocked to open area (between 0 and 1)
         """
 
-        # check dimensionality and >=0
+        tube_inner_diameter = units.parse_quant_input(
+            tube_inner_diameter,
+            unit_registry
+        ).to_base_units()
+        blockage_diameter = units.parse_quant_input(
+            blockage_diameter,
+            unit_registry
+        ).to_base_units()
         units.check_pint_quantity(
             tube_inner_diameter,
             "length",
@@ -771,10 +787,6 @@ class DDT:
             "length",
             ensure_positive=True
         )
-
-        # make sure units cancel
-        blockage_diameter = blockage_diameter.to_base_units()
-        tube_inner_diameter = tube_inner_diameter.to_base_units()
 
         # ensure blockage diameter < tube diameter
         if tube_inner_diameter.magnitude == 0:
@@ -796,8 +808,8 @@ class DDT:
             initial_pressure,
             species_dict,
             mechanism,
-            unit_registry,
-            phase_specification=""
+            unit_registry=_U,
+            phase_specification="",
     ):
         """
         Calculates the runup distance needed for a detonation to develop from a
@@ -848,29 +860,32 @@ class DDT:
         if blockage_ratio <= 0 or blockage_ratio > 0.75:
             raise ValueError("\nBlockage ratio outside of correlation range")
 
+        tube_diameter = units.parse_quant_input(
+            tube_diameter,
+            unit_registry
+        )
+        initial_temperature = units.parse_quant_input(
+            initial_temperature,
+            unit_registry
+        )
+        initial_pressure = units.parse_quant_input(
+            initial_pressure,
+            unit_registry
+        )
         units.check_pint_quantity(
             tube_diameter,
             "length",
             ensure_positive=True
         )
-
         units.check_pint_quantity(
             initial_temperature,
             "temperature",
             ensure_positive=True
         )
-
         units.check_pint_quantity(
             initial_pressure,
             "pressure",
             ensure_positive=True
-        )
-
-        # handle units
-        quant = unit_registry.Quantity
-        tube_diameter = quant(
-            tube_diameter.magnitude,
-            tube_diameter.units.format_babel()
         )
 
         # calculate laminar flame speed
@@ -878,10 +893,9 @@ class DDT:
             initial_temperature,
             initial_pressure,
             species_dict,
-            mechanism
-        )
-        laminar_fs = quant(
-            laminar_fs.magnitude, laminar_fs.units.format_babel()
+            mechanism,
+            phase_specification,
+            unit_registry
         )
 
         # calculate density ratio across the deflagration assuming adiabatic
@@ -900,14 +914,12 @@ class DDT:
 
         # find sound speed in products at adiabatic flame temperature
         sound_speed = thermochem.get_eq_sound_speed(
-            quant(working_gas.T, "K"),
-            quant(working_gas.P, "Pa"),
+            (working_gas.T, "K"),
+            (working_gas.P, "Pa"),
             species_dict,
-            mechanism
-        )
-        sound_speed = quant(
-            sound_speed.magnitude,
-            sound_speed.units.format_babel()
+            mechanism,
+            phase_specification,
+            unit_registry
         )
 
         def eq4_1():
@@ -930,8 +942,14 @@ class DDT:
                 initial_pressure.to("Pa").magnitude,
                 species_dict
             ]
-            rho = quant(working_gas.density_mass, "kg/m^3")
-            mu = quant(working_gas.viscosity, "Pa*s")
+            rho = units.parse_quant_input(
+                (working_gas.density_mass, "kg/m^3"),
+                unit_registry
+            )
+            mu = units.parse_quant_input(
+                (working_gas.viscosity, "Pa*s"),
+                unit_registry
+            )
             nu = mu / rho
             delta = (nu / laminar_fs).to_base_units()
 
@@ -991,9 +1009,9 @@ class DDT:
                 np.array([0.1, 0.3]),
                 interp_distances
             )
-            runup_distance = quant(
-                runup_distance,
-                tube_diameter.units.format_babel()
+            runup_distance = units.parse_quant_input(
+                (runup_distance, tube_diameter.units.format_babel()),
+                unit_registry
             )
 
         return runup_distance

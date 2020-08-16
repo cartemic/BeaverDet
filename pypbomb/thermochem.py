@@ -19,7 +19,7 @@ _U = pint.UnitRegistry()
 def calculate_laminar_flame_speed(
         initial_temperature,
         initial_pressure,
-        species_dict,
+        species,
         mechanism,
         phase_specification="",
         unit_registry=_U
@@ -34,8 +34,8 @@ def calculate_laminar_flame_speed(
         Mixture initial temperature
     initial_pressure : pint.Quantity
         Mixture initial pressure
-    species_dict : dict
-        Dictionary with species names (all caps) as keys and moles as values
+    species : dict or str
+        Species definition for cantera
     mechanism : str
         String of mechanism to use (e.g. ``gri30.cti``)
     phase_specification : str, optional
@@ -52,6 +52,14 @@ def calculate_laminar_flame_speed(
     gas = ct.Solution(mechanism, phase_specification)
     quant = unit_registry.Quantity
 
+    initial_pressure = units.parse_quant_input(
+        initial_pressure,
+        unit_registry
+    )
+    initial_temperature = units.parse_quant_input(
+        initial_temperature,
+        unit_registry
+    )
     units.check_pint_quantity(
         initial_pressure,
         "pressure",
@@ -63,23 +71,10 @@ def calculate_laminar_flame_speed(
         ensure_positive=True
     )
 
-    # ensure species dict isn't empty
-    if len(species_dict) == 0:
-        raise ValueError("Empty species dictionary")
-
-    # ensure all species are in the mechanism file
-    bad_species = ""
-    good_species = gas.species_names
-    for species in species_dict:
-        if species not in good_species:
-            bad_species += species + "\n"
-    if len(bad_species) > 0:
-        raise ValueError("Species not in mechanism:\n" + bad_species)
-
     gas.TPX = (
         initial_temperature.to("K").magnitude,
         initial_pressure.to("Pa").magnitude,
-        species_dict
+        species
     )
 
     # find laminar flame speed
@@ -94,7 +89,7 @@ def calculate_laminar_flame_speed(
 def get_eq_sound_speed(
         temperature,
         pressure,
-        species_dict,
+        species,
         mechanism,
         phase_specification="",
         unit_registry=_U
@@ -108,8 +103,8 @@ def get_eq_sound_speed(
         Mixture initial temperature
     pressure : pint.Quantity
         Mixture initial pressure
-    species_dict : dict
-        Dictionary of mixture mole fractions
+    species : dict or str
+        Species definition for cantera
     mechanism : str
         Desired chemical mechanism
     phase_specification : str, optional
@@ -125,12 +120,19 @@ def get_eq_sound_speed(
     """
     quant = unit_registry.Quantity
 
+    pressure = units.parse_quant_input(
+        pressure,
+        unit_registry
+    )
+    temperature = units.parse_quant_input(
+        temperature,
+        unit_registry
+    )
     units.check_pint_quantity(
         pressure,
         "pressure",
         ensure_positive=True
     )
-
     units.check_pint_quantity(
         temperature,
         "temperature",
@@ -141,7 +143,7 @@ def get_eq_sound_speed(
     working_gas.TPX = [
         temperature.to("K").magnitude,
         pressure.to("Pa").magnitude,
-        species_dict
+        species
         ]
 
     pressures = np.zeros(2)

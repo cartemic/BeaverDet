@@ -257,7 +257,7 @@ class TestDDT:
         expected_spiral_diameter = (
                 self.diameter / 2 * (1 - sqrt(1 - test_blockage_ratio))
         )
-        result = tube.DDT.calculate_spiral_diameter(
+        result = tube.DDT.calculate_blockage_diameter(
             self.diameter,
             test_blockage_ratio
         )
@@ -272,7 +272,7 @@ class TestDDT:
                 match="Non-numeric blockage ratio."
         ):
             # noinspection PyTypeChecker
-            tube.DDT.calculate_spiral_diameter(
+            tube.DDT.calculate_blockage_diameter(
                 self.diameter,
                 "doompity doo"
             )
@@ -285,7 +285,7 @@ class TestDDT:
                     ValueError,
                     match="Blockage ratio outside of 0<BR<1"
             ):
-                tube.DDT.calculate_spiral_diameter(
+                tube.DDT.calculate_blockage_diameter(
                     self.diameter,
                     ratio
                 )
