@@ -312,8 +312,35 @@ unit registry</p></li>
 <em class="property">class </em><code class="sig-prename descclassname">pypbomb.tube.</code><code class="sig-name descname">DDT</code><a class="headerlink" href="#pypbomb.tube.DDT" title="Permalink to this definition">¶</a></dt>
 <dd><p>Methods for estimating the deflagration-to-detonation transition (DDT).</p>
 <dl class="py method">
+<dt id="pypbomb.tube.DDT.calculate_blockage_diameter">
+<em class="property">static </em><code class="sig-name descname">calculate_blockage_diameter</code><span class="sig-paren">(</span><em class="sig-param">pipe_id</em>, <em class="sig-param">blockage_ratio</em>, <em class="sig-param">unit_registry=&lt;pint.registry.UnitRegistry object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.tube.DDT.calculate_blockage_diameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the diameter of a Shchelkin spiral corresponding to a given
+blockage ratio within a pipe of given inner diameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pipe_id</strong> (<em>pint.Quantity</em>) – Length scale representing the inner diameter of the pipe used for
+the detonation tube</p></li>
+<li><p><strong>blockage_ratio</strong> (<em>float</em>) – Ratio of blocked area to total cross-sectional area, <span class="math notranslate nohighlight">\(0 &lt; BR
+&lt; 1\)</span></p></li>
+<li><p><strong>unit_registry</strong> (<em>pint.UnitRegistry</em>) – Unit registry for managing units to prevent conflicts with parent
+unit registry</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Shchelkin spiral diameter inside a tube of <cite>pipe_id</cite> inner diameter
+giving a blockage ratio of <cite>blockage_ratio</cite>. Units are the same as
+pipe_id.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pint.Quantity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="pypbomb.tube.DDT.calculate_blockage_ratio">
-<em class="property">static </em><code class="sig-name descname">calculate_blockage_ratio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tube_inner_diameter</span></em>, <em class="sig-param"><span class="n">blockage_diameter</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.tube.DDT.calculate_blockage_ratio" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">calculate_blockage_ratio</code><span class="sig-paren">(</span><em class="sig-param">tube_inner_diameter</em>, <em class="sig-param">blockage_diameter</em>, <em class="sig-param">unit_registry=&lt;pint.registry.UnitRegistry object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.tube.DDT.calculate_blockage_ratio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the blockage ratio of a Shchelkin spiral within a detonation
 tube.</p>
 <dl class="field-list simple">
@@ -323,6 +350,8 @@ tube.</p>
 <li><p><strong>blockage_diameter</strong> (<em>pint.Quantity</em>) – Outer diameter of the blockage used to create the Shchelkin spiral
 (i.e. a Shchelkin spiral made from 1/2” round stock would be
 <code class="docutils literal notranslate"><span class="pre">blockage_diameter=quant(0.5,</span> <span class="pre">&quot;inch&quot;)</span></code></p></li>
+<li><p><strong>unit_registry</strong> (<em>pint.UnitRegistry</em>) – Unit registry for managing units to prevent conflicts with parent
+unit registry</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -336,7 +365,7 @@ tube.</p>
 
 <dl class="py method">
 <dt id="pypbomb.tube.DDT.calculate_run_up">
-<em class="property">static </em><code class="sig-name descname">calculate_run_up</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">blockage_ratio</span></em>, <em class="sig-param"><span class="n">tube_diameter</span></em>, <em class="sig-param"><span class="n">initial_temperature</span></em>, <em class="sig-param"><span class="n">initial_pressure</span></em>, <em class="sig-param"><span class="n">species_dict</span></em>, <em class="sig-param"><span class="n">mechanism</span></em>, <em class="sig-param"><span class="n">unit_registry</span></em>, <em class="sig-param"><span class="n">phase_specification</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.tube.DDT.calculate_run_up" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">calculate_run_up</code><span class="sig-paren">(</span><em class="sig-param">blockage_ratio</em>, <em class="sig-param">tube_diameter</em>, <em class="sig-param">initial_temperature</em>, <em class="sig-param">initial_pressure</em>, <em class="sig-param">species_dict</em>, <em class="sig-param">mechanism</em>, <em class="sig-param">unit_registry=&lt;pint.registry.UnitRegistry object&gt;</em>, <em class="sig-param">phase_specification=''</em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.tube.DDT.calculate_run_up" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the runup distance needed for a detonation to develop from a
 deflagration for a given blockage ratio, tube diameter, and mixture.
 This is accomplished using equations collected by Ciccarelli and
@@ -370,31 +399,6 @@ an error for all blockage ratios less than 0.3.</p></li>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Predicted DDT distance</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>pint.Quantity</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="pypbomb.tube.DDT.calculate_spiral_diameter">
-<em class="property">static </em><code class="sig-name descname">calculate_spiral_diameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipe_id</span></em>, <em class="sig-param"><span class="n">blockage_ratio</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypbomb.tube.DDT.calculate_spiral_diameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates the diameter of a Shchelkin spiral corresponding to a given
-blockage ratio within a pipe of given inner diameter.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pipe_id</strong> (<em>pint.Quantity</em>) – Length scale representing the inner diameter of the pipe used for
-the detonation tube</p></li>
-<li><p><strong>blockage_ratio</strong> (<em>float</em>) – Ratio of blocked area to total cross-sectional area, <span class="math notranslate nohighlight">\(0 &lt; BR
-&lt; 1\)</span></p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Shchelkin spiral diameter inside a tube of <cite>pipe_id</cite> inner diameter
-giving a blockage ratio of <cite>blockage_ratio</cite>. Units are the same as
-pipe_id.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>pint.Quantity</p>

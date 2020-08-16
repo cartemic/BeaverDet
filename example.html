@@ -631,7 +631,7 @@ else:
 </div>
 <p>o wow do the plot thign cool</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -643,7 +643,6 @@ g = sns.FacetGrid(
     data=results,
     height=4,
     aspect=0.75,
-    palette=&quot;colorblind&quot;,
     hue_kws=dict(linestyle=[&quot;--&quot;, &quot;-.&quot;, &quot;:&quot;])
 )
 g.map(
@@ -651,9 +650,11 @@ g.map(
     &quot;initial temperature (F)&quot;,
     &quot;max initial pressure (psi)&quot;,
     alpha=0.75,
-    marker=&quot;.&quot;
+    color=&quot;k&quot;
 ).add_legend()
-plt.suptitle(&quot;$P_{0,max}$ vs. tube temperature for various pipe sizes&quot;)
+plt.suptitle(
+    &quot;Max safe initial pressure vs. tube temperature for various pipe sizes&quot;
+)
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 sns.despine()
 
@@ -673,13 +674,20 @@ sns.despine()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>results_main = results[
-    (results[&quot;size&quot;] == &quot;6&quot;) &amp;
-    (results[&quot;schedule&quot;] == &quot;80&quot;)
-].drop(
+<span></span>nps_main = &quot;6&quot;
+schedule_main = &quot;80&quot;
+results_main = results[
+    (results[&quot;size&quot;] == nps_main) &amp;
+    (results[&quot;schedule&quot;] == schedule_main)
+].copy()
+results_original = results_main[
+    [&quot;max initial pressure (psi)&quot;,
+     &quot;initial temperature (F)&quot;]].astype(float)
+results_main.drop(
     [&quot;max initial pressure (psi)&quot;,
      &quot;initial temperature (F)&quot;],
-    axis=1
+    axis=1,
+    inplace=True
 )
 results_main
 </pre></div>
@@ -774,9 +782,11 @@ results_main
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>results_mix = results[
-    (results[&quot;size&quot;] == &quot;1&quot;) &amp;
-    (results[&quot;schedule&quot;] == &quot;40&quot;)
+<span></span>nps_mix = &quot;1&quot;
+schedule_mix = &quot;40&quot;
+results_mix = results[
+    (results[&quot;size&quot;] == nps_mix) &amp;
+    (results[&quot;schedule&quot;] == schedule_mix)
 ].drop(
     [&quot;max initial pressure (psi)&quot;,
      &quot;initial temperature (F)&quot;,
@@ -1046,7 +1056,7 @@ tube.Window.safety_factor(
 <div class="section" id="Bolt-pattern">
 <h3>Bolt pattern<a class="headerlink" href="#Bolt-pattern" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1107,25 +1117,178 @@ sns.despine()
 </div>
 <div class="section" id="Estimate-DDT-length">
 <h2>Estimate DDT length<a class="headerlink" href="#Estimate-DDT-length" title="Permalink to this headline">¶</a></h2>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>tube.DDT.
+<span></span>main_id = results_main[&quot;inner_diameter&quot;].iloc[0]
+target_blockage_diameter = tube.DDT.calculate_blockage_diameter(
+    main_id,
+    0.45,
+    unit_registry=ureg
+)
+print(&quot;Target blockage diameter: {:3.2f}&quot;.format(target_blockage_diameter))
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Target blockage diameter: 0.74 inch
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>blockage_actual = tube.DDT.calculate_blockage_ratio(
+    main_id,
+    (0.75, &quot;in&quot;),
+    unit_registry=ureg
+)
+print(&quot;Actual blockage ratio: {:4.1f}%&quot;.format(blockage_actual*100))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Actual blockage ratio: 45.3%
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>runup = tube.DDT.calculate_run_up(
+    blockage_actual,
+    main_id,
+    (70, &quot;degF&quot;),
+    (1, &quot;atm&quot;),
+    gas.mole_fraction_dict(),
+    mechanism,
+    unit_registry=ureg
+)
+print(&quot;Runup distance: {:1.2f}&quot;.format(runup.to(&quot;millifurlong&quot;)))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Runup distance: 6.14 millifurlong
+</pre></div></div>
 </div>
 </div>
 <div class="section" id="Find-safe-operation-limits-for-a-new-mixture">
 <h2>Find safe operation limits for a new mixture<a class="headerlink" href="#Find-safe-operation-limits-for-a-new-mixture" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
+<span></span>results_file = &quot;second_mixture_results.h5&quot;
+
+calculate_results = False
+new_fuel = &quot;H2&quot;
+new_oxidizer = &quot;O2&quot;
+gas2 = ct.Solution(mechanism)
+gas2.set_equivalence_ratio(1, new_fuel, new_oxidizer)
+
+if calculate_results:
+    results = pd.DataFrame(
+        columns=[
+            &quot;max initial pressure (psi)&quot;,
+            &quot;initial temperature (F)&quot;,
+        ]
+    )
+    for i, initial_temperature in enumerate(initial_temperatures):
+        dims = tube.Tube.get_dimensions(
+            nps_main,
+            schedule_main,
+            unit_registry=ureg
+        )
+        max_stress = tube.Tube.calculate_max_stress(
+            initial_temperature,
+            material,
+            welded=False,
+            unit_registry=ureg
+        )
+        max_pressure = tube.Tube.calculate_max_pressure(
+            dims[&quot;inner_diameter&quot;],
+            dims[&quot;outer_diameter&quot;],
+            max_stress
+        )
+        elastic_modulus = tube.Tube.get_elastic_modulus(material, ureg)
+        density = tube.Tube.get_density(material, ureg)
+        poisson = tube.Tube.get_poisson(material)
+        initial_pressure = tube.Tube.calculate_max_initial_pressure(
+            dims[&quot;inner_diameter&quot;],
+            dims[&quot;outer_diameter&quot;],
+            initial_temperature,
+            gas2.mole_fraction_dict(),
+            mechanism,
+            max_pressure.to(&quot;Pa&quot;),
+            elastic_modulus,
+            density,
+            poisson,
+            use_multiprocessing=False
+        )
+
+        current_results = pd.Series(dtype=&quot;object&quot;)
+        current_results[&quot;max initial pressure (psi)&quot;] = \
+        initial_pressure.to(&quot;psi&quot;).magnitude
+        current_results[&quot;initial temperature (F)&quot;] = \
+            initial_temperature.to(&quot;degF&quot;).magnitude
+        results = pd.concat(
+            (results, current_results.to_frame().T),
+            ignore_index=True
+        )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter(&quot;ignore&quot;)
+        with pd.HDFStore(results_file, &quot;w&quot;) as store:
+            store.put(&quot;data&quot;, results)
+
+else:
+    with pd.HDFStore(results_file, &quot;r&quot;) as store:
+        results = store.data
 </pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>results_original[&quot;mixture&quot;] = &quot;original&quot;
+results[&quot;mixture&quot;] = &quot;new&quot;
+sns.lineplot(
+    x=&quot;initial temperature (F)&quot;,
+    y=&quot;max initial pressure (psi)&quot;,
+    data=pd.concat((results_original, results)),
+    style=&quot;mixture&quot;,
+    color=&quot;k&quot;,
+)
+plt.title(&quot;Mixture comparison\nMax safe initial pressure vs. Temperature&quot;)
+sns.despine()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_43_0.png" src="_images/example_43_0.png" />
 </div>
 </div>
 </div>
