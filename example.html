@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Using pypbomb &mdash; pypbomb 0.1.0 documentation</title>
+  <title>Using Pypbomb &mdash; pypbomb 0.1.0 documentation</title>
   
 
   
@@ -97,7 +97,7 @@
 </ul>
 <p class="caption"><span class="caption-text">Example</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code></a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using Pypbomb</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Determine-tube-size-and-operating-limits">Determine tube size and operating limits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Select-proper-flanges">Select proper flanges</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Main-section">Main section</a></li>
@@ -159,7 +159,7 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code></li>
+      <li>Using Pypbomb</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -433,9 +433,9 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Using-pypbomb">
-<h1>Using <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code><a class="headerlink" href="#Using-pypbomb" title="Permalink to this headline">¶</a></h1>
-<p>Let’s go over some quick examples of how you might use <code class="docutils literal notranslate"><span class="pre">pypbomb</span></code> to design a detonation tube for your research.</p>
+<div class="section" id="Using-Pypbomb">
+<h1>Using Pypbomb<a class="headerlink" href="#Using-Pypbomb" title="Permalink to this headline">¶</a></h1>
+<p>Let’s go over some quick examples of how you might use pypbomb to design a detonation tube for your research.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -461,7 +461,7 @@ quant = ureg.Quantity
 </div>
 <div class="section" id="Determine-tube-size-and-operating-limits">
 <h2>Determine tube size and operating limits<a class="headerlink" href="#Determine-tube-size-and-operating-limits" title="Permalink to this headline">¶</a></h2>
-<p>First we will pick a mixture of stoichiometric propane/air. For this example we will use <code class="docutils literal notranslate"><span class="pre">gri30.cti</span></code> as the mechanism of choice for our Cantera calculations.</p>
+<p>First let us pick a mixture of stoichiometric propane/air. For this example we will use <code class="docutils literal notranslate"><span class="pre">gri30.cti</span></code> as the mechanism of choice for our Cantera calculations.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
@@ -486,7 +486,7 @@ gas.set_equivalence_ratio(1, fuel, oxidizer)
 </pre></div>
 </div>
 </div>
-<p>At this point we should probably out which schedules are available across all of the potential pipe sizes that we’d like to consider.</p>
+<p>At this point we should probably figure out which schedules are available across all of the potential pipe sizes that we’d like to consider.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -521,8 +521,7 @@ common_sizes
 </pre></div>
 </div>
 </div>
-<p>Let’s also look at a couple of different operating temperatures. Room temperature is always a good place to start. We will also look at 100 degrees Celsius; perhaps we want to use a hot water jacket to investigate detonations at elevated initial temperatures, so let’s use 100 degrees as well.</p>
-<p>rewrite this to suck less</p>
+<p>Let’s also look at a range of operating temperatures, in case we need to preheat our tube.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
@@ -629,7 +628,6 @@ else:
 </pre></div>
 </div>
 </div>
-<p>o wow do the plot thign cool</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
@@ -665,10 +663,10 @@ sns.despine()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_17_0.png" src="_images/example_17_0.png" />
+<img alt="_images/example_16_0.png" src="_images/example_16_0.png" />
 </div>
 </div>
-<p>o wow say neat things and investigate DLF to show that it’s why thigns collapse as size goes up</p>
+<p>TODO: o wow say neat things and investigate DLF to show that it’s why thigns collapse as size goes up</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
@@ -776,7 +774,7 @@ results_main
 </table>
 </div></div>
 </div>
-<p>mixing section</p>
+<p>With operational limits for the main detonation section out of the way, let’s consider a smaller, parallel tube with an internal fan to facilitate reactant mixing. Let’s also try to use schedule 40, since it is cheaper and more readily available than schedule 80. An important thing to check here is that the mixing section can handle at least as much pressure as the main section.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
@@ -905,6 +903,7 @@ Mix tube is safe :)
 </div>
 <div class="section" id="Select-proper-flanges">
 <h2>Select proper flanges<a class="headerlink" href="#Select-proper-flanges" title="Permalink to this headline">¶</a></h2>
+<p>Now we need to know what class of flanges each of our sections require. For this we will use the maximum system pressure, which is the pressure behind the reflected detonation wave at the maximum allowable initial pressure.</p>
 <div class="section" id="Main-section">
 <h3>Main section<a class="headerlink" href="#Main-section" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
@@ -970,7 +969,7 @@ results_mix[&quot;flange class&quot;].max()
 <h2>Determine window dimensions and bolt pattern<a class="headerlink" href="#Determine-window-dimensions-and-bolt-pattern" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="Window-Dimensions">
 <h3>Window Dimensions<a class="headerlink" href="#Window-Dimensions" title="Permalink to this headline">¶</a></h3>
-<p>blah blah viewing window unclamped height = 5.75 inches blah blah</p>
+<p>Since our main tube is NPS-6 schedule 80 pipe, the inner diameter is 5.76 inches. Therefore, let’s design a viewing section with a visible window height of 5.75 inches. First, let’s figure out how thick a fused quartz window needs to be in order to have a safety factor of 4. Also, let’s try to constrain ourselves to keeping the window thickness under 1 inch if we can.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
@@ -1026,7 +1025,7 @@ sns.despine()
 <img alt="_images/example_31_0.png" src="_images/example_31_0.png" />
 </div>
 </div>
-<p>let’s go with a 2.25 inch window (due to camera limitations), and 1 inch thick. what’s the safety factor?</p>
+<p>let’s go with a 2.25 inch wide window (due to camera limitations), and stick to 1 inch thick. what’s the safety factor?</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
@@ -1052,9 +1051,11 @@ tube.Window.safety_factor(
 7.95962038236468
 </pre></div></div>
 </div>
+<p>Nice.</p>
 </div>
 <div class="section" id="Bolt-pattern">
 <h3>Bolt pattern<a class="headerlink" href="#Bolt-pattern" title="Permalink to this headline">¶</a></h3>
+<p>Now let’s see how many 1/4-28 grade 8 bolts we need to clamp our window in place if we can tap them 1/2 inch into the viewing section plate.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
@@ -1109,14 +1110,16 @@ sns.despine()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_35_0.png" src="_images/example_35_0.png" />
+<img alt="_images/example_37_0.png" src="_images/example_37_0.png" />
 </div>
 </div>
-<p>important: bolt safety factor &lt; plate safety factor</p>
+<p>For a safety factor of 2.5, we will need a minimum of 12 bolts. Another important thing to pay attention to: The bolt safety factor is less than the plate safety factor. This is desirable; bolts are much cheaper to replace than a detonation tube, particularly when the part of the tube in question is machined from a very large and expensive piece of stainless steel!</p>
 </div>
 </div>
 <div class="section" id="Estimate-DDT-length">
 <h2>Estimate DDT length<a class="headerlink" href="#Estimate-DDT-length" title="Permalink to this headline">¶</a></h2>
+<p>Now let’s estimate how long it will take a deflagration ignited at one end of the tube to transition into a detonation. The <code class="docutils literal notranslate"><span class="pre">calculate_blockage_diameter</span></code> and <code class="docutils literal notranslate"><span class="pre">calculate_blockage_ratio</span></code> functions included in <code class="docutils literal notranslate"><span class="pre">tube.DDT</span></code> are for a Shchelkin spiral. This is not the only blockage pattern that can be used, however if you want to use an arbitrary blockage you will have to handle blockage ratio calculations on your own. That being said, the <code class="docutils literal notranslate"><span class="pre">DDT.calculate_run_up</span></code> function accepts arguments of
+blockage ratio and tube diameter, meaning that its only geometric assumption is a circular chamber cross-section.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
@@ -1188,9 +1191,11 @@ print(&quot;Runup distance: {:1.2f}&quot;.format(runup.to(&quot;millifurlong&quo
 Runup distance: 6.14 millifurlong
 </pre></div></div>
 </div>
+<p>Of course, since this package makes use of <code class="docutils literal notranslate"><span class="pre">pint</span></code>, you may use whatever ridiculous units you want for inputs and outputs.</p>
 </div>
 <div class="section" id="Find-safe-operation-limits-for-a-new-mixture">
 <h2>Find safe operation limits for a new mixture<a class="headerlink" href="#Find-safe-operation-limits-for-a-new-mixture" title="Permalink to this headline">¶</a></h2>
+<p>Finally, since the dynamic load factor is a function of wave speed as well as the tube’s geometry and material properties, the operational limits of your tube may change from mixture to mixture. Let’s take a look at what would happen to our safe operation limits for this tube if we decided to pack it with hydrogen and oxygen instead of propane and air.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
@@ -1288,7 +1293,7 @@ sns.despine()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_43_0.png" src="_images/example_43_0.png" />
+<img alt="_images/example_48_0.png" src="_images/example_48_0.png" />
 </div>
 </div>
 </div>

@@ -4,14 +4,14 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# Using ``pypbomb``"
+    "# Using Pypbomb"
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Let's go over some quick examples of how you might use ``pypbomb`` to design a detonation tube for your research."
+    "Let's go over some quick examples of how you might use pypbomb to design a detonation tube for your research."
    ]
   },
   {
@@ -48,7 +48,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "First we will pick a mixture of stoichiometric propane/air. For this example we will use ``gri30.cti`` as the mechanism of choice for our Cantera calculations."
+    "First let us pick a mixture of stoichiometric propane/air. For this example we will use ``gri30.cti`` as the mechanism of choice for our Cantera calculations."
    ]
   },
   {
@@ -85,7 +85,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "At this point we should probably out which schedules are available across all of the potential pipe sizes that we'd like to consider."
+    "At this point we should probably figure out which schedules are available across all of the potential pipe sizes that we'd like to consider."
    ]
   },
   {
@@ -134,9 +134,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Let's also look at a couple of different operating temperatures. Room temperature is always a good place to start. We will also look at 100 degrees Celsius; perhaps we want to use a hot water jacket to investigate detonations at elevated initial temperatures, so let's use 100 degrees as well.\n",
-    "\n",
-    "rewrite this to suck less"
+    "Let's also look at a range of operating temperatures, in case we need to preheat our tube."
    ]
   },
   {
@@ -252,13 +250,6 @@
    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "o wow do the plot thign cool"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": 8,
    "metadata": {},
@@ -303,7 +294,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "o wow say neat things and investigate DLF to show that it's why thigns collapse as size goes up"
+    "TODO: o wow say neat things and investigate DLF to show that it's why thigns collapse as size goes up"
    ]
   },
   {
@@ -438,7 +429,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "mixing section"
+    "With operational limits for the main detonation section out of the way, let's consider a smaller, parallel tube with an internal fan to facilitate reactant mixing. Let's also try to use schedule 40, since it is cheaper and more readily available than schedule 80. An important thing to check here is that the mixing section can handle at least as much pressure as the main section."
    ]
   },
   {
@@ -597,6 +588,13 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
+    "Now we need to know what class of flanges each of our sections require. For this we will use the maximum system pressure, which is the pressure behind the reflected detonation wave at the maximum allowable initial pressure."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
     "### Main section"
    ]
   },
@@ -683,7 +681,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "blah blah viewing window unclamped height = 5.75 inches blah blah"
+    "Since our main tube is NPS-6 schedule 80 pipe, the inner diameter is 5.76 inches. Therefore, let's design a viewing section with a visible window height of 5.75 inches. First, let's figure out how thick a fused quartz window needs to be in order to have a safety factor of 4. Also, let's try to constrain ourselves to keeping the window thickness under 1 inch if we can."
    ]
   },
   {
@@ -749,7 +747,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "let's go with a 2.25 inch window (due to camera limitations), and 1 inch thick. what's the safety factor?"
+    "let's go with a 2.25 inch wide window (due to camera limitations), and stick to 1 inch thick. what's the safety factor?"
    ]
   },
   {
@@ -783,7 +781,21 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
+    "Nice."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
     "### Bolt pattern"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's see how many 1/4-28 grade 8 bolts we need to clamp our window in place if we can tap them 1/2 inch into the viewing section plate."
    ]
   },
   {
@@ -851,7 +863,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "important: bolt safety factor < plate safety factor"
+    "For a safety factor of 2.5, we will need a minimum of 12 bolts. Another important thing to pay attention to: The bolt safety factor is less than the plate safety factor. This is desirable; bolts are much cheaper to replace than a detonation tube, particularly when the part of the tube in question is machined from a very large and expensive piece of stainless steel!"
    ]
   },
   {
@@ -859,6 +871,13 @@
    "metadata": {},
    "source": [
     "## Estimate DDT length"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's estimate how long it will take a deflagration ignited at one end of the tube to transition into a detonation. The `calculate_blockage_diameter` and `calculate_blockage_ratio` functions included in `tube.DDT` are for a Shchelkin spiral. This is not the only blockage pattern that can be used, however if you want to use an arbitrary blockage you will have to handle blockage ratio calculations on your own. That being said, the `DDT.calculate_run_up` function accepts arguments of blockage ratio and tube diameter, meaning that its only geometric assumption is a circular chamber cross-section."
    ]
   },
   {
@@ -936,7 +955,21 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
+    "Of course, since this package makes use of `pint`, you may use whatever ridiculous units you want for inputs and outputs."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
     "## Find safe operation limits for a new mixture"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Finally, since the dynamic load factor is a function of wave speed as well as the tube's geometry and material properties, the operational limits of your tube may change from mixture to mixture. Let's take a look at what would happen to our safe operation limits for this tube if we decided to pack it with hydrogen and oxygen instead of propane and air."
    ]
   },
   {
@@ -1060,7 +1093,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.7.7"
+   "version": "3.7.3"
   }
  },
  "nbformat": 4,
