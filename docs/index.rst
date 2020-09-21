@@ -5,7 +5,7 @@
 
 Pypbomb
 ================================================================
-.. image:: https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master
+.. image:: https://api.travis-ci.com/cartemic/pypbomb.svg?branch=master
    :alt: Travis build badge
    :target: https://travis-ci.com/github/cartemic/pypbomb
 
