@@ -1474,6 +1474,7 @@ class Tube:
             max_iterations=500,
             use_multiprocessing=False,
             max_pressure_state="reflected",
+            return_dlf=False
     ):
         """
         Parameters
@@ -1518,12 +1519,17 @@ class Tube:
         max_pressure_state : str
             Which state to use as the tube's maximum pressure. Must be either
             ``"reflected"`` (closed tube) or ``"cj"`` (open tube).
+        return_dlf : bool
+            If ``True``, dynamic load factor will be returned
 
         Returns
         -------
-        pint.Quantity
+        pint.Quantity or Tuple[pint.Quantity, float]
             Initial mixture pressure corresponding to the tube's maximum
             allowable pressure.
+
+            If `return_dlf` is set to ``True``, this will be a list, with item
+            0 being the initial pressure and item 1 being DLF
         """
         if max_pressure_state not in ("reflected", "cj"):
             raise ValueError("`max_pressure_state` must be 'reflected' or 'cj'")
@@ -1588,7 +1594,10 @@ class Tube:
             error = (state[max_pressure_state]["state"].P * dlf -
                      max_pressure.magnitude) / max_pressure.magnitude
 
-        return initial_pressure
+        if return_dlf:
+            return initial_pressure, dlf
+        else:
+            return initial_pressure
 
     @staticmethod
     def get_available_pipe_schedules(pipe_size):
