@@ -7,7 +7,7 @@ Pypbomb
 ================================================================
 .. image:: https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master
    :alt: Travis build badge
-   :target: https://travis-ci.org/github/cartemic/pypbomb
+   :target: https://travis-ci.com/github/cartemic/pypbomb
 
 .. image:: https://codecov.io/gh/cartemic/pypbomb/branch/master/graph/badge.svg
    :alt: Codecov badge
