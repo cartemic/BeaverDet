@@ -456,6 +456,9 @@ from pypbomb import tube
 
 ureg = pint.UnitRegistry()
 quant = ureg.Quantity
+
+sns.set_context(&quot;notebook&quot;)
+sns.set_style(&quot;white&quot;)
 </pre></div>
 </div>
 </div>
@@ -492,7 +495,7 @@ gas.set_equivalence_ratio(1, fuel, oxidizer)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>potential_sizes = [&quot;1&quot;, &quot;4&quot;, &quot;6&quot;, &quot;8&quot;]
+<span></span>potential_sizes = [&quot;1&quot;, &quot;3&quot;, &quot;4&quot;, &quot;6&quot;]
 common_sizes = set(tube.Tube.get_available_pipe_schedules(potential_sizes[0]))
 for size in potential_sizes[1:]:
     common_sizes.intersection_update(
@@ -567,6 +570,7 @@ if calculate_results:
             &quot;initial temperature (F)&quot;,
             &quot;tube_temp&quot;,
             &quot;max_pressure&quot;,
+            &quot;DLF&quot;,
         ]
     )
     for i, (schedule, size, initial_temperature) in enumerate(combinations):
@@ -589,7 +593,7 @@ if calculate_results:
         elastic_modulus = tube.Tube.get_elastic_modulus(material, ureg)
         density = tube.Tube.get_density(material, ureg)
         poisson = tube.Tube.get_poisson(material)
-        initial_pressure = tube.Tube.calculate_max_initial_pressure(
+        initial_pressure, dlf = tube.Tube.calculate_max_initial_pressure(
             dims[&quot;inner_diameter&quot;],
             dims[&quot;outer_diameter&quot;],
             initial_temperature,
@@ -599,7 +603,8 @@ if calculate_results:
             elastic_modulus,
             density,
             poisson,
-            use_multiprocessing=False
+            use_multiprocessing=False,
+            return_dlf=True
         )
 
         current_results = pd.Series(dtype=&quot;object&quot;)
@@ -612,10 +617,18 @@ if calculate_results:
         current_results[&quot;tube_temp&quot;] = initial_temperature
         current_results[&quot;max_pressure&quot;] = max_pressure
         current_results[&quot;inner_diameter&quot;] = dims[&quot;inner_diameter&quot;]
+        current_results[&quot;DLF&quot;] = dlf
         results = pd.concat(
             (results, current_results.to_frame().T),
             ignore_index=True
         )
+
+    float_keys = [
+        &quot;max initial pressure (psi)&quot;,
+        &quot;initial temperature (F)&quot;,
+        &quot;DLF&quot;
+    ]
+    results[float_keys] = results[float_keys].astype(float)
 
     with warnings.catch_warnings():
         warnings.simplefilter(&quot;ignore&quot;)
@@ -633,29 +646,16 @@ else:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>sns.set_context(&quot;notebook&quot;)
-sns.set_style(&quot;white&quot;)
-g = sns.FacetGrid(
+<span></span>sns.relplot(
+    x=&quot;initial temperature (F)&quot;,
+    y=&quot;max initial pressure (psi)&quot;,
     col=&quot;size&quot;,
-    hue=&quot;schedule&quot;,
+    style=&quot;schedule&quot;,
+    kind=&quot;line&quot;,
     data=results,
-    height=4,
-    aspect=0.75,
-    hue_kws=dict(linestyle=[&quot;--&quot;, &quot;-.&quot;, &quot;:&quot;])
+    aspect=0.5
 )
-g.map(
-    plt.plot,
-    &quot;initial temperature (F)&quot;,
-    &quot;max initial pressure (psi)&quot;,
-    alpha=0.75,
-    color=&quot;k&quot;
-).add_legend()
-plt.suptitle(
-    &quot;Max safe initial pressure vs. tube temperature for various pipe sizes&quot;
-)
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 sns.despine()
-
 </pre></div>
 </div>
 </div>
@@ -666,9 +666,33 @@ sns.despine()
 <img alt="_images/example_16_0.png" src="_images/example_16_0.png" />
 </div>
 </div>
-<p>TODO: o wow say neat things and investigate DLF to show that it’s why thigns collapse as size goes up</p>
+<p>Here we have operating limits for our mixture over varying initial temperatures across three schedules and four pipe sizes. At NPS 3 something interesting happens: schedule 80 pipe has a lower initial pressure than schedule 40 pipe. This is caused by the dynamic load factor, as shown below.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>sns.catplot(
+    x=&quot;schedule&quot;,
+    y=&quot;DLF&quot;,
+    col=&quot;size&quot;,
+    kind=&quot;bar&quot;,
+    data=results,
+    aspect=0.5
+);
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/example_18_0.png" src="_images/example_18_0.png" />
+</div>
+</div>
+<p>Let us select NPS 6 schedule 80 pipe for the main section of our detonation tube, in order to maximize the size of the viewing windows and allow for a wider range of cell sizes to be captured by our camera.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -692,7 +716,7 @@ results_main
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -718,56 +742,63 @@ results_main
       <th>size</th>
       <th>tube_temp</th>
       <th>max_pressure</th>
+      <th>DLF</th>
       <th>inner_diameter</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>36</th>
+      <th>42</th>
       <td>80</td>
       <td>6</td>
       <td>20.0 degree_Celsius</td>
       <td>2.1903439367027286 kip_per_square_inch</td>
+      <td>2.0</td>
       <td>5.761 inch</td>
     </tr>
     <tr>
-      <th>37</th>
+      <th>43</th>
       <td>80</td>
       <td>6</td>
       <td>96.0 degree_Celsius</td>
       <td>1.846139060229291 kip_per_square_inch</td>
+      <td>2.0</td>
       <td>5.761 inch</td>
     </tr>
     <tr>
-      <th>38</th>
+      <th>44</th>
       <td>80</td>
       <td>6</td>
       <td>172.0 degree_Celsius</td>
       <td>1.5963561440335863 kip_per_square_inch</td>
+      <td>2.0</td>
       <td>5.761 inch</td>
     </tr>
     <tr>
-      <th>39</th>
+      <th>45</th>
       <td>80</td>
       <td>6</td>
       <td>248.0 degree_Celsius</td>
       <td>1.4192312611012432 kip_per_square_inch</td>
+      <td>2.0</td>
       <td>5.761 inch</td>
     </tr>
     <tr>
-      <th>40</th>
+      <th>46</th>
       <td>80</td>
       <td>6</td>
       <td>324.0 degree_Celsius</td>
       <td>1.3029337639270142 kip_per_square_inch</td>
+      <td>2.0</td>
       <td>5.761 inch</td>
     </tr>
     <tr>
-      <th>41</th>
+      <th>47</th>
       <td>80</td>
       <td>6</td>
       <td>400.0 degree_Celsius</td>
       <td>1.2265926045535283 kip_per_square_inch</td>
+      <td>2.0</td>
       <td>5.761 inch</td>
     </tr>
   </tbody>
@@ -776,7 +807,7 @@ results_main
 </div>
 <p>With operational limits for the main detonation section out of the way, let’s consider a smaller, parallel tube with an internal fan to facilitate reactant mixing. Let’s also try to use schedule 40, since it is cheaper and more readily available than schedule 80. An important thing to check here is that the mixing section can handle at least as much pressure as the main section.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -811,7 +842,7 @@ Mix tube is safe :)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -837,6 +868,7 @@ Mix tube is safe :)
       <th>size</th>
       <th>tube_temp</th>
       <th>max_pressure</th>
+      <th>DLF</th>
       <th>max_main_pressure</th>
       <th>safe</th>
     </tr>
@@ -848,6 +880,7 @@ Mix tube is safe :)
       <td>1</td>
       <td>20.0 degree_Celsius</td>
       <td>3.5331641285956006 kip_per_square_inch</td>
+      <td>4.0</td>
       <td>2.1903439367027286 kip_per_square_inch</td>
       <td>True</td>
     </tr>
@@ -857,6 +890,7 @@ Mix tube is safe :)
       <td>1</td>
       <td>96.0 degree_Celsius</td>
       <td>2.9779397631133677 kip_per_square_inch</td>
+      <td>4.0</td>
       <td>1.846139060229291 kip_per_square_inch</td>
       <td>True</td>
     </tr>
@@ -866,6 +900,7 @@ Mix tube is safe :)
       <td>1</td>
       <td>172.0 degree_Celsius</td>
       <td>2.5750240270727587 kip_per_square_inch</td>
+      <td>4.0</td>
       <td>1.5963561440335863 kip_per_square_inch</td>
       <td>True</td>
     </tr>
@@ -875,6 +910,7 @@ Mix tube is safe :)
       <td>1</td>
       <td>248.0 degree_Celsius</td>
       <td>2.289310321489002 kip_per_square_inch</td>
+      <td>4.0</td>
       <td>1.4192312611012432 kip_per_square_inch</td>
       <td>True</td>
     </tr>
@@ -884,6 +920,7 @@ Mix tube is safe :)
       <td>1</td>
       <td>324.0 degree_Celsius</td>
       <td>2.1017150592216587 kip_per_square_inch</td>
+      <td>4.0</td>
       <td>1.3029337639270142 kip_per_square_inch</td>
       <td>True</td>
     </tr>
@@ -893,6 +930,7 @@ Mix tube is safe :)
       <td>1</td>
       <td>400.0 degree_Celsius</td>
       <td>1.9785719120135372 kip_per_square_inch</td>
+      <td>4.0</td>
       <td>1.2265926045535283 kip_per_square_inch</td>
       <td>True</td>
     </tr>
@@ -907,7 +945,7 @@ Mix tube is safe :)
 <div class="section" id="Main-section">
 <h3>Main section<a class="headerlink" href="#Main-section" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -925,7 +963,7 @@ results_main[&quot;flange class&quot;].max()
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -937,7 +975,7 @@ results_main[&quot;flange class&quot;].max()
 <div class="section" id="Mixing-section">
 <h3>Mixing section<a class="headerlink" href="#Mixing-section" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -955,7 +993,7 @@ results_mix[&quot;flange class&quot;].max()
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -971,7 +1009,7 @@ results_mix[&quot;flange class&quot;].max()
 <h3>Window Dimensions<a class="headerlink" href="#Window-Dimensions" title="Permalink to this headline">¶</a></h3>
 <p>Since our main tube is NPS-6 schedule 80 pipe, the inner diameter is 5.76 inches. Therefore, let’s design a viewing section with a visible window height of 5.75 inches. First, let’s figure out how thick a fused quartz window needs to be in order to have a safety factor of 4. Also, let’s try to constrain ourselves to keeping the window thickness under 1 inch if we can.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -989,7 +1027,7 @@ window_thicknesses = tube.Window.minimum_thickness(
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1022,12 +1060,12 @@ sns.despine()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_31_0.png" src="_images/example_31_0.png" />
+<img alt="_images/example_33_0.png" src="_images/example_33_0.png" />
 </div>
 </div>
 <p>let’s go with a 2.25 inch wide window (due to camera limitations), and stick to 1 inch thick. what’s the safety factor?</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1043,7 +1081,7 @@ tube.Window.safety_factor(
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -1057,7 +1095,7 @@ tube.Window.safety_factor(
 <h3>Bolt pattern<a class="headerlink" href="#Bolt-pattern" title="Permalink to this headline">¶</a></h3>
 <p>Now let’s see how many 1/4-28 grade 8 bolts we need to clamp our window in place if we can tap them 1/2 inch into the viewing section plate.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1110,7 +1148,7 @@ sns.despine()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_37_0.png" src="_images/example_37_0.png" />
+<img alt="_images/example_39_0.png" src="_images/example_39_0.png" />
 </div>
 </div>
 <p>For a safety factor of 2.5, we will need a minimum of 12 bolts. Another important thing to pay attention to: The bolt safety factor is less than the plate safety factor. This is desirable; bolts are much cheaper to replace than a detonation tube, particularly when the part of the tube in question is machined from a very large and expensive piece of stainless steel!</p>
@@ -1121,7 +1159,7 @@ sns.despine()
 <p>Now let’s estimate how long it will take a deflagration ignited at one end of the tube to transition into a detonation. The <code class="docutils literal notranslate"><span class="pre">calculate_blockage_diameter</span></code> and <code class="docutils literal notranslate"><span class="pre">calculate_blockage_ratio</span></code> functions included in <code class="docutils literal notranslate"><span class="pre">tube.DDT</span></code> are for a Shchelkin spiral. This is not the only blockage pattern that can be used, however if you want to use an arbitrary blockage you will have to handle blockage ratio calculations on your own. That being said, the <code class="docutils literal notranslate"><span class="pre">DDT.calculate_run_up</span></code> function accepts arguments of
 blockage ratio and tube diameter, meaning that its only geometric assumption is a circular chamber cross-section.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1144,7 +1182,7 @@ Target blockage diameter: 0.74 inch
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1166,7 +1204,7 @@ Actual blockage ratio: 45.3%
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1197,7 +1235,7 @@ Runup distance: 6.14 millifurlong
 <h2>Find safe operation limits for a new mixture<a class="headerlink" href="#Find-safe-operation-limits-for-a-new-mixture" title="Permalink to this headline">¶</a></h2>
 <p>Finally, since the dynamic load factor is a function of wave speed as well as the tube’s geometry and material properties, the operational limits of your tube may change from mixture to mixture. Let’s take a look at what would happen to our safe operation limits for this tube if we decided to pack it with hydrogen and oxygen instead of propane and air.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1271,7 +1309,7 @@ else:
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1293,7 +1331,7 @@ sns.despine()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/example_48_0.png" src="_images/example_48_0.png" />
+<img alt="_images/example_50_0.png" src="_images/example_50_0.png" />
 </div>
 </div>
 </div>
