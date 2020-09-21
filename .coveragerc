@@ -1,2 +1,2 @@
 [run]
-omit = beaverdet/_version.py, setup.py
+omit = pypbomb/_version.py, setup.py, pypbomb/tests/*

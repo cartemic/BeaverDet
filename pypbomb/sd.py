@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Functions for detonation calculations.
-
-Original functions from Shock and Detonation Toolbox
-http://www.galcit.caltech.edu/EDL/public/cantera/html/SD_Toolbox/
+Pypbomb requires the use of some functionality from the shock and detonation
+toolbox from the Explosion Dynamics Laboratory at Cal Tech:
+https://shepherd.caltech.edu/EDL/PublicResources/sdt/. SDToolbox is, as yet,
+not installable via pip or conda, and not all of its functions  are needed for
+this package. Therefore, the functions needed for pypbomb's purposes are located
+here, in ``pypbomb.sd``. Some of these functions, such as
+``Detonation.cj_speed``, have been modified to speed up the calculation process.
+If you are planning to do any sort of actual detonation work outside of tube
+design it is recommended to use the full SDToolbox.
 """
 
 import multiprocessing as mp
@@ -16,21 +21,23 @@ import numpy as np
 # noinspection SpellCheckingInspection
 def cj_curve_fit(x, y):
     """
-        Determines least squares fit of parabolic data.
-        Original function: LSQ_CJspeed from sdtoolbox, but vectorized
+        Determines least squares fit of parabolic data. This is a vectorized
+        version of ``sdtoolbox.PostShock.LSQ_CJspeed``.
 
         Parameters
         ----------
-        x
-            iterable with independent data points for curve fitting
-        y
-            iterable with dependent data points for curve fitting
+        x : np.array
+            Independent data points for curve fitting
+        y : np.array
+            Dependent data points for curve fitting
 
         Returns
         -------
         tuple
-            a, b, c, r_squared where:
-            a, b, c = coefficients of quadratic function (ax^2 + bx + c = 0)
+            A tuple containing ``(a, b, c, r_squared)`` where ``a``, ``b``, and
+            ``c`` are the coefficients of quadratic function
+            :math:`ax^2 + bx + c = 0` and ``r_squared`` is the :math:`R^2` value
+            of the curve fit.
         """
     # enforce numpy and float dtype
     x = np.array(x, dtype=float)
@@ -78,6 +85,9 @@ def cj_curve_fit(x, y):
 
 
 class Detonation:
+    """
+    Methods specifically relating to Chapman-Jouguet speed and state calculation
+    """
     @classmethod
     def cj_state(
             cls,
@@ -89,34 +99,35 @@ class Detonation:
             max_iterations=500
     ):
         """
-        This function calculates the Chapman-Jouguet state and wave speed using
-        Reynolds' iterative method.
+        Calculates the Chapman-Jouguet state and wave speed using Reynolds'
+        iterative method.
 
-        Original function: CJ_calc in PostShock.py
+        This function corresponds to ``sdtoolbox.PostShock.CJ_calc``
 
         Parameters
         ----------
-        working_gas : cantera.composite.Solution
-            A cantera gas object used for calculations.
-        initial_state_gas : cantera.composite.Solution
-            A cantera gas object for the working gas mixture in its initial,
-            undetonated state.
+        working_gas : cantera.Solution
+            Working gas mixture used for calculations.
+        initial_state_gas : ct.Solution
+            Working gas mixture in its initial, undetonated state.
         error_tol_temperature : float
-            Temperature error tolerance for iteration.
+            Temperature error tolerance for iteration, in Kelvin.
         error_tol_velocity : float
-            Velocity error tolerance for iteration.
+            Velocity error tolerance for iteration, in m/s.
         density_ratio : float
-            density ratio.
-        max_iterations : int
+            Density ratio.
+        max_iterations : int, optional
             Maximum number of loop iterations used to calculate output. Default
             is 500.
 
         Returns
         -------
-        working_gas : cantera.composite.Solution
-            Gas object at equilibrium state.
-        initial_velocity : float
-            Initial velocity resulting in the input density ratio, in m/s.
+        tuple(`ct.Solution`, `float`)
+            A tuple containing:
+
+            * Gas mixture at equilibrium state (`ct.Solution`)
+            * Initial velocity resulting in the input density ratio, in m/s
+              (`float`)
         """
         # initial state
         initial_volume = 1 / initial_state_gas.density
@@ -150,7 +161,7 @@ class Detonation:
             # check for non-convergence
             if loop_counter == max_iterations:
                 warnings.warn(
-                    'No convergence within {0} iterations'.format(
+                    "No convergence within {0} iterations".format(
                         max_iterations
                     ),
                     Warning
@@ -290,30 +301,41 @@ class Detonation:
             return_state=False
     ):
         """
-        This function calculates CJ detonation velocity
+        Calculates the Chapman-Jouguet detonation velocity of a gaseous mixture.
 
-        Original function: CJspeed in PostShock.py
+        This is a modified version of ``sdtoolbox.PostShock.CJspeed``.
+        Specifically, it has been changed to allow for CJ state output, and
+        to allow the use of multiprocessing to speed up the curve fit.
 
         Parameters
         ----------
         initial_pressure : float
-            initial pressure (Pa)
+            Initial pressure in Pascals
         initial_temperature : float
-            initial temperature (K)
+            Initial temperature in Kelvin
         species_mole_fractions : str or dict
-            string or dictionary of reactant species mole fractions
+            Reactant species mole fractions
         mechanism : str
-            cti file containing mechanism data (e.g. 'gri30.cti')
-        use_multiprocessing : bool
-            use multiprocessing to speed up CJ speed calculation
-        return_r_squared : bool
-            return the R^2 value of the CJ speed vs. density ratio fit
-        return_state : bool
-            return the CJ state corresponding to the calculated velocity
+            Cti file containing mechanism data (e.g. ``gri30.cti``)
+        use_multiprocessing : bool, optional
+            Use multiprocessing to speed up CJ speed calculation
+        return_r_squared : bool, optional
+            Return the :math:`R^2` value of the CJ speed vs. density ratio fit
+        return_state : bool, optional
+            Return the CJ state corresponding to the calculated velocity
 
         Returns
         -------
         dict
+            Dictionary with the following keys:
+
+            * ``"cj speed"``: Chapman-Jouguet wave speed (`float`)
+            * ``"R^2"``:  R-squared value of the CJ speed vs. density ratio fit
+              (`float`). Only exists if `return_r_squared` is set to ``True``.
+            * ``"cj state"``: Cantera solution object describing the CJ state
+              (`ct.Solution`). Only exists if `return_state` is set to ``True``.
+
+
         """
         # DECLARATIONS
         num_steps = 20
@@ -394,6 +416,9 @@ class Detonation:
             max_density_ratio = adjusted_density_ratio * (1 + 0.001)
             counter += 1
 
+        if use_multiprocessing:
+            pool.close()
+
         cj_speed = a * adjusted_density_ratio**2 + \
             b * adjusted_density_ratio + c
 
@@ -420,21 +445,21 @@ class Detonation:
 
         if return_r_squared and return_state:
             # noinspection PyUnboundLocalVariable
-            return {'cj speed': cj_speed,
-                    'R^2': r_squared,
-                    'cj state': working_gas
+            return {"cj speed": cj_speed,
+                    "R^2": r_squared,
+                    "cj state": working_gas
                     }
         elif return_state:
             # noinspection PyUnboundLocalVariable
-            return {'cj speed': cj_speed,
-                    'cj state': working_gas
+            return {"cj speed": cj_speed,
+                    "cj state": working_gas
                     }
         elif return_r_squared:
-            return {'cj speed': cj_speed,
-                    'R^2': r_squared
+            return {"cj speed": cj_speed,
+                    "R^2": r_squared
                     }
         else:
-            return {'cj speed': cj_speed}
+            return {"cj speed": cj_speed}
 
 
 class Properties:
@@ -447,13 +472,13 @@ class Properties:
     ):
         """
         This function calculates the equilibrium pressure and enthalpy given
-        temperature and density
+        temperature and density.
 
-        Original function: eq_state in Thermo.py
+        Original function: ``sdtoolbox.Thermo.eq_state``
 
         Parameters
         ----------
-        gas : cantera.composite.Solution
+        gas : ct.Solution
             Working gas object.
         density : float
             Mixture density in kg/m^3.
@@ -463,18 +488,25 @@ class Properties:
         Returns
         -------
         dict
-            Dictionary containing pressure and temperature values
+            Dictionary containing pressure and temperature values. Keys:
+
+            * ``"pressure"`` (`float`)
+            * ``"enthalpy"`` (`float`)
         """
 
         gas.TD = temperature, density
-        gas.equilibrate('TV')
+        gas.equilibrate("TV")
         pressure = gas.P
         enthalpy = gas.enthalpy_mass
 
-        return {'pressure': pressure, 'enthalpy': enthalpy}
+        return {"pressure": pressure, "enthalpy": enthalpy}
 
 
 class GetError:
+    """
+    Methods for calculating error in enthalpy and pressure from a given
+    velocity.
+    """
     # noinspection SpellCheckingInspection
     @staticmethod
     def equilibrium(
@@ -487,22 +519,24 @@ class GetError:
         calculate error in current pressure and enthalpy guesses. In this case,
         working state is in equilibrium.
 
-        Original function: FHFP_CJ in PostShock.py
+        Original function: ``FHFP_CJ in PostShock.py``
 
         Parameters
         ----------
-        working_gas : cantera.composite.Solution
-            A cantera gas object used for calculations.
-        initial_state_gas : cantera.composite.Solution
-            A cantera gas object for the working gas mixture in its initial,
-            undetonated state.
+        working_gas : ct.Solution
+            Working gas mixture used for calculations.
+        initial_state_gas : ct.Solution
+            Working gas mixture in its initial, undetonated state.
         initial_velocity_guess : float
             A guess for the initial velocity in m/s
 
         Returns
         -------
-        list
-            A list of errors in [enthalpy, pressure]
+        tuple (`float`, `float`)
+            A tuple containing:
+
+            * Enthalpy error (`float`)
+            * Pressure error (`float`)
         """
 
         initial_pressure = initial_state_gas.P
@@ -532,7 +566,7 @@ class GetError:
             )
         )
 
-        return [enthalpy_error, pressure_error]
+        return enthalpy_error, pressure_error
 
     @staticmethod
     def reflected_shock_frozen(
@@ -545,21 +579,24 @@ class GetError:
         calculate error in current pressure and enthalpy guesses during
         reflected shock calculations. In this case, working state is frozen.
 
-        Original function: FHFP_reflected_fr in reflections.py
+        Original function: ``sdtoolbox.reflections.FHFP_reflected_fr``
 
         Parameters
         ----------
         shock_speed : float
             Current post-incident-shock lab frame particle speed
-        working_gas : cantera.composite.Solution
-            A cantera gas object used for calculations.
-        post_shock_gas : cantera.composite.Solution
-            A cantera gas object at post-incident-shock state (already computed)
+        working_gas : ct.Solution
+            Working gas mixture used for calculations.
+        post_shock_gas : ct.Solution
+            Working gas mixture in its post-incident-shock state.
 
         Returns
         -------
-        numpy array
-            A numpy array of errors in [enthalpy, pressure]
+        tuple (`float`, `float`)
+            A tuple containing:
+
+            * Enthalpy error (`float`)
+            * Pressure error (`float`)
         """
         post_shock_pressure = post_shock_gas.P
         post_shock_enthalpy = post_shock_gas.enthalpy_mass
@@ -588,7 +625,7 @@ class GetError:
                 )
             )
 
-        return [enthalpy_error, pressure_error]
+        return enthalpy_error, pressure_error
 
 
 class Reflection:
@@ -602,29 +639,31 @@ class Reflection:
     ):
         """
         This function calculates equilibrium post-reflected-shock state assuming
-        u1 = 0
+        u1 = 0.
 
-        reflected_eq
+        Original function: ``sdtoolbox.reflections.reflected_eq``
 
         Parameters
         ----------
-        initial_state_gas : cantera.composite.Solution
-            gas object at initial state
-        post_shock_gas : cantera.composite.Solution
-            gas object at post-incident-shock state (already computed)
-        working_gas : cantera.composite.Solution
-            working gas object
+        initial_state_gas : ct.Solution
+            Working gas mixture in its initial, undetonated state.
+        post_shock_gas : ct.Solution
+            Working gas mixture in its post-incident-shock state.
+        working_gas : ct.Solution
+            Working gas mixture used for calculations.
         incident_shock_speed : float
-            incident shock speed (m/s)
+            Incident shock speed in m/s.
 
         Returns
         -------
-        working['pressure'] : float
-            post-reflected-shock pressure (Pa)
-        reflected_shock_speed : float
-            reflected shock speed (m/s)
-        working_gas : cantera.composite.Solution
-            gas object at equilibrium post-reflected-shock state
+        tuple of (`float`, `float`, ct.Solution)
+            A tuple containing:
+
+            * post-reflected-shock pressure in Pascals (`float`),
+            * reflected shock speed in m/s (`float`),
+            * Gas object at equilibrium post-reflected-shock state
+              (`ct.Solution`)
+
         """
         initial_pressure = initial_state_gas.P
         initial_volume = 1 / initial_state_gas.density
@@ -657,7 +696,7 @@ class Reflection:
             working_pressure,
             post_shock_gas.X
         ]
-        working_gas = cls.get_reflected_eq_state(
+        working_gas = cls.get_eq_state(
             reflected_velocity,
             post_shock_gas,
             working_gas
@@ -670,10 +709,10 @@ class Reflection:
                 reflected_velocity
         )
 
-        return [working_pressure, reflected_shock_speed, working_gas]
+        return working_pressure, reflected_shock_speed, working_gas
 
     @staticmethod
-    def get_reflected_eq_state(
+    def get_eq_state(
             particle_speed,
             post_shock_gas,
             working_gas,
@@ -685,26 +724,26 @@ class Reflection:
         This function calculates equilibrium post-reflected-shock state for a
         specified shock velocity
 
-        Original function: PostReflectedShock_eq in reflections.py
+        Original function: ``sdtoolbox.reflections.PostReflectedShock_eq``
 
         Parameters
         ----------
         particle_speed : float
             current post-incident-shock lab frame particle speed
-        post_shock_gas : cantera.composite.Solution
-            gas object at post-incident-shock state (already computed)
-        working_gas : cantera.composite.Solution
-            working gas object
-        error_tol_temperature : float
+        post_shock_gas : ct.Solution
+            Working gas mixture in its post-incident-shock state.
+        working_gas : ct.Solution
+            Working gas mixture used for calculations.
+        error_tol_temperature : float, optional
             Temperature error tolerance for iteration.
-        error_tol_specific_volume : float
+        error_tol_specific_volume : float, optional
             Specific volume error tolerance for iteration.
-        max_iterations : int
-            maximum number of loop iterations
+        max_iterations : int, optional
+            Maximum number of loop iterations
 
         Returns
         -------
-        working_gas : cantera.composite.Solution
+        working_gas : ct.Solution
             gas object at equilibrium post-reflected-shock state
         """
 
@@ -739,10 +778,10 @@ class Reflection:
                 )
         ):
             loop_counter += 1
-            if loop_counter == max_iterations:
+            if loop_counter == max_iterations:  # pragma: no cover
                 warnings.warn(
-                    'Calculation did not converge for U = {0:.2f} ' +
-                    'after {1} iterations'.format(particle_speed, loop_counter))
+                    "Calculation did not converge for U = {0:.2f} " +
+                    "after {1} iterations".format(particle_speed, loop_counter))
                 return working_gas
 
             # calculate enthalpy and pressure error for current guess

@@ -1,7 +1,12 @@
 language: python
 python:
-- "2.7"
 - "3.6"
+
+branches:
+  only:
+    - master
+    - develop
+    - ppf_sphinx
 
 install:
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -18,5 +23,9 @@ install:
     - conda config --append channels conda-forge
     - conda env create -qf test-environment.yaml;
     - source activate test-environment;
+
 script:
     - pytest -vv --cov=./;
+
+after_success:
+    - bash <(curl -s https://codecov.io/bash)
