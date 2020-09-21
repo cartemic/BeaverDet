@@ -1,6 +1,6 @@
 # pypbomb
 ---
-[![Travis build badge](https://api.travis-ci.org/cartemic/pypbomb.svg?branch=master)](https://travis-ci.org/github/cartemic/pypbomb)
+[![Travis build badge](https://api.travis-ci.com/cartemic/pypbomb.svg?branch=master)](https://travis-ci.com/github/cartemic/pypbomb)
 [![Codecov badge](https://codecov.io/gh/cartemic/pypbomb/branch/master/graph/badge.svg)](https://codecov.io/gh/cartemic/pypbomb)
 [![Documentation badge](https://github.com/cartemic/pypbomb/workflows/Documentation/badge.svg)](https://cartemic.github.io/pypbomb/)
 ---
