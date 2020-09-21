@@ -1,5 +1,5 @@
 ---
-title: 'Pypbomb: A Python package for galactic dynamics'
+title: 'Pypbomb: For when you want the detonation to stay on the inside'
 tags:
   - detonation
 authors:
