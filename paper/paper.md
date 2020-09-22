@@ -15,7 +15,7 @@ bibliography: paper.bib
 
 # Introduction
 
-A detonation is a supersonic combustion reaction in which a reaction front is coupled with a pressure shock front. Adiabatic heating from the shocks helps sustain the combustion front, which in turn accelerates the shock front. Because the products of a detonation are at a higher pressure than the reactants, thermodynamic cycles using detonations (such as the Humphrey cycle) have the potential for higher thermodynamic efficiency than deflagration-based cycles (such as the Brayton cycle) @Coleman2001
+A detonation is a supersonic combustion reaction in which a reaction front is coupled with a pressure shock front. Adiabatic heating from the shocks helps sustain the combustion front, which in turn accelerates the shock front. Because the products of a detonation are at a higher pressure than the reactants, thermodynamic cycles using detonations (such as the Humphrey cycle) have the potential for higher thermodynamic efficiency than deflagration-based cycles (such as the Brayton cycle) [@Coleman2001]
 
 # Statement of need 
 
