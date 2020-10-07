@@ -20,16 +20,15 @@ Pypbomb
 For when you want the detonations to stay on the inside
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Tube: the useful one
+   :maxdepth: 1
+   :caption: API
 
+   Tube
+   Flange
+   DDT
+   Window
+   Bolt
    tube
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Helper functions
-
    sd
    thermochem
    units
