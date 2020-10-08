@@ -25,36 +25,25 @@ In order to study the structure of gaseous detonations, a closed-end detonation 
 
 ``pypbomb`` contains a series of tools that can be used to quickly design and determine the operational envelope of a closed-end detonation tube. The first iteration of this package was written during the design of just such a tube, which is currently being used to measure cell sizes of gaseous detonations, and will be used in the near future for the study of detonations in two-phase mixtures.
 
-overview
-
 ## Tube
 
-* max allowable stress lookup as f(T) [@asmeb311]
-* max allowable pressure calculation [@megyesy]
-* dynamic load factor calculation [@Shepherd2009]
-* max safe initial pressure calculation [@sdt]
-* standard pipe size lookup and relevant material property lookup for stainless steels
-* pipe dimensions and stress limits (welded and seamless)
+`pypbomb.tube.Tube` allows the user to quickly iterate on the design of the main detonation tube and determine its safe operational limits. Standard pipe size lookups are included, allowing the user to quickly assess different tube geometries. Maximum allowable stress values are available as a function of temperature [@asmeb311], or may be supplied by the user. Using the allowable stress, the maximum pressure of the tube can be calculated [@megyesy]. Shepherd's dynamic load factor is calculated in order to adjust the static pressure limit to account for the tube's response to the transient pressure caused by the detonation wave [@Shepherd2009]. Using the de-rated pressure, the maximum initial reactant pressure can be determined for a given mixture and initial temperature. The shock and detonation toolbox is used to calculate detonation wave speeds and reflection properties [@sdt, @cantera].
 
 ## Flange
 
-* Properly size flanges using max tube pressure at a given temperature [@asmeb165]
+`pypbomb.tube.Flange` identifies the necessary flange class based on the maximum tube pressure and temperature [@asmeb165].
 
 ## DDT
 
-* Shchelkin spiral blockage ratio and diameter calculations
-* DDT run-up length estimation [@ciccarelli]
-  * BR <= 0.1 may require phase specification for cantera [@cantera]
+A successful detonation tube will allow a successful deflagration-to-detonation transition (DDT). `pypbomb.tube.DDT` contains tools for Shchelkin spiral blockage ratio and diameter calculations. It also allows the user to estimate the DDT run-up length for a desired mixture using cantera [@ciccarelli, @cantera].
 
 ## Window
 
-Determine required window thickness and safety factor for clamped rectangular windows [@crystran].
+For optical access, window thickness and safety factor calculations are included in `pypbomb.tube.Window` for clamped rectangular windows [@crystran].
 
 ## Bolt
 
-* calculate bolt stress areas [@machinery]
-* calculate bolt safety factor
-* thread property lookup
+`pypbomb.tube.Bolt` allows the user to calculate bolt stress areas and safety factors in order to keep the windows intact  and prevent bolts from pulling out of the tube [@machinery]. Standard thread property lookups are included.
 
 ## Acknowledgements
 
