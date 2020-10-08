@@ -800,7 +800,7 @@ class TestTube:
             return df_fake_stress.set_index("temperature")["stress"]
 
         with patch(
-                "pypbomb.tube.Tube.get_pipe_stress_limits",
+                "pypbomb.tube.Tube._get_pipe_stress_limits",
                 new=make_non_monotonic
         ):
             with pytest.raises(
