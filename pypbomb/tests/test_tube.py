@@ -466,7 +466,7 @@ class TestWindow:
 class TestTube:
     def test__get_pipe_stress_limits(self):
         unit_registry = tube._U
-        test_limits_weld = tube.Tube.get_pipe_stress_limits(
+        test_limits_weld = tube.Tube._get_pipe_stress_limits(
             "316",
             True,
             unit_registry
@@ -475,7 +475,7 @@ class TestTube:
             16, 16, 13.8, 12.4, 11.4, 10.6, 10.1, 9.8, 9.6,
             9.5, 9.4, 9.3, 9.2, 9.1, 9, 8.9, 8.8, 7.9, 6.3,
         ]
-        test_limits_smls = tube.Tube.get_pipe_stress_limits(
+        test_limits_smls = tube.Tube._get_pipe_stress_limits(
             "316",
             False,
             unit_registry

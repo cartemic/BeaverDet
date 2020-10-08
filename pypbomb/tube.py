@@ -1249,7 +1249,7 @@ class Tube:
         )
 
         # look up stress-temperature limits and units
-        stress_limits = cls.get_pipe_stress_limits(
+        stress_limits = cls._get_pipe_stress_limits(
             material=material,
             welded=welded,
             unit_registry=unit_registry
@@ -1289,7 +1289,7 @@ class Tube:
         return max_stress
 
     @staticmethod
-    def get_pipe_stress_limits(
+    def _get_pipe_stress_limits(
             material,
             welded,
             unit_registry=_U
