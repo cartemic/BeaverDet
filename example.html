@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Using Pypbomb &mdash; pypbomb 1.0.0 documentation</title>
+  <title>Using Pypbomb &mdash; pypbomb 1.1.0 documentation</title>
   
 
   
@@ -85,12 +85,18 @@
               
             
             
-              <p class="caption"><span class="caption-text">Tube: the useful one</span></p>
+              <p class="caption"><span class="caption-text">Installation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tube.html">pypbomb.tube</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing pypbomb</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Helper functions</span></p>
+<p class="caption"><span class="caption-text">API</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="Tube.html">Tube</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Flange.html">Flange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DDT.html">DDT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Window.html">Window</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Bolt.html">Bolt</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tube.html">pypbomb.tube</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sd.html">pypbomb.sd</a></li>
 <li class="toctree-l1"><a class="reference internal" href="thermochem.html">pypbomb.thermochem</a></li>
 <li class="toctree-l1"><a class="reference internal" href="units.html">pypbomb.units</a></li>
@@ -452,7 +458,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
-from pypbomb import tube
+from pypbomb import Tube, Flange, DDT, Window, Bolt
 
 ureg = pint.UnitRegistry()
 quant = ureg.Quantity
@@ -496,10 +502,10 @@ gas.set_equivalence_ratio(1, fuel, oxidizer)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>potential_sizes = [&quot;1&quot;, &quot;3&quot;, &quot;4&quot;, &quot;6&quot;]
-common_sizes = set(tube.Tube.get_available_pipe_schedules(potential_sizes[0]))
+common_sizes = set(Tube.get_available_pipe_schedules(potential_sizes[0]))
 for size in potential_sizes[1:]:
     common_sizes.intersection_update(
-        set(tube.Tube.get_available_pipe_schedules(size))
+        set(Tube.get_available_pipe_schedules(size))
     )
 common_sizes
 </pre></div>
@@ -551,7 +557,7 @@ common_sizes
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>calculate_results = False
+<span></span>calculate_results = True
 results_file = &quot;tube_size_results.h5&quot;
 
 combinations = list(
@@ -574,26 +580,26 @@ if calculate_results:
         ]
     )
     for i, (schedule, size, initial_temperature) in enumerate(combinations):
-        dims = tube.Tube.get_dimensions(
+        dims = Tube.get_dimensions(
             size,
             schedule,
             unit_registry=ureg
         )
-        max_stress = tube.Tube.calculate_max_stress(
+        max_stress = Tube.calculate_max_stress(
             initial_temperature,
             material,
             welded=False,
             unit_registry=ureg
         )
-        max_pressure = tube.Tube.calculate_max_pressure(
+        max_pressure = Tube.calculate_max_pressure(
             dims[&quot;inner_diameter&quot;],
             dims[&quot;outer_diameter&quot;],
             max_stress
         )
-        elastic_modulus = tube.Tube.get_elastic_modulus(material, ureg)
-        density = tube.Tube.get_density(material, ureg)
-        poisson = tube.Tube.get_poisson(material)
-        initial_pressure, dlf = tube.Tube.calculate_max_initial_pressure(
+        elastic_modulus = Tube.get_elastic_modulus(material, ureg)
+        density = Tube.get_density(material, ureg)
+        poisson = Tube.get_poisson(material)
+        initial_pressure, dlf = Tube.calculate_max_initial_pressure(
             dims[&quot;inner_diameter&quot;],
             dims[&quot;outer_diameter&quot;],
             initial_temperature,
@@ -950,7 +956,7 @@ Mix tube is safe :)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>results_main[&quot;flange class&quot;] = results_main.apply(
-    lambda x: tube.Flange.get_class(
+    lambda x: Flange.get_class(
         x[&quot;max_pressure&quot;],
         x[&quot;tube_temp&quot;],
         material,
@@ -980,7 +986,7 @@ results_main[&quot;flange class&quot;].max()
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>results_mix[&quot;flange class&quot;] = results_mix.apply(
-    lambda x: tube.Flange.get_class(
+    lambda x: Flange.get_class(
         x[&quot;max_main_pressure&quot;],
         x[&quot;tube_temp&quot;],
         material,
@@ -1015,7 +1021,7 @@ results_mix[&quot;flange class&quot;].max()
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>window_height = quant(5.75, &quot;in&quot;)
 window_lengths = np.linspace(0.25, 7, 100)
-window_thicknesses = tube.Window.minimum_thickness(
+window_thicknesses = Window.minimum_thickness(
     length=window_height,
     width=quant(window_lengths, &quot;in&quot;),
     safety_factor=4,
@@ -1070,7 +1076,7 @@ sns.despine()
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>window_length = quant(2.25, &quot;in&quot;)
-tube.Window.safety_factor(
+Window.safety_factor(
     window_length,
     window_height,
     quant(1, &quot;in&quot;),
@@ -1100,7 +1106,7 @@ tube.Window.safety_factor(
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>num_bolts = np.array(range(1, 25))
-bolt_safety_factors = tube.Bolt.calculate_safety_factors(
+bolt_safety_factors = Bolt.calculate_safety_factors(
     max_pressure=results_main[&quot;max_pressure&quot;].max(),
     window_area = window_length * window_height,
     num_bolts=num_bolts,
@@ -1156,7 +1162,7 @@ sns.despine()
 </div>
 <div class="section" id="Estimate-DDT-length">
 <h2>Estimate DDT length<a class="headerlink" href="#Estimate-DDT-length" title="Permalink to this headline">¶</a></h2>
-<p>Now let’s estimate how long it will take a deflagration ignited at one end of the tube to transition into a detonation. The <code class="docutils literal notranslate"><span class="pre">calculate_blockage_diameter</span></code> and <code class="docutils literal notranslate"><span class="pre">calculate_blockage_ratio</span></code> functions included in <code class="docutils literal notranslate"><span class="pre">tube.DDT</span></code> are for a Shchelkin spiral. This is not the only blockage pattern that can be used, however if you want to use an arbitrary blockage you will have to handle blockage ratio calculations on your own. That being said, the <code class="docutils literal notranslate"><span class="pre">DDT.calculate_run_up</span></code> function accepts arguments of
+<p>Now let’s estimate how long it will take a deflagration ignited at one end of the tube to transition into a detonation. The <code class="docutils literal notranslate"><span class="pre">calculate_blockage_diameter</span></code> and <code class="docutils literal notranslate"><span class="pre">calculate_blockage_ratio</span></code> functions included in <code class="docutils literal notranslate"><span class="pre">DDT</span></code> are for a Shchelkin spiral. This is not the only blockage pattern that can be used, however if you want to use an arbitrary blockage you will have to handle blockage ratio calculations on your own. That being said, the <code class="docutils literal notranslate"><span class="pre">DDT.calculate_run_up</span></code> function accepts arguments of
 blockage ratio and tube diameter, meaning that its only geometric assumption is a circular chamber cross-section.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
@@ -1164,7 +1170,7 @@ blockage ratio and tube diameter, meaning that its only geometric assumption is 
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>main_id = results_main[&quot;inner_diameter&quot;].iloc[0]
-target_blockage_diameter = tube.DDT.calculate_blockage_diameter(
+target_blockage_diameter = DDT.calculate_blockage_diameter(
     main_id,
     0.45,
     unit_registry=ureg
@@ -1186,7 +1192,7 @@ Target blockage diameter: 0.74 inch
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>blockage_actual = tube.DDT.calculate_blockage_ratio(
+<span></span>blockage_actual = DDT.calculate_blockage_ratio(
     main_id,
     (0.75, &quot;in&quot;),
     unit_registry=ureg
@@ -1208,7 +1214,7 @@ Actual blockage ratio: 45.3%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>runup = tube.DDT.calculate_run_up(
+<span></span>runup = DDT.calculate_run_up(
     blockage_actual,
     main_id,
     (70, &quot;degF&quot;),
@@ -1241,7 +1247,7 @@ Runup distance: 6.14 millifurlong
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>results_file = &quot;second_mixture_results.h5&quot;
 
-calculate_results = False
+calculate_results = True
 new_fuel = &quot;H2&quot;
 new_oxidizer = &quot;O2&quot;
 gas2 = ct.Solution(mechanism)
@@ -1255,26 +1261,26 @@ if calculate_results:
         ]
     )
     for i, initial_temperature in enumerate(initial_temperatures):
-        dims = tube.Tube.get_dimensions(
+        dims = Tube.get_dimensions(
             nps_main,
             schedule_main,
             unit_registry=ureg
         )
-        max_stress = tube.Tube.calculate_max_stress(
+        max_stress = Tube.calculate_max_stress(
             initial_temperature,
             material,
             welded=False,
             unit_registry=ureg
         )
-        max_pressure = tube.Tube.calculate_max_pressure(
+        max_pressure = Tube.calculate_max_pressure(
             dims[&quot;inner_diameter&quot;],
             dims[&quot;outer_diameter&quot;],
             max_stress
         )
-        elastic_modulus = tube.Tube.get_elastic_modulus(material, ureg)
-        density = tube.Tube.get_density(material, ureg)
-        poisson = tube.Tube.get_poisson(material)
-        initial_pressure = tube.Tube.calculate_max_initial_pressure(
+        elastic_modulus = Tube.get_elastic_modulus(material, ureg)
+        density = Tube.get_density(material, ureg)
+        poisson = Tube.get_poisson(material)
+        initial_pressure = Tube.calculate_max_initial_pressure(
             dims[&quot;inner_diameter&quot;],
             dims[&quot;outer_diameter&quot;],
             initial_temperature,

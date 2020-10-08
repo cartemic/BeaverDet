@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Search &mdash; pypbomb 1.1.0 documentation</title>
+  <title>Installing pypbomb &mdash; pypbomb 1.1.0 documentation</title>
   
 
   
@@ -21,7 +21,6 @@
   
 
   
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -39,9 +38,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-    <script type="text/javascript" src="_static/searchtools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tube" href="Tube.html" />
+    <link rel="prev" title="Pypbomb" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -68,7 +68,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -87,8 +87,11 @@
             
             
               <p class="caption"><span class="caption-text">Installation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing pypbomb</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installing pypbomb</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#instructions">Instructions</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">API</span></p>
 <ul>
@@ -151,12 +154,14 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Search</li>
+      <li>Installing pypbomb</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -168,23 +173,84 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
 
-  
-  <div id="search-results">
-  
-  </div>
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="installing-pypbomb">
+<h1>Installing pypbomb<a class="headerlink" href="#installing-pypbomb" title="Permalink to this headline">¶</a></h1>
+<p>Owing to some problems I have had using conda-build, pypbomb is
+installed using pip. However, cantera and pint are required, which
+means you should have conda installed. Don’t forget to activate the correct
+conda environment before installing pypbomb!</p>
+<div class="section" id="instructions">
+<h2>Instructions<a class="headerlink" href="#instructions" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>Download and extracted the latest release from
+<a class="reference external" href="https://github.com/cartemic/pypbomb/releases/latest">github</a> and navigate
+to the top level directory of pypbomb (e.g. <code class="docutils literal notranslate"><span class="pre">~/Downloads/pypbomb/</span></code>) in your
+terminal of choice.</p></li>
+<li><p>Install cantera:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda install -c cantera cantera
+</pre></div>
+</div>
+</li>
+<li><p>Install pint:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda install -c conda-forge pint
+</pre></div>
+</div>
+</li>
+<li><p>Install pypbomb:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install .
+</pre></div>
+</div>
+</li>
+<li><p>You may now delete the pypbomb directory that you downloaded</p></li>
+</ol>
+<p>Alternatively, if you want to tweak pypbomb while using it for your own ends,
+move the pypbomb directory to where you want it, perform steps 1-3, and install
+pypbomb in development mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda develop .
+</pre></div>
+</div>
+<p>In this case, <em>do not</em> delete the downloaded pypbomb directory, since this is where pypbomb lives now.</p>
+</div>
+</div>
+
 
            </div>
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Tube.html" class="btn btn-neutral float-right" title="Tube" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Pypbomb" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -224,14 +290,7 @@
   
   
     
-  
-  <script type="text/javascript">
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script type="text/javascript" id="searchindexloader"></script>
    
-
 
 </body>
 </html>
